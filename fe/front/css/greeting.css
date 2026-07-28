@@ -1,0 +1,16 @@
+center {
+    display: block;
+    margin-top: 80px;
+    font-size: 28px;
+    font-weight: 700;
+    color: #7000FF;
+    background-color: #FF5F33;
+}
+
+.btn {
+    cursor: pointer;
+    border: none;
+    border-radius: 8px;
+    background-color: violet;
+    color: white;
+}
