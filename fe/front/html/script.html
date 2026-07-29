@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Script</title>
+</head>
+<body>
+    <script>
+        var message = "Hi";
+        console.log(`message = ${message}`);
+        console.log(`type of message = ${typeof(message)}`)
+
+        message = 1234;
+        console.log(`message = ${message}`);
+        console.log(`type of message = ${typeof(message)}`);
+        console.log(`message == ${message == "10"}`);
+        console.log(`message === ${message === "10"}`);
+
+        let msg = "Hello World!";
+        // let msg = 10;
+
+        const num = 10;
+        // num = 20;
+
+        let obj = {
+            name: "박준우",
+            age: 27,
+            major: "정보통신공학과"
+        };
+        console.log(`obj: ${obj}`);
+        console.log(`type of obj: ${typeof(obj)}`);
+        console.log(`name: ${obj.name}, age: ${obj.age}, major: ${obj["major"]}`);
+
+        let arr = [
+            {name: "A"},
+            {name: "B"},
+            {name: "C"}
+        ];
+        console.log("arr =", arr);
+        console.log(`type of arr = ${typeof(arr)}`);
+        for(let key in arr) {
+            console.log(key, arr[key]);
+        }
+    </script>
+</body>
+</html>

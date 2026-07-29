@@ -1,0 +1,53 @@
+.container {
+    border: 1px solid orangered;
+    width: 1000px;
+}
+
+.tour-intro {
+    border: 1px solid lawngreen;
+    text-align: center;
+    color:antiquewhite;
+    background-color: #101010;
+    font-weight: bold;
+    margin-top: 10px;
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+.tour-list {
+    border: 1px dotted darkred;
+    overflow: hidden;
+    margin: 10px;
+    text-align: center;
+}
+
+.tour-list > .tour-prd > a > img {
+    width: 200px;
+    border-radius: 50%;
+}
+
+.tour-prd > a {
+    text-decoration: none;
+}
+
+button {
+    width: 180px;
+    border-radius: 25px;
+    padding: 10px 20px;
+    margin: 10px 5px 10px 10px;
+}
+
+.tour-prd h3, button {
+    text-align: center;
+}
+
+.tour-prd {
+    display: inline-block;
+    border: dashed coral;
+    margin: 5px 10px;
+    padding: 7px;
+}
+
+span {
+    color: cornflowerblue;
+}

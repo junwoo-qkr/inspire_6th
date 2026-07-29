@@ -1,0 +1,20 @@
+ul {
+    list-style: none;
+}
+
+fieldset > ul  li > label {
+    width: 100px;
+    float: left;
+}
+
+li {
+    line-height: 30px;
+}
+
+button {
+    background-color: #101010;
+    color: aliceblue;
+    border: none;
+    border-radius: 8px;
+    cursor: crosshair;
+}
