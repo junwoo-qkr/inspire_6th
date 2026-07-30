@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <div id="display"></div>
+    <script>
+        const arr = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+        // for문
+        for(let i=0; i<arr.length; i++) {
+            console.log(`index = ${i}, arr[index] = ${arr[i]}`);
+        }
+
+        // forEach()
+        arr.forEach((value, idx) => {
+            console.log(`index = ${idx}, arr[index] = ${value}`);
+        });
+
+        // for ~ in
+        for(let idx in arr) {
+            console.log(`index = ${idx}, arr[index] = ${arr[idx]}`);
+        }
+
+        // for ~ of
+        for(let key of arr) {
+            console.log(key);
+        }
+
+        let img = "xxx.png";
+        let heading = "xxxx";
+        let cardAry = [
+            {img, heading}, {img, heading}, {img, heading},
+        ]
+        let divTag = "";
+        cardAry.forEach((obj) => {
+            divTag += `<div><img src='${obj.img}'>`;
+            divTag += `<h2>${obj.heading}</h2></div>`;
+        });
+        document.getElementById("display").innerHTML = divTag;
+    </script>
+</body>
+</html>

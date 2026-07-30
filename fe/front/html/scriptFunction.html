@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <script>
+        // 함수 정의
+        function test(x, y) {
+            return x + y;
+        }
+        // 정의되어 있는 함수를 호출
+        let result = test(10, 20);
+        console.log(`result = ${result}`);
+
+        // 익명 함수 선언
+        let btnHandler = function() {
+            console.log("익명 함수입니다.");
+        }
+        btnHandler();
+        console.log(`type of btnHandler = ${typeof(btnHandler)}`)
+
+        // 화살표함수 선언
+        let arrowFunc = () => {
+            console.log("화살표 함수 입니다.");
+        }
+        arrowFunc();
+
+        let add1 = (a, b) => a + b;
+        console.log(`add1 = ${add1(10, 20)}`);
+        let add2 = (a, b) => {
+            a + b;
+        }
+        console.log(`add2 = ${add2(10, 20)}`);
+
+        // 메서드: 객체에 종속된 함수
+        let obj = {
+            name: "홍길동",
+            grade: function() {
+                return ["A+", "C", "F"];
+            }
+        }
+        let g = obj.grade();
+        console.log(`g = ${g}`);
+
+        // 구조분해(Destructuring)
+        let obj2 = {
+            name: "홍길동",
+            grade: function() {
+                return {
+                    "PE": "A+",
+                    "math": "C",
+                    "science": "F"
+                };
+            }
+        };
+        let {PE, math, science} = obj2.grade();
+        console.log(`math = ${math}`);
+
+        // 축약 문법
+        let A = 32;
+        let B = 7;
+        let C = 66;
+        
+        func = () => {
+            return {
+                A,
+                B,
+                C
+            };
+        }
+        console.log(func().A);
+
+        // map(): 배열의 각 요소에 콜백함수를 적용해서 새 배열 반환
+        const ages = [19, 43, 22, 17, 6, 44, 26];
+        const newAges = ages.map(age => age*2);
+        console.log(newAges);
+
+        // filter(): 콜백함수에 맞는 요소만 남긴 새 배열 반환
+        const evenAges = ages.filter(age => age%2===0);
+        console.log(evenAges)
+
+        // reduce(): 배열의 각 요소를 처리해 누적
+        const userAry = [
+            { email : "naver.com" , nickName : "IronMan"},
+            { email : "google.com", nickName : "Bob"},
+            { email : "daum.com"  , nickName : "Alice"}
+        ];
+        // const newUserAry = userAry.map(user => ({[user.email]: user.nickName}));
+        const newUserAry = userAry.reduce((acc, curr) => {
+            acc[curr.email] = curr.nickName;
+            return acc;
+        }, {});
+        console.log(newUserAry);
+    </script>
+</body>
+</html>
