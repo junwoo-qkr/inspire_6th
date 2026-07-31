@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <link href="../css/axios.css" rel="stylesheet">
+</head>
+<body>
+    <h1>상품목록</h1>
+    <div class="container" id="container"></div>
+    <script>
+        let data;
+        const loadData = async () => {
+            const response = await axios.get('https://fakestoreapi.com/products')
+            data = await(response.data);
+        }
+
+        const makeProduct = () => {
+            data.forEach((obj, idx) => {
+                const card = document.createElement("div");
+                card.className = "card";
+                const title = document.createElement("h3");
+                title.textContent = obj.title;
+                const price = document.createElement("p");
+                price.textContent = obj.price;
+                const img = document.createElement("img");
+                img.src = obj.image;
+                img.width = "200";
+                
+                card.appendChild(img);
+                card.appendChild(title);
+                card.appendChild(price);
+                container.appendChild(card);
+            });
+        }
+
+        const init = async () => {
+            await loadData();
+            makeProduct();
+        }
+
+        init();
+    </script>
+    
+
+</body>
+</html>
