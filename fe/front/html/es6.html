@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <script>
+        // Spread Operator
+        let origin = {
+            a: 10,
+            b: 20
+        };
+
+        let newObj = {...origin};
+        console.log(`origin === newObj의 결과: ${origin === newObj}`);
+
+        newObj.a = 20;
+        console.log(`origin.a: ${origin.a}`);
+        console.lpg(`newObj.a: ${newObj.a}`);
+
+
+        // 구조 분해(destructuring)
+        let {a, b} = origin;
+        console.log(`a: ${a}, b: ${b}`);
+
+
+        // Optional Chaining
+        const user = {
+            name: {
+                first: "A",
+                last: "B"
+            },
+            address: {
+                city: "Seoul",
+                postcode: "1234"
+            }
+        };
+
+        // const postcode = user.address && user.address.postcode;
+        const postcode = user.address?.postcode;
+
+
+        // null 병합 연산자
+        const city = user.address?.city ?? "busan";
+
+
+        // Enhanced Object Literal
+        let lang = "KOR";
+        let country = "UK";
+
+        // const obj = {
+        //     lang: lang,
+        //     country: country
+        // }
+
+        const obj = {
+            lang,
+            country,
+            say() {
+                console.log("HI");
+            }
+        }
+    </script>
+</body>
+</html>
