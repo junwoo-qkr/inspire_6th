@@ -1,18 +1,18 @@
 import "../../styles/book.css";
 import placeholder from "../../img/placeholder.png";
 
-const Book = ({bookName, price}) => {
+const Comment = ({data}) => {
     return (
         <div className="wrapper">
             <div>
                 <img src={placeholder} className="image"></img>
             </div>
             <div>
-                <p><span>책 이름: {bookName}</span></p>
-                <span>가격: {price}</span>
+                <span>{data.writer}</span><p/>
+                <span>{data.comment}</span>
             </div>
         </div>
     );
 }
 
-export default Book;
+export default Comment;
