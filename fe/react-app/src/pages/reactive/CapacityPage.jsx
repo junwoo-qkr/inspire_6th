@@ -4,6 +4,9 @@ import { useState, useEffect } from "react";
 const CapacityPage = () => {
     // let cnt = 0;  -> state 관리가 안되는 변수
     let [cnt, setCnt] = useState(0);
+    let [isFull, setIsFull] = useState(false);
+    let [isEmpty, setIsEmpty] = useState(true);
+    const capacity = 10;
 
     const increaseHandler = (e) => {
         // cnt++;
@@ -19,15 +22,16 @@ const CapacityPage = () => {
 
     // side effect로 렌더링 이후 작업을 명시
     useEffect(() => {
-        console.log("updated");
-        console.log(`입장 / 퇴장, cnt = ${cnt}`);
+        console.log(`updated, cnt = ${cnt}`);
+        setIsFull(cnt >= capacity);
+        setIsEmpty(cnt <= 0);
     }, [cnt]);
 
     return (
         <div>
             <p>입장인원: {cnt}</p>
-            <Button title="입장" onclick={(e) => increaseHandler()} />
-            <Button title="퇴장" onclick={(e) => decreaseHandler()} />
+            <Button title="입장" disabled={isFull} onclick={(e) => increaseHandler()} />
+            <Button title="퇴장" disabled={isEmpty} onclick={(e) => decreaseHandler()} />
         </div>
     );
 }

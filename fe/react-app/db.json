@@ -12,5 +12,12 @@
             "writer": "박선아",
             "comment": "강사님과 함께하는 시시한 React..."
         }
+    ],
+    "users": [
+        {
+            "email": "p40212@gmail.com",
+            "pswd": "1234",
+            "name": "박준우"
+        }
     ]
 }

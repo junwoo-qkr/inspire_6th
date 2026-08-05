@@ -27,13 +27,13 @@ import reportWebVitals from './reportWebVitals';
 //   </React.StrictMode>
 // );
 
-import {CommentPage as Cp} from './pages/sample/CommentPage';
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(
-  <React.StrictMode>
-    <Cp />
-  </React.StrictMode>
-);
+// import {CommentPage as Cp} from './pages/sample/CommentPage';
+// const root = ReactDOM.createRoot(document.getElementById('root'));
+// root.render(
+//   <React.StrictMode>
+//     <Cp />
+//   </React.StrictMode>
+// );
 
 // import CapacityPage from './pages/reactive/CapacityPage';
 // const root = ReactDOM.createRoot(document.getElementById('root'));
@@ -42,6 +42,30 @@ root.render(
 //     <CapacityPage />
 //   </React.StrictMode>
 // );
+
+// import EventPage from './pages/event/EventPage';
+// const root = ReactDOM.createRoot(document.getElementById('root'));
+// root.render(
+//   <React.StrictMode>
+//     <EventPage />
+//   </React.StrictMode>
+// );
+
+// import TestRouterApp from './TestRouterApp';
+// const root = ReactDOM.createRoot(document.getElementById('root'));
+// root.render(
+//   <React.StrictMode>
+//     <TestRouterApp />
+//   </React.StrictMode>
+// );
+
+import RenderingPage from './pages/rendering/RenderingPage';
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(
+  <React.StrictMode>
+    <RenderingPage />
+  </React.StrictMode>
+);
 
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))
