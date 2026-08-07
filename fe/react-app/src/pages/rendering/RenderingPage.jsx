@@ -4,7 +4,7 @@ import LoginButton from "../../components/rendering/LoginButton";
 import LogoutButton from "../../components/rendering/LogoutButton";
 
 const RenderingPage = () => {
-    const [flag, setFlag] = useState(true);
+    const [flag, setFlag] = useState(false);
 
     return (
         <div>

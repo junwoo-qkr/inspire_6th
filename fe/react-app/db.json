@@ -1,23 +1,36 @@
 {
-    "comment": [
-        {
-            "writer": "임정섭",
-            "comment": "강사님과 함께하는 즐거운 React..."
-        },
-        {
-            "writer": "차현준",
-            "comment": "강사님과 함께하는 재미없는 React..."
-        },
-        {
-            "writer": "박선아",
-            "comment": "강사님과 함께하는 시시한 React..."
-        }
-    ],
-    "users": [
-        {
-            "email": "p40212@gmail.com",
-            "pswd": "1234",
-            "name": "박준우"
-        }
-    ]
+  "users": [
+    {
+      "name": "박준우",
+      "email": "p40212@gmail.com",
+      "password": "1234567890",
+      "id": 1
+    }
+  ],
+  "posts": [
+    {
+        "title": "TIL 작성",
+        "contents": "AAA",
+        "category": "Category A",
+        "email": "p40212@gmail.com"
+    },
+    {
+        "title": "밥먹기",
+        "contents": "AAAAA",
+        "category": "Category A",
+        "email": "p40212@gmail.com"
+    },
+    {
+        "title": "잠자기",
+        "contents": "AAA",
+        "category": "Category A",
+        "email": "p40212@gmail.com"
+    },
+    {
+        "title": "게임하기",
+        "contents": "AAA",
+        "category": "Category A",
+        "email": "p40212@gmail.com"
+    }
+  ]
 }

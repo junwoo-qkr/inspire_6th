@@ -59,11 +59,19 @@ import reportWebVitals from './reportWebVitals';
 //   </React.StrictMode>
 // );
 
-import RenderingPage from './pages/rendering/RenderingPage';
+// import RenderingPage from './pages/rendering/RenderingPage';
+// const root = ReactDOM.createRoot(document.getElementById('root'));
+// root.render(
+//   <React.StrictMode>
+//     <RenderingPage />
+//   </React.StrictMode>
+// );
+
+import ToyApp from './ToyApp';
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <RenderingPage />
+    <ToyApp />
   </React.StrictMode>
 );
 
