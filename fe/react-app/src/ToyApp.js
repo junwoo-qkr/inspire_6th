@@ -3,6 +3,7 @@ import SignUpPage from "./features/user/page/SignUpPage";
 import SignInPage from "./features/user/page/SignInPage";
 import BlogIndexPage from "./features/blog/page/BlogIndexPage";
 import BlogWritePage from "./features/blog/page/BlogWritePage";
+import BlogReadPage from "./features/blog/page/BlogReadPage";
 
 const ToyApp = () => {
     return (
@@ -15,7 +16,7 @@ const ToyApp = () => {
                 {/* blog */}
                 <Route path="/blog/index" element={<BlogIndexPage />} />
                 <Route path="/blog/write" element={<BlogWritePage />} />
-                <Route path="/blog/read/:postId" element={<BlogIndexPage />} />
+                <Route path="/blog/read/:postId" element={<BlogReadPage />} />
                 
                 {/* comment */}
             </Routes>

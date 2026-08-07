@@ -2,7 +2,7 @@ import styled from "styled-components";
 
 import Button from "../../../components/styled/Button";
 import BlogList from "../list/BlogList";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import api from "../../../api/axios";
 import { useNavigate } from "react-router-dom";
 
@@ -126,6 +126,12 @@ const FilterButton = styled.button`
 const BlogIndexPage = () => {
     const user = localStorage.getItem("user");
     const [posts, setPosts] = useState([]);
+    const CATEGORIES = ["전체", "개발", "생활", "취미", "일상"]
+    const [selectedCategory, setSelectedCategory] = useState("전체");
+    // const filteredPosts = selectedCategory === "전체" ? posts : posts.filter((post) => post.category === selectedCategory);
+    const filteredPosts = useMemo(() => {
+        return selectedCategory === "전체" ? posts : posts.filter((post) => post.category === selectedCategory);
+    }, []);
 
     const loadData = async () => {
         await api.get("/posts")
@@ -163,10 +169,13 @@ const BlogIndexPage = () => {
                     </WriteButtonArea>
                 </Header>
                 <CategoryFilter aria-label="게시글 카테고리 필터">
-                    <FilterButton type="button" $active>전체</FilterButton>
-                    <FilterButton type="button">Category A</FilterButton>
-                    <FilterButton type="button">Category B</FilterButton>
-                    <FilterButton type="button">Category C</FilterButton>
+                    {CATEGORIES.map((value, idx) => (
+                        <FilterButton
+                            type="button"
+                            $active={value === selectedCategory}
+                            onClick={() => setSelectedCategory(value)}
+                        >{value}</FilterButton>
+                    ))}
                 </CategoryFilter>
                 <BlogList posts={posts || []} />
             </PageContainer>

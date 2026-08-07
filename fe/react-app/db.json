@@ -9,28 +9,40 @@
   ],
   "posts": [
     {
-        "title": "TIL 작성",
-        "contents": "AAA",
-        "category": "Category A",
-        "email": "p40212@gmail.com"
+      "title": "테스트 제목",
+      "content": "테스트 내용",
+      "category": "개발",
+      "email": "p40212@gmail.com",
+      "id": 1
     },
     {
-        "title": "밥먹기",
-        "contents": "AAAAA",
-        "category": "Category A",
-        "email": "p40212@gmail.com"
+      "title": "테스트 제목 2",
+      "content": "테스트 내용 2",
+      "category": "생활",
+      "email": "p40212@gmail.com",
+      "id": 2
     },
     {
-        "title": "잠자기",
-        "contents": "AAA",
-        "category": "Category A",
-        "email": "p40212@gmail.com"
+      "title": "개발 카테고리 글",
+      "content": "ㅇㅇㅇ",
+      "category": "개발",
+      "email": "p40212@gmail.com",
+      "id": 3
     },
     {
-        "title": "게임하기",
-        "contents": "AAA",
-        "category": "Category A",
-        "email": "p40212@gmail.com"
+      "title": "취미 카테고리 글",
+      "content": "ㅇㅇㄹㄴㅇ",
+      "category": "취미",
+      "email": "p40212@gmail.com",
+      "id": 4
+    }
+  ],
+  "comments": [
+    {
+      "comment": "hi",
+      "postId": 1,
+      "commentEmail": "q40213@naver.com",
+      "id": 1
     }
   ]
 }

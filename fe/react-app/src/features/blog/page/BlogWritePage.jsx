@@ -2,6 +2,8 @@ import styled from "styled-components";
 import Button from "../../../components/styled/Button";
 import TextInput from "../../../components/styled/TextInput";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import api from "../../../api/axios";
 
 const Page = styled.main`
     min-height: 100vh;
@@ -190,8 +192,34 @@ const BlogWritePage = () => {
     const CATEGORIES = ["개발", "생활", "취미", "일상"];
     const moveURL = useNavigate();
 
+    const [title, setTitle] = useState("");
+    const [content, setContent] = useState("");
+    const [category, setCategory] = useState("");
+
     const previousHandler = (event) => {
         moveURL("/blog/index");
+    }
+
+    const writeHandler = async () => {
+        // console.log(`title: ${title}`);
+        // console.log(`content: ${content}`);
+        // console.log(`category: ${category}`);
+        // console.log(`user: ${user}`);
+        await api.post("/posts", {
+            title,
+            content,
+            category,
+            email: user
+        })
+            .then(response => {
+                console.log(response);
+                if (response.status === 201) {
+                    moveURL("/blog/index");
+                }
+            })
+            .catch(err => {
+                console.log(err);
+            })
     }
 
     return (
@@ -207,7 +235,16 @@ const BlogWritePage = () => {
                         <CategoryLabel>카테고리</CategoryLabel>
                         <CategoryRow>
                             {CATEGORIES.map((cat, idx) => (
-                                <CategoryChip key={idx} type="button">{cat}</CategoryChip>
+                                <CategoryChip
+                                    key={idx}
+                                    type="button"
+                                    $active={category === cat}
+                                    onClick={
+                                        (e) => {
+                                            setCategory(cat);
+                                        }
+                                    }
+                                >{cat}</CategoryChip>
                             ))}
                         </CategoryRow>
                     </CategoryWrapper>
@@ -215,19 +252,31 @@ const BlogWritePage = () => {
                     <Field>
                         <FieldLabel>제목</FieldLabel>
                         <TitleInputArea>
-                            <TextInput height={48} />
+                            <TextInput
+                                height={48}
+                                value={title}
+                                handler={(e) => {
+                                    setTitle(e.target.value);
+                                }} />
                         </TitleInputArea>
                     </Field>
 
                     <Field>
                         <FieldLabel>내용</FieldLabel>
                         <ContentInputArea>
-                            <TextInput height={280} />
+                            <TextInput
+                                height={280}
+                                value={content}
+                                handler={(e) => {
+                                    setContent(e.target.value);
+                                }} />
                         </ContentInputArea>
                     </Field>
 
                     <ActionArea>
-                        <Button title="게시하기" />
+                        <Button
+                            title="게시하기"
+                            onClick={writeHandler} />
                         <Button title="이전" onClick={(e) => previousHandler(e)} />
                     </ActionArea>
                 </WriteForm>
