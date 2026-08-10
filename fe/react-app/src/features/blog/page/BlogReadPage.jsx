@@ -179,6 +179,24 @@ const BlogReadPage = () => {
             .catch()
     }
 
+    const commentUpdateHandler = async (id, mention) => {
+        // console.log(id, mention);
+        await api.patch(`/comments/${id}`, {
+            comment: mention
+        })
+            .then(response => {
+                console.log(response)
+                if (response.status === 200) {
+                    setComments(arr => {
+                        return arr.map(comment => {
+                            return comment.id === id ? {...comment, comment : mention} : comment;
+                        })
+                    })
+                }  
+            })
+            .catch()
+    }
+
     useEffect(() => {
         loadData();
     }, []);
@@ -199,7 +217,11 @@ const BlogReadPage = () => {
 
                     {/* comment list */}
                     <CommentLabel>작성된 댓글 목록</CommentLabel>
-                    <BlogCommentList comments={comments || []} deletionHandler={commentDeleteHandler}/>
+                    <BlogCommentList
+                        comments={comments || []}
+                        deletionHandler={commentDeleteHandler}
+                        updateHandler={commentUpdateHandler}
+                    />
 
                     {/* input comment, event */}
                     <TextInput height={14} value={comment} handler={(e) => setComment(e.target.value)} />

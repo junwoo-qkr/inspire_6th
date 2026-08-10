@@ -1,5 +1,7 @@
 import styled from "styled-components";
 import Button from "../../../components/styled/Button";
+import TextInput from "../../../components/styled/TextInput";
+import { useEffect, useState } from "react";
 
 const Wrapper = styled.article`
     width: 100%;
@@ -28,11 +30,51 @@ const CommentText = styled.p`
     white-space: pre-wrap;
 `;
 
-const BlogCommentItem = ({comment, deletionHandler}) => {
+const BlogCommentItem = ({comment, deletionHandler, updateHandler}) => {
     const user = localStorage.getItem("user");
+    const [isEdit, setIsEdit] = useState(false);
+    const [mention, setMention] = useState("");
+
+    const updateMentionHandler = (e) => {
+        if (!isEdit) {
+            setIsEdit(true);
+        } else {
+            updateHandler(comment.id, mention);
+            setIsEdit(false);
+        }
+    }
+
+    useEffect(() => {
+        setMention(comment.comment);
+    }, []);
+
     return (
         <Wrapper>
-            <CommentText>{comment.comment}{user === comment.commentEmail && <Button title="삭제" onClick={(e) => deletionHandler(e, comment.id)}/>}</CommentText>
+            {
+                isEdit ? 
+                    <TextInput
+                        height={16} 
+                        value={mention} 
+                        handler={(e) => setMention(e.target.value)}
+                        disabled={!isEdit}    
+                    />
+                :
+                    <CommentText>{mention}</CommentText>
+            }
+            {
+                user === comment.commentEmail &&
+                <Button
+                    title="삭제"
+                    onClick={(e) => deletionHandler(e, comment.id)}
+                />
+            }
+            {
+                <Button
+                    title={isEdit ? "수정완료" : "수정"}
+                    onClick={(e) => updateMentionHandler(e)}
+                />
+            }
+            
         </Wrapper>
     )
 }

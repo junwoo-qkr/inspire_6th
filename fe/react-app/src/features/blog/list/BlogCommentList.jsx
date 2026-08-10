@@ -8,12 +8,17 @@ const Wrapper = styled.div`
     gap: 16px;
 `;
 
-const BlogCommentList = ({comments, deletionHandler}) => {
+const BlogCommentList = ({comments, deletionHandler, updateHandler}) => {
     return (
         <Wrapper>
             {
                 comments.map((comment, idx) => {
-                    return <BlogCommentItem key={idx} comment={comment} deletionHandler={deletionHandler} />
+                    return <BlogCommentItem 
+                        key={idx}
+                        comment={comment}
+                        deletionHandler={deletionHandler}
+                        updateHandler={updateHandler}
+                    />
                 })
             }
         </Wrapper>

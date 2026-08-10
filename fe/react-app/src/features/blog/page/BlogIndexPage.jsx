@@ -130,8 +130,10 @@ const BlogIndexPage = () => {
     const [selectedCategory, setSelectedCategory] = useState("전체");
     // const filteredPosts = selectedCategory === "전체" ? posts : posts.filter((post) => post.category === selectedCategory);
     const filteredPosts = useMemo(() => {
-        return selectedCategory === "전체" ? posts : posts.filter((post) => post.category === selectedCategory);
-    }, []);
+        return selectedCategory === "전체" 
+        ? posts 
+        : posts.filter((post) => post.category === selectedCategory);
+    }, [posts, selectedCategory]);
 
     const loadData = async () => {
         await api.get("/posts")
@@ -165,7 +167,9 @@ const BlogIndexPage = () => {
                         {user && <WelcomeMessage>{user}님 환영합니다.</WelcomeMessage>}
                     </HeaderContent>
                     <WriteButtonArea>
-                        <Button title="글쓰기" onClick={(event) => writeHandler(event)} />
+                        <Button title="날씨" onClick={(e) => moveURL("/openapi/index")} />
+                        <Button title="글쓰기" onClick={(e) => writeHandler(e)} />
+                        <Button title="로그아웃" onClick={(e) => {moveURL("/");}} />
                     </WriteButtonArea>
                 </Header>
                 <CategoryFilter aria-label="게시글 카테고리 필터">
@@ -177,7 +181,7 @@ const BlogIndexPage = () => {
                         >{value}</FilterButton>
                     ))}
                 </CategoryFilter>
-                <BlogList posts={posts || []} />
+                <BlogList posts={filteredPosts || []} />
             </PageContainer>
         </Page>
     );
