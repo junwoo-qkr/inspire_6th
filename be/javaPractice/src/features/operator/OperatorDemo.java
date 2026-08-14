@@ -67,7 +67,7 @@ public class OperatorDemo {
             case 2 -> "또 거짓말 ㄴㄴ";
             case 3 -> "착하네";
             default -> null;
-        }
+        };
     }
 
     public int sumNumber(int start, int end) {
