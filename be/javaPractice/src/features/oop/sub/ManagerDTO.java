@@ -9,7 +9,7 @@ import lombok.experimental.SuperBuilder;
 @SuperBuilder
 @Setter
 @Getter
-@ToString
+@ToString(callSuper = true)
 public class ManagerDTO extends PersonDTO {
     private String dept;
 
