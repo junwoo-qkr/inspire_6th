@@ -1,112 +1,51 @@
-collection API
-java.util에 있는 패키지를 사용
-배열을 확장시켜놓은 자료구조(stack, deque, ...)
-List(가변 길이, 중복 허용, 순서 존재, 요소의 타입으로 객체만 담음)
-Set(중복 허용 X, 순서 존재 X, 요소의 타입으로 객체만 담음, 가변 길이)
-Map(json과 비슷한거 {key: value}, {key: value}, ...)
-- map은 collection으로 볼 수도 있는 거, 정확하게는 아님
-- 셋 다 인터페이스(객체 생성 X)
+예외처리
+예외: 예기치 못한 상황(코드가 잘못된 것이 아님)
+(에러: 코드 상의 논리적 오류)
+예외처리는 예외 발생 시 프로그램을 멈추지 말고 잘 넘기는 핸들링 방법
+예외 발생 시점
+- 컴파일(IOException)
+- 런타임(RuntimeExcetion)
+예외처리방법1: try - catch - finally(권장)
+예외처리방법2: throws
+사용자 정의 예외클래스: 클래스 선언 시 예외를 상속받기
+throw: 강제로 예외 발생
 
-db가 데이터를 다루는 단위
-table: 행과 열로 이뤄진 객체
-table의 한 줄: record or row
-table은 자바에서 DTO로 구현할 수 있음
-record는 DTO로부터 생성된 instance
-table의 column 명: DTO의 변수 명
-table의 column 타입: DTO의 변수 타입
+try: 예외가 발생 할 수 있는 코드 블럭
+catch: 예외 발생 시 실행할 코드 블럭
+- catch() 안에는 발생하는 예외를 잘 찾아서 넣어야함
+- catch는 하나 이상일 수 있음(각자 다른 에외)
+- Exception을 넣어서 싸그리 처리할수도 있음
+finally: 예외 발생과 상관없이 실행될 코드 블럭
 
-ArrayList(): 10개의 칸을 가지는 list 생성
+throw: 강제로 예외 발생시키기
+throws: 메서드 안에서 발생할 수 있는 예외를 호출자에게 처리 책임을 넘기는것(짬처리)
 
-list.add(Object e)
-list.size()
-list.get(int index)
-e에 기본 타입의 값을 넣어도 boxing이 되어서 객체가 들어감
-toString()이 오버라이드돼서 list만 출력해도 주소가 아닌 값이 출력됨
+mvc 패턴
+Presentation Layer: controller class가 있음
+Business Layer: Service class가 있음 - 비즈니스 로직 처리
+Persistence Layer: dao or repository class가 있음
+사용자의 request는 front controller(factory)를 통해 controller로 감
+factory는 key: value 형태로 데이터를 관리
+dto를 entity로, entity를 dto로 바꿀줄 알아야함
+persistence layer는 orm으로 DB와 통신
 
-Wrapper Class
-기본타입을 참조타입으로 변환, 반대도 가능
-int - Integer
-char - Character
-...
+BlogReactView.java: 화면 구성
 
-Boxing: 기본 타입을 객체로
-Unboxing: 객체를 기본 타입으로
+MPE: nullpointexception 회피하는 방법
 
-기본 타입: value를 가지고 있음
-참조 타입: 주소를 가지고 있음
+BlogBeanFactory.java
+singleton, factory 패턴
+사용자의 요청 endpoint로 controller 객체를 바인딩(key: value 형태로)
+getBean의 반환 타입은 object(무슨 타입의 controller가 올지 모르기 때문)
 
-함수형 인터페이스: Consumer
-메서드의 매개변수로 함수(추상 메서드가 딱 하나인 인터페이스)를 받을 때 사용하는 것?
+view에서 요청 -> front controller -> factory -> controller -> ... -> front controller
 
-generics
-파라미터 타입을 지정할 때 쓰는 것
-list는 안에 객체는 다 들어갈 수 있음
-안에 들어갈 수 있는 타입을 지정해버리기: <타입>
-T: type, E: elements, K: key, V: value, N: number
+dao 등도 singleton으로 만들어야함
 
-백엔드의 3가지 계층
-표현(presentation) 계층
-비즈니스(business) 계층
-영속성(persistence) 계층
+인터페이스를 implements하는 서비스들을 controller에 주입: 서로 다른 서비스를 인터페이스로 관리
 
-arraylist를 부모 클래스로 선언 -> 자식 클래스의 객체들을 넣을 수 있음
+dependency injection(constructor): BlogBeanFactory의 map.put(...)에서 service 주입
 
-제너릭스를 쓰는 이유
-타입의 안전성
-불필요한 캐스팅 방지
+List.of(): 불변
 
-list에는 주로 dto를 많이 담음
-
-personList: 제너릭스로 PersonDTO만 담음
-그래서 get() 시에 나오는 객체는 전부 PersonDTO
-명령형 처리와 선언적 처리
-
-stream()
-순서가 있는 stream을 반환(collection의 요소)
-for 문을 쓰는 것 보다 훨씬 빠름
-
-템플릿을 만들 때 제너릭스 사용(ResponseTemplate.java): 표준화
-같은 클래스를 사용해도 다른 타입의 필드를 사용할 수 있음
-
-<? extends 부모> - 와일드카드
-부모를 상속하는 어떤 자식이거나 부모 그 자체
-부모와 그 자식들을 다 매개변수로 받을 수 있음
-실제 타입이 뭔지 모르니까(부모인지 자식인지) 추가하기 힘듬, 읽기 중심
-
-<? super 부모> - 와일드카드
-부모 그 자체이거나 부모의 부모
-부모와 그 자식들을 다 매개변수로 받을 수 있음
-부모와 그 자식들을 다 추가할 수 있지만 꺼내기 힘듬(확실하게 꺼낼 수 있는건 최상위 타입인 Object이니까), 쓰기 중심
-
-직접 제네릭 클래스를 만들 때 <T> 선언 <- T는 아직 결정되지 않은 데이터 타입
-객체 생성 시 결정
-
-함수형 인터페이스
-추상 메서드가 하나뿐인 인터페이스
-람다식을 사용해서 인터페이스에 하나밖에 없는 추상 메서드를 구현함(같은 인터페이스에서 다른 람다식을 구현 가능)
-
-자바에서 제공하는 함수형 인터페이스들
-Supplier: 매개변수X , 반환타입O / 실행 메서드: get()
-Consumer: 매개변수O , 반환타입X / 실행 메서드: accept()
-Function: 매개변수O , 반환타입O / 실행 메서드: apply()
-Predicate: 매개변수O , Boolean 반환 / 실행 메서드: test()
-
-System.out::println에서 "::": 메서드 참조
-이미 존재하는 메서드를 람다식 대신 전달
--> 지금 실행하는게 아니라 해당 메서드를 함수처럼 전달
-
-consumer.andThen(함수1).andThen(함수2).accept()
-consumer의 작업 실행 -> 함수1 실행 -> 함수2 실행
-
-Stream API
-collection 데이터를 연속적으로 처리하는 도구
-데이터를 가공하는 흐름
-stream 처리 단계: stream 생성 -> 중간 연산 -> 최종 연산
-최종 연산이 끝나면 다시 사용할 수 없음 -> 다시 처리하려면 새로운 stream 만들기
-
-중간 연산
-filter: 조건을 통과한 요소만 남김
-map: 객체를 다른 값으로 변환
-
-최종 연산
-collect: 결과를 collection으로 다시 모음
+컨트롤러는 서비스, 서비스는 dao를 주입받음
