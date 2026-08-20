@@ -3,7 +3,10 @@ package features.blogs.factory;
 import java.util.HashMap;
 import java.util.Map;
 
+import features.blogs.controller.InsertController;
 import features.blogs.controller.ListController;
+import features.blogs.controller.ReadController;
+import features.blogs.controller.SearchController;
 import features.blogs.repository.BlogReactDao;
 import features.blogs.service.BlogReactSerciveImpl;
 import features.blogs.service.BlogReactService;
@@ -21,7 +24,10 @@ public class BlogBeanFactory {
         map = new HashMap<>();
         dao = new BlogReactDao();
         service = new BlogReactSerciveImpl(dao);
-        map.put("list.posts", new ListController(service));
+        map.put("list", new ListController(service));
+        map.put("read", new ReadController(service));
+        map.put("search", new SearchController(service));
+        map.put("insert", new InsertController(service));
     }
 
     public static BlogBeanFactory getInstance() {

@@ -8,7 +8,6 @@ import features.blogs.facade.BlogFrontController;
 
 public class BlogReactView {
     private Scanner scanner;
-    private int mainMenuInput;
     private BlogFrontController front;
 
     public BlogReactView() {
@@ -33,7 +32,7 @@ public class BlogReactView {
             System.out.print("메뉴 번호 입력: ");
 
             try {
-                mainMenuInput = Integer.parseInt(scanner.nextLine());
+                int mainMenuInput = Integer.parseInt(scanner.nextLine());
                 System.out.println();
                 System.out.println();
                 switch (mainMenuInput) {
@@ -42,11 +41,11 @@ public class BlogReactView {
                         break;
 
                     case 2:
-                        System.out.println("You chose 2");
+                        read();
                         break;
 
                     case 3:
-                        System.out.println("You chose 3");
+                        insert();
                         break;
 
                     case 4:
@@ -58,7 +57,7 @@ public class BlogReactView {
                         break;
 
                     case 6:
-                        System.out.println("You chose 6");
+                        search();
                         break;
 
                     case 99:
@@ -84,11 +83,41 @@ public class BlogReactView {
     }
 
     public void list() {
-        System.out.println(">>>> 데이터 출력 <<<<");
-        String endPoint = "list.posts";
+        System.out.println(">>>> 전체 게시글 출력 <<<<");
+        String endPoint = "list";
         List<BlogResponseDTO> response = front.list(endPoint);
-        // TODO : Stream API로 출력
-
         response.stream().forEach(System.out::println);
+    }
+
+    public void read() {
+        System.out.print("게시글 번호를 입력하세요: ");
+        int postId = Integer.parseInt(scanner.nextLine());
+        String endPoint = "read";
+        BlogResponseDTO response = front.read(endPoint, postId);
+        System.out.println((response != null) ? response : "No post found : postId = " + postId);
+    }
+
+    public void search() {
+        System.out.print("검색어를 입력하세요: ");
+        String searchParam = scanner.nextLine();
+        String endPoint = "search";
+        List<BlogResponseDTO> response = front.search(endPoint, searchParam);
+        if (response.isEmpty()) {
+            System.out.println("No Post Contains " + searchParam);
+        }
+        response.stream().forEach(System.out::println);
+    }
+
+    private void insert() {
+        System.out.print("제목 입력: ");
+        String title = scanner.nextLine();
+        System.out.print("내용 입력: ");
+        String content = scanner.nextLine();
+        System.out.print("이메일 입력: ");
+        String email = scanner.nextLine();
+        String endPoint = "insert";
+
+        int flag = front.insert(endPoint, title, content, email);
+        System.out.println((flag == 1) ? "입력 성공" : "입력 실패");
     }
 }

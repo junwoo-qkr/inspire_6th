@@ -1,51 +1,35 @@
-예외처리
-예외: 예기치 못한 상황(코드가 잘못된 것이 아님)
-(에러: 코드 상의 논리적 오류)
-예외처리는 예외 발생 시 프로그램을 멈추지 말고 잘 넘기는 핸들링 방법
-예외 발생 시점
-- 컴파일(IOException)
-- 런타임(RuntimeExcetion)
-예외처리방법1: try - catch - finally(권장)
-예외처리방법2: throws
-사용자 정의 예외클래스: 클래스 선언 시 예외를 상속받기
-throw: 강제로 예외 발생
+stream의 중간 연산
+filter
+map
+flatmap: 중첩 구조를 평탄화
+sorted
+distinct: 중복 제거
+limit
+skip
+...
 
-try: 예외가 발생 할 수 있는 코드 블럭
-catch: 예외 발생 시 실행할 코드 블럭
-- catch() 안에는 발생하는 예외를 잘 찾아서 넣어야함
-- catch는 하나 이상일 수 있음(각자 다른 에외)
-- Exception을 넣어서 싸그리 처리할수도 있음
-finally: 예외 발생과 상관없이 실행될 코드 블럭
+stream의 최종 연산: 하고 나면 stream 재사용 불가
+collect
+forEach
+count
+reduce
+...
+findFirst: 순서 보장
+findAny
 
-throw: 강제로 예외 발생시키기
-throws: 메서드 안에서 발생할 수 있는 예외를 호출자에게 처리 책임을 넘기는것(짬처리)
 
-mvc 패턴
-Presentation Layer: controller class가 있음
-Business Layer: Service class가 있음 - 비즈니스 로직 처리
-Persistence Layer: dao or repository class가 있음
-사용자의 request는 front controller(factory)를 통해 controller로 감
-factory는 key: value 형태로 데이터를 관리
-dto를 entity로, entity를 dto로 바꿀줄 알아야함
-persistence layer는 orm으로 DB와 통신
+Optional: 하나의 wrapper class
+NullPointerException을 회피하는 방법
+메서드 호출 시 반환값을 확신할 수 없을 때 쓰는 문법
+메서드의 반환 타입으로만 쓸 수 있음
+optional에 일부러 null은 넣지 말기
+isPresent()로 null인지 아닌지 확인하고 get()으로 값을 꺼낼 수 있음
 
-BlogReactView.java: 화면 구성
+fileDB
+stream input output
 
-MPE: nullpointexception 회피하는 방법
+controller: 여러 파라미터를 객체로 묶고 데이터의 유효성을 체크하는 역할
 
-BlogBeanFactory.java
-singleton, factory 패턴
-사용자의 요청 endpoint로 controller 객체를 바인딩(key: value 형태로)
-getBean의 반환 타입은 object(무슨 타입의 controller가 올지 모르기 때문)
-
-view에서 요청 -> front controller -> factory -> controller -> ... -> front controller
-
-dao 등도 singleton으로 만들어야함
-
-인터페이스를 implements하는 서비스들을 controller에 주입: 서로 다른 서비스를 인터페이스로 관리
-
-dependency injection(constructor): BlogBeanFactory의 map.put(...)에서 service 주입
-
-List.of(): 불변
-
-컨트롤러는 서비스, 서비스는 dao를 주입받음
+타입변경
+RequestDTO로 쭉 데이터를 보내다가 마지막에 타입을 바꿔줘야함 -> 정적 메서드 패턴
+자기 자신을 입력받아서 ResponseDTO로 바꿔버림(원래는 Entity로 바꿔야하지만 지금은 ResponseDTO로 변경)
