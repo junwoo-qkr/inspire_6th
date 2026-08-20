@@ -2,7 +2,10 @@ package features.blogs.repository;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
+import features.blogs.domain.dto.BlogRequestDTO;
 import features.blogs.domain.dto.BlogResponseDTO;
 
 public class BlogReactDao {
@@ -24,5 +27,23 @@ public class BlogReactDao {
     public List<BlogResponseDTO> printAll() {
         System.out.println("debug >>>> BlogDao.printAll()");
         return posts;
+    }
+
+    public Optional<BlogResponseDTO> printSinglePost(int postId) {
+        System.out.println("debug >>>> BlogDao.printSinglePost()");
+        Optional<BlogResponseDTO> response = posts.stream().filter(p -> p.getPostId().equals(postId)).findAny();
+        return response;
+    }
+
+    public List<BlogResponseDTO> search(BlogRequestDTO request) {
+        System.out.println("debug >>>> BlogDao.search()");
+        List<BlogResponseDTO> response = posts.stream().filter(p -> p.getContent().contains(request.getSearchParam()) || p.getTitle().contains(request.getSearchParam())).collect(Collectors.toList());
+        return response;
+    }
+
+    public int insert(BlogRequestDTO request) {
+        System.out.println("debug >>>> BlogDao.insert()");
+        posts.add(BlogRequestDTO.toEntity(request));
+        return 1;
     }
 }

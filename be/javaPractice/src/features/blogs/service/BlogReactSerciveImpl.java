@@ -1,6 +1,7 @@
 package features.blogs.service;
 
 import java.util.List;
+import java.util.Optional;
 
 import features.blogs.domain.dto.BlogRequestDTO;
 import features.blogs.domain.dto.BlogResponseDTO;
@@ -25,14 +26,20 @@ public class BlogReactSerciveImpl implements BlogReactService {
 
     @Override
     public BlogResponseDTO read(int postId) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'read'");
+        System.out.println("debug >>>> Blog Service: read(), postId = " + postId);
+        // return dao.printSinglePost(postId).orElse(null);
+        // return dao.printSinglePost(postId).orElseThrow(() -> new RuntimeException("No post found : postId = " + postId));
+        Optional<BlogResponseDTO> optional = dao.printSinglePost(postId);
+        if (!optional.isPresent()) {
+            return null;
+        }
+        return optional.get();
     }
 
     @Override
     public int insert(BlogRequestDTO request) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'insert'");
+        System.out.println("debug >>>> Blog Service: insert()");
+        return dao.insert(request);
     }
 
     @Override
@@ -49,8 +56,9 @@ public class BlogReactSerciveImpl implements BlogReactService {
 
     @Override
     public List<BlogResponseDTO> search(BlogRequestDTO request) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'search'");
+        System.out.println("debug >>>> Blog Service: search()");
+        List<BlogResponseDTO> response = dao.search(request);
+        return response;
     }
     
 }
