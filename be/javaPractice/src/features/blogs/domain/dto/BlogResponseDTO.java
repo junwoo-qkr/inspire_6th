@@ -1,5 +1,7 @@
 package features.blogs.domain.dto;
 
+import java.io.Serializable;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -13,7 +15,7 @@ import lombok.ToString;
 @Setter
 @Getter
 @ToString
-public class BlogResponseDTO {
+public class BlogResponseDTO implements Serializable {
     // Deprecated
     private int status ;
     private String message;

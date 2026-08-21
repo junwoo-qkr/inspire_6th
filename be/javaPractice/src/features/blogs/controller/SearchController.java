@@ -5,6 +5,7 @@ import java.util.List;
 import features.blogs.domain.dto.BlogRequestDTO;
 import features.blogs.domain.dto.BlogResponseDTO;
 import features.blogs.service.BlogReactService;
+import features.blogs.util.ResponseEntity;
 
 public class SearchController {
     private BlogReactService service;
@@ -13,8 +14,8 @@ public class SearchController {
         this.service = service;
     }
 
-    public List<BlogResponseDTO> search(String searchParam) {
+    public ResponseEntity<List<BlogResponseDTO>> search(String searchParam) {
         System.out.println("debug >>>> SearcgController.search()");
-        return service.search(BlogRequestDTO.builder().searchParam(searchParam).build());
+        return new ResponseEntity<List<BlogResponseDTO>>(200, "OK", service.search(BlogRequestDTO.builder().searchParam(searchParam).build()));
     }
 }

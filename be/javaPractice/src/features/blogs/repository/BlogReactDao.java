@@ -24,6 +24,10 @@ public class BlogReactDao {
         ));
     }
 
+    public void setPosts(List<BlogResponseDTO> posts) {
+        this.posts = posts;
+    }
+
     public List<BlogResponseDTO> printAll() {
         System.out.println("debug >>>> BlogDao.printAll()");
         return posts;
@@ -43,7 +47,29 @@ public class BlogReactDao {
 
     public int insert(BlogRequestDTO request) {
         System.out.println("debug >>>> BlogDao.insert()");
-        posts.add(BlogRequestDTO.toEntity(request));
+        BlogResponseDTO response = BlogRequestDTO.toEntity(request);
+        int nextPostId = posts.stream().mapToInt(BlogResponseDTO::getPostId).max().getAsInt() + 1;
+        response.setPostId(nextPostId);
+        posts.add(response);
         return 1;
+    }
+
+    public int delete(int postId) {
+        System.out.println("debug >>>> BlogDao.delete()");
+        boolean isFlag = posts.removeIf(p -> p.getPostId() == postId);
+        return isFlag ? 1 : 0;
+    }
+
+    public int update(BlogRequestDTO request) {
+        System.out.println("debug >>>> BlogDao.update()");
+        return posts.stream()
+            .filter(p -> p.getPostId().equals(request.getId()))
+            .findAny()
+            .map(post -> {
+                post.setTitle(request.getTitle());
+                post.setContent(request.getContent());
+                return 1;
+            })
+            .orElse(0);
     }
 }

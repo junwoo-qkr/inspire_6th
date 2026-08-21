@@ -12,4 +12,6 @@ public interface BlogReactService {
     public int update(BlogRequestDTO request);  // 게시글 수정
     public int delete(int postId);  // 게시글 삭제
     public List<BlogResponseDTO> search(BlogRequestDTO request);  // 게시글 검색
+    public boolean save();  // 게시글 저장
+    public boolean load();  // 게시글 불러오기
 }

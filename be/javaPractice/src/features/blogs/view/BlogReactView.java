@@ -5,6 +5,7 @@ import java.util.Scanner;
 
 import features.blogs.domain.dto.BlogResponseDTO;
 import features.blogs.facade.BlogFrontController;
+import features.blogs.util.ResponseEntity;
 
 public class BlogReactView {
     private Scanner scanner;
@@ -16,6 +17,8 @@ public class BlogReactView {
     }
 
     public void landingPage() {
+        boolean isLoad = front.file("file", "load");
+        System.out.println(isLoad ? "로드 성공" : "로드 실패");
         while(true) {
             System.out.println();
             System.out.println(">>>> Blog <<<<");
@@ -49,11 +52,11 @@ public class BlogReactView {
                         break;
 
                     case 4:
-                        System.out.println("You chose 4");
+                        update();
                         break;
 
                     case 5:
-                        System.out.println("You chose 5");
+                        delete();
                         break;
 
                     case 6:
@@ -78,6 +81,12 @@ public class BlogReactView {
     }
 
     public void exit() {
+        System.out.print("종료 전 저장하시겠습니까? (y/n): ");
+        String yn = scanner.nextLine();
+        if (yn.equalsIgnoreCase("y")) {
+            String endPoint = "file";
+            System.out.println(front.file(endPoint, "save") ? "데이터 저장 완료" : "데이터 저장 실패");
+        }
         System.out.println("Shutting down");
         System.exit(1);
     }
@@ -85,27 +94,31 @@ public class BlogReactView {
     public void list() {
         System.out.println(">>>> 전체 게시글 출력 <<<<");
         String endPoint = "list";
-        List<BlogResponseDTO> response = front.list(endPoint);
-        response.stream().forEach(System.out::println);
+        ResponseEntity<List<BlogResponseDTO>> response = front.list(endPoint);
+
+        if (response.getCode() == 200) {
+            response.getData().stream().forEach(System.out::println);
+        }
     }
 
     public void read() {
         System.out.print("게시글 번호를 입력하세요: ");
         int postId = Integer.parseInt(scanner.nextLine());
         String endPoint = "read";
-        BlogResponseDTO response = front.read(endPoint, postId);
-        System.out.println((response != null) ? response : "No post found : postId = " + postId);
+        ResponseEntity<BlogResponseDTO> response = front.read(endPoint, postId);
+        System.out.println((response.getCode() == 200) ? response.getData() : "No post found : postId = " + postId);
+
     }
 
     public void search() {
         System.out.print("검색어를 입력하세요: ");
         String searchParam = scanner.nextLine();
         String endPoint = "search";
-        List<BlogResponseDTO> response = front.search(endPoint, searchParam);
-        if (response.isEmpty()) {
+        ResponseEntity<List<BlogResponseDTO>> response = front.search(endPoint, searchParam);
+        if (response.getCode() == 200 && response.getData().isEmpty()) {
             System.out.println("No Post Contains " + searchParam);
         }
-        response.stream().forEach(System.out::println);
+        response.getData().stream().forEach(System.out::println);
     }
 
     private void insert() {
@@ -119,5 +132,27 @@ public class BlogReactView {
 
         int flag = front.insert(endPoint, title, content, email);
         System.out.println((flag == 1) ? "입력 성공" : "입력 실패");
+    }
+
+    public void update() {
+        System.out.print("게시글 번호를 입력하세요: ");
+        int postId = Integer.parseInt(scanner.nextLine());
+        System.out.print("제목 입력: ");
+        String title = scanner.nextLine();
+        System.out.print("내용 입력: ");
+        String content = scanner.nextLine();
+        String endPoint = "update";
+
+        int flag = front.update(endPoint, postId, title, content);
+        System.out.println((flag == 1) ? "수정 성공" : "수정 실패");
+    }
+
+    public void delete() {
+        System.out.print("게시글 번호를 입력하세요: ");
+        int postId = Integer.parseInt(scanner.nextLine());
+        String endPoint = "delete";
+        int response = front.delete(endPoint, postId);
+        System.out.print((response == 1) ? "Post deleted" : "No post found");
+        System.out.println(" : postId = " + postId);
     }
 }

@@ -3,10 +3,13 @@ package features.blogs.factory;
 import java.util.HashMap;
 import java.util.Map;
 
+import features.blogs.controller.DeleteController;
+import features.blogs.controller.FileController;
 import features.blogs.controller.InsertController;
 import features.blogs.controller.ListController;
 import features.blogs.controller.ReadController;
 import features.blogs.controller.SearchController;
+import features.blogs.controller.UpdateController;
 import features.blogs.repository.BlogReactDao;
 import features.blogs.service.BlogReactSerciveImpl;
 import features.blogs.service.BlogReactService;
@@ -28,6 +31,9 @@ public class BlogBeanFactory {
         map.put("read", new ReadController(service));
         map.put("search", new SearchController(service));
         map.put("insert", new InsertController(service));
+        map.put("delete", new DeleteController(service));
+        map.put("update", new UpdateController(service));
+        map.put("file", new FileController(service));
     }
 
     public static BlogBeanFactory getInstance() {

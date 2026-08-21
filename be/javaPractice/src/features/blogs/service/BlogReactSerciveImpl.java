@@ -1,11 +1,17 @@
 package features.blogs.service;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.List;
 import java.util.Optional;
 
 import features.blogs.domain.dto.BlogRequestDTO;
 import features.blogs.domain.dto.BlogResponseDTO;
 import features.blogs.repository.BlogReactDao;
+import features.blogs.util.ResponseEntity;
 
 public class BlogReactSerciveImpl implements BlogReactService {
     private BlogReactDao dao;
@@ -44,14 +50,16 @@ public class BlogReactSerciveImpl implements BlogReactService {
 
     @Override
     public int update(BlogRequestDTO request) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'update'");
+        System.out.println("debug >>>> Blog Service: update(), postId = " + postId);
+        int response = dao.update(request);
+        return response;
     }
 
     @Override
     public int delete(int postId) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'delete'");
+        System.out.println("debug >>>> Blog Service: delete(), postId = " + postId);
+        int response = dao.delete(postId);
+        return response;
     }
 
     @Override
@@ -59,6 +67,31 @@ public class BlogReactSerciveImpl implements BlogReactService {
         System.out.println("debug >>>> Blog Service: search()");
         List<BlogResponseDTO> response = dao.search(request);
         return response;
+    }
+
+    @Override
+    public boolean save() {
+        System.out.println("debug >>>> Blog Service: save()");
+        String path = "./blogs.txt";
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(new File(path)))) {
+            oos.writeObject(dao.printAll());
+            return true;
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
+    @Override
+    public boolean load() {
+        String path = "./blogs.txt";
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(new File(path)))) {
+            dao.setPosts((List<BlogResponseDTO>)ois.readObject());
+            return true;
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
+        return false;
     }
     
 }
