@@ -4,6 +4,7 @@ import java.util.List;
 
 import features.blogs.domain.dto.BlogResponseDTO;
 import features.blogs.service.BlogReactService;
+import features.blogs.util.ResponseEntity;
 
 public class ListController {
     private BlogReactService service;
@@ -16,8 +17,7 @@ public class ListController {
         this.service = service;
     }
     
-    public List<BlogResponseDTO> list() {
-        System.out.println("debug >>>> listController.list()");
-        return service.list();
+    public ResponseEntity<List<BlogResponseDTO>> list() {
+        return new ResponseEntity<List<BlogResponseDTO>>(200, "OK", service.list());
     }
 }
