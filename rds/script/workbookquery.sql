@@ -1,0 +1,76 @@
+SELECT	*
+FROM		tb_department;
+
+SELECT	*
+FROM		tb_student;
+
+SELECT	*
+FROM		tb_professor;
+
+SELECT	*
+FROM		tb_class;
+
+-- 문제 1번
+SELECT	DEPARTMENT_NAME AS '학과 명',
+			CATEGORY AS '계열'
+FROM		tb_department;
+
+
+-- 문제 2번
+SELECT	CONCAT(DEPARTMENT_NAME, '의 정원은 ', CAPACITY, '명 입니다.') AS '학과별 정원'
+FROM		tb_department;
+
+
+-- 문제 3번
+SELECT	STUDENT_NAME
+FROM		tb_student
+WHERE		ABSENCE_YN = 'Y'
+AND 		DEPARTMENT_NO = (
+	SELECT	DEPARTMENT_NO
+	FROM		TB_DEPARTMENT
+	WHERE 	DEPARTMENT_NAME = '국어국문학과'
+)
+AND		STUDENT_SSN LIKE '%-2%';
+
+
+-- 문제 4번
+SELECT	STUDENT_NAME
+FROM		tb_student
+WHERE		STUDENT_NO IN ('A513079', 'A513090', 'A513091', 'A513110', 'A513119');
+
+
+-- 문제 5번
+SELECT	DEPARTMENT_NAME, CATEGORY
+FROM		tb_department
+WHERE		CAPACITY BETWEEN 20 AND 30;
+
+
+-- 문제 6번
+SELECT	PROFESSOR_NAME
+FROM		tb_professor
+WHERE		ISNULL(DEPARTMENT_NO);
+
+
+-- 문제 7번
+SELECT	COUNT(*)
+FROM		tb_department
+WHERE		ISNULL(DEPARTMENT_NO);
+
+
+-- 문제 8번
+SELECT	CLASS_NO
+FROM		tb_class
+WHERE		ISNULL(PREATTENDING_CLASS_NO) = 0;
+
+
+-- 문제 9번
+SELECT	DISTINCT CATEGORY
+FROM		tb_department;
+
+
+-- 문제 10번
+SELECT	STUDENT_NO, STUDENT_NAME, STUDENT_SSN
+FROM		tb_student
+WHERE		ENTRANCE_DATE LIKE '2002%'
+AND		ABSENCE_YN = 'N'
+AND		STUDENT_ADDRESS LIKE '%전주%';
