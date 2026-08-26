@@ -1,0 +1,274 @@
+/*
+GROUP BY: 특정 컬럼을 기준으로 같은 값을 가지는 행들을 하나로 묶기
+GROUP BY {COLUMN | 표현식 | POSITION(COLUMN INDEX)}
+*/
+SELECT	*
+FROM		employee;
+
+
+-- Q) 부서별 급여 총합을 검색하다면?
+SELECT	SUM(SALARY)
+FROM		employee
+WHERE		SALARY >= 3000000
+GROUP BY	DEPT_ID
+HAVING	SUM(SALARY) >= 4000000;
+
+
+-- GROUP BY 절에 명시된 열과 그룹 함수만 SELECT에 명시될 수 있음
+SELECT	EMP_NAME,
+			DEPT_ID,
+			MAX(SALARY)
+FROM		employee
+GROUP BY	DEPT_ID;
+
+
+-- Q) 급여등급별 인원수 집계하고 싶다면?
+SELECT	CASE
+				WHEN SALARY <= 3000000 THEN '초급'
+				WHEN SALARY <= 4000000 THEN '중급'
+				ELSE '고급'
+			END AS 'GRADE',
+			COUNT(*) AS 'COUNT'
+FROM		EMPLOYEE
+GROUP BY	GRADE
+-- ORDER BY	COUNT DESC;
+ORDER BY FIELD(GRADE, '중급', '초급',  '고급');
+
+
+USE SQLDB;
+SELECT	*
+FROM		USERTBL;
+SELECT	*
+FROM		BUYTBL;
+
+
+-- 사용자별 구매 총액 검색
+SELECT	USERID,
+			SUM(PRICE * AMOUNT)
+FROM		BUYTBL
+GROUP BY	USERID;
+
+
+-- 사용자별 평균 구매 개수 검색
+SELECT	USERID,
+			ROUND(AVG(AMOUNT), 1)
+FROM		BUYTBL
+GROUP BY	USERID;
+
+
+USE TESTDB;
+-- 부서번호가 50번이거나 부서가 없는 사원의 이름, 급여 검색 / 급여가 많은 사원부터
+SELECT	EMP_NAME,
+			EMP_NO,
+			SALARY
+FROM		employee
+WHERE		DEPT_ID = 50 OR DEPT_ID IS NULL
+ORDER BY	SALARY DESC;
+
+
+-- 위 결과를 바탕으로 성별에 따른 평균 급여 검색
+SELECT	CASE
+				WHEN SUBSTRING(EMP_NO, 8, 1) IN ('1', '3') THEN '남자'
+				WHEN SUBSTRING(EMP_NO, 8, 1) IN ('2', '4') THEN '여자'
+				ELSE '?'
+			END AS 'GENDER',
+			AVG(SALARY)
+FROM		employee
+WHERE		DEPT_ID = 50 OR DEPT_ID IS NULL
+GROUP BY	GENDER
+ORDER BY	SALARY DESC;
+
+
+-- 부서별 급여 총액이 9000000 이상인 부서만 검색
+SELECT	DEPT_ID,
+			SUM(SALARY)
+FROM		employee
+GROUP BY	DEPT_ID
+HAVING	SUM(SALARY) >= 9000000;
+
+
+USE SQLDB;
+SELECT	*
+FROM		USERTBL;
+SELECT	*
+FROM		BUYTBL;
+
+
+-- HAVING: GROUP BY에 대한 조건
+-- 사용자별 총 구매액이 100 이상인 사용자만 검색
+SELECT	USERID,
+			SUM(PRICE * AMOUNT) AS '총구매액'
+FROM		BUYTBL
+GROUP BY	USERID
+HAVING	총구매액 >= 100;
+
+
+-- WITH ROLLUP: 계층적 집계 결과
+-- 그룹 이름별 구매비용을 검색
+SELECT	NUM,
+			GROUPNAME,
+			SUM(PRICE * AMOUNT) AS '총구매액'
+FROM		BUYTBL
+GROUP BY	GROUPNAME, NUM WITH ROLLUP;
+
+
+/*
+WINDOW 함수: 기존 행을 유지하면서 집계 결과를 열로 추가
+GROUP FUNCTION(AVG, RANK, ROW_NUMBER, DENSE_RANK, ...) ~ OVER(PARTITION BY | ORDER BY)
+*/
+USE TESTDB;
+SELECT	EMP_NAME,
+			SALARY,
+			DEPT_ID,
+			AVG(SALARY) OVER(PARTITION BY DEPT_ID)
+FROM		employee;
+
+
+-- 사원의 급여 순위
+SELECT	EMP_NAME,
+			SALARY,
+			RANK() OVER(ORDER BY SALARY DESC) AS 'RANK'
+FROM employee;
+
+
+SELECT	EMP_NAME,
+			SALARY,
+			ROW_NUMBER() OVER(ORDER BY SALARY DESC) AS 'RANK'
+FROM employee;
+
+
+-- 부서별 사원의 급여 순위
+SELECT	EMP_NAME,
+			DEPT_ID,
+			RANK() OVER(PARTITION BY DEPT_ID ORDER BY SALARY DESC) AS 'RANK'
+FROM		employee;
+
+
+/*
+JOIN: 여러 테이블을 묶어 하나의 결과 반환
+(관계의 종류: 1:1, 1:N, N:M)
+JOIN TABLE ON (조건식)
+JOIN TABLE USING (컬럼명)
+
+[INNER] JOIN
+NATURAL INNER JOIN
+LEFT | RIGHT [OUTER] JOIN
+
+EQUAL JOIN, NON-EQUAL JOIN
+*/
+-- CARTESIAN PRODUCT
+SELECT	E.EMP_NAME,
+			D.DEPT_NAME
+FROM		employee E, department D
+WHERE		E.DEPT_ID = D.DEPT_ID;
+
+
+-- CROSS JOIN
+SELECT	E.EMP_NAME,
+			D.DEPT_NAME
+FROM		employee E
+JOIN		department D;
+
+
+-- INNER JOIN
+SELECT	E.EMP_NAME,
+			D.DEPT_NAME
+FROM		employee E
+JOIN		department D USING(DEPT_ID);
+
+
+SELECT	E.EMP_NAME,
+			D.DEPT_NAME
+FROM		employee E
+JOIN		department D ON(E.DEPT_ID = D.DEPT_ID);
+
+
+SELECT	*
+FROM		sal_grade;
+
+
+SELECT	E.EMP_NAME
+			, J.JOB_TITLE
+			, D.DEPT_NAME
+			, L.LOC_DESCRIBE
+			, C.COUNTRY_NAME
+			, S.SLEVEL
+FROM		employee 	E
+JOIN		department 	D ON(E.DEPT_ID = D.DEPT_ID)
+JOIN		job 			J USING(JOB_ID)
+JOIN		location		L ON(D.LOC_ID = L.LOCATION_ID)
+JOIN		country		C USING(COUNTRY_ID)
+JOIN		sal_grade	S ON(E.SALARY BETWEEN S.LOWEST AND S.HIGHEST)
+WHERE		DEPT_NAME LIKE '해외%'
+AND		L.LOC_DESCRIBE LIKE '아시아%'
+ORDER BY	S.SLEVEL DESC;
+
+
+USE SQLDB;
+SELECT	*
+FROM		USERTBL;
+SELECT	*
+FROM		BUYTBL;
+-- 사용자 아이디가 JYP인 사용자의 이름과 구매 상품 조회
+SELECT	U.NAME
+			, B.PRODNAME
+FROM		usertbl	U
+JOIN		buytbl	B ON (U.USERID = B.USERID)
+WHERE		U.USERID = 'JYP';
+
+
+-- 사용자의 아이디, 이름, 구매상품, 주소, 연락처(MOBILE1 + MOBILE2) 조회
+SELECT	U.USERID
+			, U.NAME
+			, B.PRODNAME
+			, U.ADDR
+			, CONCAT(U.MOBILE1, U.MOBILE2) AS '연락처'
+FROM		usertbl	U
+JOIN		buytbl	B USING(USERID);
+
+
+-- 위 요구 사항에서 구매 이력이 있는 회원만 조회
+SELECT		U.USERID
+				, U.NAME
+				, B.PRODNAME
+				, U.ADDR
+				, CONCAT(U.MOBILE1, U.MOBILE2) AS '연락처'
+FROM			usertbl	U
+LEFT JOIN	buytbl	B USING(USERID)
+WHERE 		B.PRODNAME IS NULL;
+
+
+SELECT		DISTINCT U.USERID
+				, U.NAME
+				, U.ADDR
+				, CONCAT(U.MOBILE1, U.MOBILE2) AS '연락처'
+FROM			usertbl	U
+WHERE			EXISTS(
+	SELECT	*
+	FROM		buytbl B
+	WHERE		U.userID = B.USERID
+	);
+	
+	
+USE TESTDB;
+SELECT		E.EMP_NAME,
+				D.DEPT_NAME
+FROM			employee E
+RIGHT JOIN	department D USING(DEPT_ID);
+
+
+-- 부서 배치를 받지 않은 사원의 이름, 부서명 조회
+SELECT	E.EMP_NAME
+			, D.DEPT_NAME
+FROM		EMPLOYEE E
+LEFT JOIN	DEPARTMENT D USING(DEPT_ID)
+WHERE			D.DEPT_NAME IS NULL;
+
+
+-- 사원의 이름과 사수의 이름을 조회(사수가 없는 사원도 조회)
+SELECT	E.EMP_NAME AS '사원'
+			, M.EMP_NAME AS '사수'
+			, S.EMP_NAME AS '사수 없음'
+FROM		EMPLOYEE E
+LEFT JOIN		EMPLOYEE M ON(E.MGR_ID = M.EMP_ID)
+LEFT JOIN		EMPLOYEE S ON(M.MGR_ID = S.EMP_ID);
