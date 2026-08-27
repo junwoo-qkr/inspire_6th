@@ -1,25 +1,37 @@
-HAVING: 그룹에 대한 조건
-그룹 함수는 일반적으로 group by와 함께 쓰임
-GROUP BY에 의존함
+서브쿼리: 하나의 쿼리가 다른 쿼리를 포함하는 구조
+유형
+- 단일행(단일열, 다중열) -> 일반 연산자 사용 가능
+- 다중행(단일열, 다중열) -> ANY, ALL, IN 사용 가능
+위치
+- SELECT절(SCALAR SUBQUERY): 서브쿼리를 수행할 결과 집합이 소량일 때
+- FROM절(INLINE VIEW)
+- WHERE절(SUBQUERY)
 
-GROUP BY 절에 명시된 열과 그룹 함수만 SELECT에 명시될 수 있음
+FROM절에 서브쿼리를 쓸 때 함수를 쓴 열은 별칭을 줘야 밖에서 쓸 수 있음
 
-원하는 방식으로 정렬: ORDER BY FIELD
+서브쿼리는 HAVING에도 들어갈 수 있음
 
-WITH ROLLUP: 계층적 집계 결과
+top n query: 상위 n개의 행만 들고오기
+LIMIT ~ OFFSET
 
-WINDOW 함수: 기존 행을 유지하면서 집계 결과를 추가
+NESTED LOOP JOIN
+하나의 테이블을 기준으로 순차적으로 상대 테이블의 ROW를 결합해 원하는 결과를 추출하는 JOIN 방식
+DRIVING TABLE: 결합하는 기준 테이블
+DRIVEN TABLE: 결합되는 테이블
+인덱스를 이용해서 성능을 높임(인덱스가 없으면 전체 테이블을 스캔해야 함)
 
-mapping-rule: ERD를 바탕으로 관계 스키마 제작
+동작 방식에 따른 서브쿼리 분류
+NESTED 서브쿼리: 서브쿼리가 한번만 실행됨
+상호연관(Correlated) 서브쿼리: 메인 쿼리 실행 후 서브 쿼리가 실행됨, 메인 쿼리 수행마다 매번 수행
 
-정규화: 데이터의 중복 방지와 효율적인 데이터의 저장(null값 방지)
-제1정규화: 테이블의 column이 원자값(하나의 값만)을 갖도록 테이블 분해
-제2정규화: 기본키가 여러개(복합키)인 테이블의 column에서 부분 함수적 종속(복합키 중 일부만으로 종속자를 찾음) 제거
-제3정규화: 테이블의 column에서 이행적 종속(X->Y, Y->Z 일 때 X->Z) 제거
+INLINE VIEW로 만들어진 가상 테이블은 물리 테이블이랑 JOIN할 수 있음
 
-join: n개의 테이블을 서로 묶어 하나의 결과를 만드는 것
-join 조건을 주지 않으면 cartesian product(가능한 조합 모두 출력) 해버림
-JOIN TABLE USING (컬럼명): 부모의 외래키와 자식의 기본키 이름이 같지 않으면 못 씀, 별칭을 못 씀
-OUTER JOIN: 조건을 만족하지 않는 값을 JOIN
-LEFT JOIN: 왼쪽 테이블의 데이터는 무조건 다 나옴
-RIGHT JOIN: 오른쪽 테이블의 데이터는 무조건 다 나옴
+DDL: 테이블과 VIEW 관리(CREATE, ALTER, DROP)
+CREATE TABLE 테이블명 (
+	컬럼명 데이터타입(SIZE) [DEFAULT] [CONSTRAINT TYPE(컬럼 레벨)],
+	[CONSTRAINT TYPE(테이블 레벨)]
+);
+DEFAULT: NULL값이 입력되면 DEFAULT 값이 대신 들어감
+CONSTRAINT: PRIMARY KEY(기본키), REFERENCES(외래키), NOT NULL(NULL 불허용), UNIQUE(유일값), CHECK(조건에 맞는 값만 수용)
+
+테이블 이름으로 예약어(TABLE, VIEW, INDEX 등)은 사용 불가, 다른 테이블과 중복 불가
