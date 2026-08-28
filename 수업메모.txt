@@ -1,37 +1,59 @@
-서브쿼리: 하나의 쿼리가 다른 쿼리를 포함하는 구조
-유형
-- 단일행(단일열, 다중열) -> 일반 연산자 사용 가능
-- 다중행(단일열, 다중열) -> ANY, ALL, IN 사용 가능
-위치
-- SELECT절(SCALAR SUBQUERY): 서브쿼리를 수행할 결과 집합이 소량일 때
-- FROM절(INLINE VIEW)
-- WHERE절(SUBQUERY)
+외래키: 참조무결성(부모에 의존하는 데이터 또는 NULL)
+옵션: ON DELETE [CASCADE | NO ACTION], ON UPDATE [CASCADE | NO ACTION]
+CASCADE: 부모가 업데이트 OR 삭제되면 함께 업데이트 OR 삭제
+NO ACTION: NULL값으로 대체
 
-FROM절에 서브쿼리를 쓸 때 함수를 쓴 열은 별칭을 줘야 밖에서 쓸 수 있음
+DEFAULT의 값으로는 고정값을 주는게 좋음
 
-서브쿼리는 HAVING에도 들어갈 수 있음
+NOT NULL은 테이블 레벨로 제약을 못 검
 
-top n query: 상위 n개의 행만 들고오기
-LIMIT ~ OFFSET
+ALTER: 테이블 스키마 수정, 제약조건 추가 변경
+ADD, DROP CONSTRAINT
+ADD COLUMN
+CHANGE COLUMN OLD NEW TYPE <- 이름과 타입 변경
+MODIFY COLUMN OLD TYPE <- 타입 변경
+DROP COLUMN COLUMN_NAME
+데이터가 들어있을 때는 타입 변경 안됨
 
-NESTED LOOP JOIN
-하나의 테이블을 기준으로 순차적으로 상대 테이블의 ROW를 결합해 원하는 결과를 추출하는 JOIN 방식
-DRIVING TABLE: 결합하는 기준 테이블
-DRIVEN TABLE: 결합되는 테이블
-인덱스를 이용해서 성능을 높임(인덱스가 없으면 전체 테이블을 스캔해야 함)
+RENAME: 테이블 이름 변경
 
-동작 방식에 따른 서브쿼리 분류
-NESTED 서브쿼리: 서브쿼리가 한번만 실행됨
-상호연관(Correlated) 서브쿼리: 메인 쿼리 실행 후 서브 쿼리가 실행됨, 메인 쿼리 수행마다 매번 수행
+기본키가 두개: 테이블 수준에서 제약조건 걸기
 
-INLINE VIEW로 만들어진 가상 테이블은 물리 테이블이랑 JOIN할 수 있음
+여러개의 기본키를 다른 테이블에서 참조: 여러 기본키를 하나로 묶어서 제약조건 걸기
 
-DDL: 테이블과 VIEW 관리(CREATE, ALTER, DROP)
-CREATE TABLE 테이블명 (
-	컬럼명 데이터타입(SIZE) [DEFAULT] [CONSTRAINT TYPE(컬럼 레벨)],
-	[CONSTRAINT TYPE(테이블 레벨)]
-);
-DEFAULT: NULL값이 입력되면 DEFAULT 값이 대신 들어감
-CONSTRAINT: PRIMARY KEY(기본키), REFERENCES(외래키), NOT NULL(NULL 불허용), UNIQUE(유일값), CHECK(조건에 맞는 값만 수용)
+VIEW: 가상의 논리적 테이블(읽기 전용)
+보안 및 질의어의 단순화를 위해 사용
+사용자는 테이블에 바로 접근하는게 아니라 뷰를 통해 접근
+복합 뷰에 대해서는 입력 수정 삭제가 안됨
 
-테이블 이름으로 예약어(TABLE, VIEW, INDEX 등)은 사용 불가, 다른 테이블과 중복 불가
+from절의 서브쿼리가 inline view인 이유: 임시로 만들어진 view였기 때문
+
+DML
+UPDATE, INSERT, DELETE <- transaction을 발생시킴
+ROLLBACK: transaction을 원상복귀시킴
+DML은 기본값이 auto commit
+
+update: 테이블의 기존 데이터를 수정(행 수는 그대로)
+update table_name
+set column_name = { value | subquery | default }
+where condition = { value | subquery }
+
+insert: 테이블에 데이터 추가
+insert into table_name([column_name]) values(values);
+column_name과 values는 타입, 순서, 개수를 맞춰야함
+
+delete: 테이블의 데이터 삭제(행의 수가 달라짐)
+delete from table_name where condition;
+참조 관계를 가지는 데이터는 삭제할 때 조심하기
+
+sequence: auto-increment하는 숫자를 생성하는 객체
+create sequence sequence_name
+START WITH 시작번호
+increment by step
+maxvalue 끝 번호
+[ cycle | nocycle ] ;
+
+nextval()
+lastval()
+
+auto-increment 옵션은 sequence랑 비슷하지만 테이블에 종속적

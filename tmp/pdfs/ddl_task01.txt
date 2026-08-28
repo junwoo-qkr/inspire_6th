@@ -1,0 +1,156 @@
+쇼핑몰 ERD
+
+
+
+
+1. 다음 설정을 참조하여 테이블을 생성하시오.
+ 테이블 명 : customers
+     컬럼명                키 유형            Null               디폴트 값       데이터 타입             길이
+     cno                primary key                                    number             5
+     cname                              not null                       varchar2           10
+     address                            not null                       varchar2           50
+     email                              not null                       varchar2           20
+     phone                              not null                       varchar2           20
+
+
+ 테이블 명 : orders
+     컬럼명          키 유형           Null          디폴트       Check   참조          참조    데이터         길이
+                                                 값               테이블         컬럼    타입
+     orderno      primary                                                          number      10
+                  key
+     orderdate                   not null      sysdate                             date
+     address                     not null                                          varchar2    50
+     phone                       not null                                          varchar2    20
+     status                      not null                결제완료,                     varchar2    20
+                                                         배송중,
+                                                         배송완료
+     cno          foreign        not null                        customers   cno   number      5
+                  key
+ 테이블 명 : products
+      컬럼명       키 유형               Null            디폴트 값           데이터타입                길이
+      pno       primary key                                        number               5
+      pname                        not null                        varchar2             20
+
+
+      cost                         not null        0               number               8
+      stock                        not null        0               number               5
+
+
+ 테이블 명 : orderdetail
+      컬럼명           키 유형                  디폴트 값         참조 테이블     참조 컬럼       데이터 타입        길이
+      orderno       primary key                         orders     orderno     number        10
+                    foreign key 1
+      pno           primary key,                        products   pno         number        5
+                    foreign key 2
+      qty                                 0                                    number        5
+      cost                                0                                    number        8
+
+
+2. products 테이블에 다음 데이터를 입력하시오.
+      pno                pname                     cost               stock
+      1001               삼양라면                      1000               200
+      1002               새우깡                       1500               500
+      1003               월드콘                       2000               350
+      1004               빼빼로                       2000               700
+      1005               코카콜라                      1800               550
+      1006               환타                        1600               300
+
+
+3. customers 테이블에 다음 데이터를 입력하시오.
+      cno              cname                  address              email                phone
+      101              김철수                    서울 강남구               cskim@naver.com      899-6666
+      102              이영희                    부산 서면                yhlee@empal.com      355-8882
+      103              최진국                    제주 동광양               jkchoi@gmail.com     852-5764
+      104              강준호                    강릉 홍제동               jhkang@hanmail.com   559-7777
+      105              민병국                    대전 전민동               bgmin@hotmail.com    559-8741
+      106              오민수                    광주 북구                msoh@microsoft.com   542-9988
+4. 다음과 같은 주문 정보를 orders 테이블과 orderdetail 테이블에 입력하시오. cno는 customers 테이블에서
+ 검색하여 입력할 것. orders에 1건, orderdetail에 1건을 입력한다.
+
+
+ “김철수(101)가 3일전에 삼양라면(1001)을 개당 1000원에 50개 주문하였다.”
+
+
+     orderno   orderdate     cname    address      phone       status    pname           cost           qty
+     1         오늘날짜-3        김철수      서울 강남구       899-6666    결제완료      삼양라면            1000           50
+
+
+5. 위와 같은 주문 정보에서 해당 상품(products)의 재고(stock)을 수정하시오.
+
+
+ “삼양라면(1001)의 재고를 150(=200-50)개로 변경한다”
+
+
+6. 다음과 같은 주문 정보를 orders 테이블과 orderdetail 테이블에 입력하시오. cno는 customers 테이블에서
+ 검색하여 입력할 것. orders에 1건, orderdetail에 2건을 입력한다.
+
+
+ “이영희(102)가    이틀전에         새우깡(1002)을     개당    1500원에     100개, 월드콘(1003)을     개당      2000원에         150개
+ 주문하였다.”
+
+
+     orderno    orderdate     cname    address      phone       status   pname    cost       qty
+     2          오늘날짜-2        이영희      부산 수영구       337-5000    결제완료     새우깡      1500       100
+                                                                         월드콘      2000       150
+
+
+7. 위와 같은 주문 정보에서 해당 상품(products)의 재고(stock)을 수정하시오.
+
+
+ “새우깡(1002)의 재고를 400(=500-100)개로 변경한다”
+ “월드콘(1003)의 재고를 200(=350-150)개로 변경한다”
+
+
+8. 다음과 같은 주문 정보를 orders 테이블과 orderdetail 테이블에 입력하시오. cno는 customers 테이블에서
+ 검색하여 입력할 것. orders에 1건, orderdetail에 2건을 입력한다.
+
+
+ “오민수(106)가 어제 빼빼로(1004)를 개당 2000원에 100개, 코카콜라(1005)를 개당 1800원에 50개 주문하였다.”
+
+
+     orderno    orderdate     cname    address     phone        status    pname       cost         qty
+     3          오늘날짜-1        오민수      광주 북구       652-2277     결제완료      빼빼로         2000         100
+                                                                          코카콜라        1800         50
+
+
+9. 위와 같은 주문 정보에서 해당 상품(products)의 재고(stock)을 수정하시오.
+
+
+ “빼빼로(1004)의 재고를 600(=700-100)개로 변경한다”
+ “코카콜라(1005)의 재고를 500(=550-50)개로 변경한다”
+10. 다음과 같은 전체 주문 목록을 출력하는 문장을 작성하시오.
+     orderdate   cname    address   phone      status   pname   cost   qty   cost*qty
+     오늘날짜-3      김철수      서울 강남구    899-6666   결제완료     삼양라면    1000   50    50000
+     오늘날짜-2      이영희      부산 수영구    337-5000   결제완료     새우깡     1500   100   150000
+     오늘날짜-2      이영희      부산 수영구    337-5000   결제완료     월드콘     2000   150   300000
+     오늘날짜-1      오민수      광주 북구     652-2277   결제완료     빼빼로     2000   100   200000
+     오늘날짜-1      오민수      광주 북구     652-2277   결제완료     코카콜라    1800   50    90000
+
+
+11. 다음과 같이 일별 매출 목록을 출력하는 문장을 작성하시오.
+     orderdate   sum(cost*qty)
+     오늘날짜-3      50000
+     오늘날짜-2      450000
+     오늘날짜-1      290000
+
+
+12. 다음과 같은 신규 상품 정보를 products 테이블에 입력하시오.
+ “제품번호는 1007, 상품명은 목캔디, 단가는 3000원, 재고는 500개이다.”
+
+
+13. 다음과 같은 4번 주문 정보를 입력하고, 재고를 적절히 수정하시오. 주문 정보를 입력하고, 10번 문제에서
+ 작성한 문장으로 검색하면 다음과 같다.
+
+
+ “최진국(103)이 오늘 목캔디(1007)를 개당 3000원에 200개 주문하였으며, 배송지의 주소는 제주 동광양이며,
+ 연락처는 352-4657이고, 결제가 완료된 상태이다.”
+
+
+     orderdate   cname    address   phone      status   pname   cost   qty   cost*qty
+     오늘날짜-3      김철수      서울 강남구    899-6666   결제완료     삼양라면    1000   50    50000
+     오늘날짜-2      이영희      부산 수영구    337-5000   결제완료     새우깡     1500   100   150000
+     오늘날짜-2      이영희      부산 수영구    337-5000   결제완료     월드콘     2000   150   300000
+     오늘날짜-1      오민수      광주 북구     652-2277   결제완료     빼빼로     2000   100   200000
+     오늘날짜-1      오민수      광주 북구     652-2277   결제완료     코카콜라    1800   50    90000
+     오늘날짜        최진국      제주 동광양    352-4657   결제완료     목캔디     3000   200   600000
+
