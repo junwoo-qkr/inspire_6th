@@ -1,59 +1,65 @@
-외래키: 참조무결성(부모에 의존하는 데이터 또는 NULL)
-옵션: ON DELETE [CASCADE | NO ACTION], ON UPDATE [CASCADE | NO ACTION]
-CASCADE: 부모가 업데이트 OR 삭제되면 함께 업데이트 OR 삭제
-NO ACTION: NULL값으로 대체
+jdbc
+자바 쪽에서 제공하는 표준 api
+수월하게 db를 연동하는 가이드라인
+드라이버: .jar 파일
+의존성 관리: maven / gradle <- 코드로 드라이버 불러오기(파일을 다운받지 않고)
 
-DEFAULT의 값으로는 고정값을 주는게 좋음
+jdbc 절차
+pakage: java.sql.*
+- 드라이버 불러오기(driver loading)
+- 연결(connection)
+- sql 쿼리 수행을 위한 작업(statement(query))
+- 실행(execute)
+- 결과 핸들링(resultset)
+- 연결 종료(close)
 
-NOT NULL은 테이블 레벨로 제약을 못 검
+https://mvnrepository.com/artifact/org.mariadb.jdbc/mariadb-java-client/3.5.10
+여기서 MariaDB java client를 lib 폴더에 받기
 
-ALTER: 테이블 스키마 수정, 제약조건 추가 변경
-ADD, DROP CONSTRAINT
-ADD COLUMN
-CHANGE COLUMN OLD NEW TYPE <- 이름과 타입 변경
-MODIFY COLUMN OLD TYPE <- 타입 변경
-DROP COLUMN COLUMN_NAME
-데이터가 들어있을 때는 타입 변경 안됨
+connection 하나에 여러 statement(sql)를 만들 수 있음
 
-RENAME: 테이블 이름 변경
+rset.getString(column 인덱스)
 
-기본키가 두개: 테이블 수준에서 제약조건 걸기
+jdbc를 쓰면 mariadbdao.java 파일 통째로 메서드로 구현되어 있음
 
-여러개의 기본키를 다른 테이블에서 참조: 여러 기본키를 하나로 묶어서 제약조건 걸기
+확장: spring boot extension pack, super mybatis 설치
 
-VIEW: 가상의 논리적 테이블(읽기 전용)
-보안 및 질의어의 단순화를 위해 사용
-사용자는 테이블에 바로 접근하는게 아니라 뷰를 통해 접근
-복합 뷰에 대해서는 입력 수정 삭제가 안됨
+gradle project 생성
+java
+spring boot 4.0.8
+packaging: jar
+configuration: properties
+java: 17
+dependencies:
+- spring boot devtools
+- spring configuration processor
+- spring web
+- spring data jpa
+- mybatis
+- MariaDB driver
+- lombok
 
-from절의 서브쿼리가 inline view인 이유: 임시로 만들어진 view였기 때문
 
-DML
-UPDATE, INSERT, DELETE <- transaction을 발생시킴
-ROLLBACK: transaction을 원상복귀시킴
-DML은 기본값이 auto commit
+main: 자주 사용할 디렉토리
+test: 테스트케이스 넣는 디렉토리
+build.gradle: dependencies 넣는 곳
+- dependencies: group_id : artifact_id : version
+- 이 파일에 따라서 jar 파일이 자동으로 깔리고 사라짐
+static: js와 이미지 파일 폴더
+templates: html 파일 폴더
+application.yml: 설정 저장
+- application-dev: 개발 시 설정
+- application-prod: 배포 시 설정
+- application.yml: 맨 처음 무조건 읽는 것, profile 설정을 보고 dev를 볼지 prod를 볼지 결정
 
-update: 테이블의 기존 데이터를 수정(행 수는 그대로)
-update table_name
-set column_name = { value | subquery | default }
-where condition = { value | subquery }
 
-insert: 테이블에 데이터 추가
-insert into table_name([column_name]) values(values);
-column_name과 values는 타입, 순서, 개수를 맞춰야함
+spa는 async한 통신: 데이터(json)을 전달
+full browsing: page(jsp)를 전달
 
-delete: 테이블의 데이터 삭제(행의 수가 달라짐)
-delete from table_name where condition;
-참조 관계를 가지는 데이터는 삭제할 때 조심하기
+properties와 yml은 구조가 다름
+properties: xxx.xxx.xxx = xxx
+yml: xxx:xxx:xxx: xxx
 
-sequence: auto-increment하는 숫자를 생성하는 객체
-create sequence sequence_name
-START WITH 시작번호
-increment by step
-maxvalue 끝 번호
-[ cycle | nocycle ] ;
-
-nextval()
-lastval()
-
-auto-increment 옵션은 sequence랑 비슷하지만 테이블에 종속적
+DemoApplication.java를 Run하면
+- 프로젝트를 빌드 -> .jar 파일 생성
+- 서버에 .jar 파일을 올리고 tomcat 서버를 시작

@@ -507,3 +507,95 @@ WHERE		SUBSTRING(TERM_NO, 1, 4) BETWEEN '2007' AND '2009'
 GROUP BY	G.CLASS_NO, C.CLASS_NAME
 ORDER BY COUNT(G.STUDENT_NO) DESC
 LIMIT 3;
+
+
+-- [DML]
+-- 문제 1번
+INSERT INTO tb_class_type VALUES
+('01', '전공필수'),
+('02', '전공선택'),
+('03', '교양필수'),
+('04', '교양선택'),
+('05', '논문지도');
+
+SELECT * FROM tb_class_type;
+
+
+-- 문제 2번
+CREATE TABLE TB_학생일반정보(
+	SELECT	STUDENT_NO AS '학번',
+				STUDENT_NAME AS '학생이름',
+				STUDENT_ADDRESS AS '주소'
+	FROM		TB_STUDENT
+);
+SELECT * FROM TB_학생일반정보;
+
+
+-- 문제 3번
+DROP TABLE TB_국어국문학과;
+CREATE TABLE TB_국어국문학과(
+	SELECT	S.STUDENT_NO AS '학번',
+				S.STUDENT_NAME AS '학생이름',
+				CONCAT('19', LEFT(S.STUDENT_SSN, 2)) AS '출생년도',
+				P.PROFESSOR_NAME AS '교수이름'
+	FROM 		tb_student S
+	JOIN		tb_professor P ON(S.COACH_PROFESSOR_NO = P.PROFESSOR_NO)
+);
+SELECT * FROM TB_국어국문학과;
+
+
+-- 문제 4번
+UPDATE	tb_department
+SET		CAPACITY = ROUND(CAPACITY * 1.1);
+
+
+-- 문제 5번
+UPDATE	tb_student
+SET		STUDENT_ADDRESS = '서울시 종로구 숭인동 181-21'
+WHERE		STUDENT_NO = 'A413042';
+
+
+-- 문제 6번
+UPDATE	tb_student
+SET		STUDENT_SSN = LEFT(STUDENT_SSN, 6);
+
+
+-- 문제 7번
+UPDATE	tb_grade
+SET		POINT = 3.5
+WHERE		CLASS_NO = (
+	SELECT	CLASS_NO
+	FROM		tb_class
+	WHERE		CLASS_NAME = '피부생리학'
+)
+AND		STUDENT_NO = (
+	SELECT	STUDENT_NO
+	FROM		tb_student
+	WHERE		STUDENT_NAME = '김명훈'
+)
+AND		TERM_NO = '200501';
+
+SELECT * FROM tb_grade
+WHERE		CLASS_NO = (
+	SELECT	CLASS_NO
+	FROM		tb_class
+	WHERE		CLASS_NAME = '피부생리학'
+)
+AND		TERM_NO = '200501';
+
+
+-- 문제 8번
+SELECT	G.*
+			, S.STUDENT_NAME
+			, S.ABSENCE_YN
+FROM		tb_grade G
+JOIN		tb_student S USING(STUDENT_NO)
+WHERE		S.ABSENCE_YN = 'Y';
+
+
+DELETE	FROM tb_grade
+WHERE		STUDENT_NO IN (
+	SELECT	STUDENT_NO
+	FROM		tb_student
+	WHERE		ABSENCE_YN = 'Y'
+);
