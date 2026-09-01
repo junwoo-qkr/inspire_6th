@@ -1,0 +1,24 @@
+server:
+  port: 8000
+
+spring:
+
+  # spring mvc view path
+  # mvc:
+  #   view:
+  #     prefix: /WEB-INF/view/  # 파일 경로
+  #     suffix: .jsp  # 확장자
+
+  config:
+    activate:
+      on-profile: dev
+
+  # DB 연결 정보
+  datasource:
+    driver-class-name: org.mariadb.jdbc.Driver   
+    url: jdbc:mariadb://localhost:3306/testdb
+    username: root
+    password: 1229
+
+mybatis:
+  mapper-locations: classpath:/mappers/*.xml

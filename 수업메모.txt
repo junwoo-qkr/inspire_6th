@@ -1,65 +1,87 @@
-jdbc
-자바 쪽에서 제공하는 표준 api
-수월하게 db를 연동하는 가이드라인
-드라이버: .jar 파일
-의존성 관리: maven / gradle <- 코드로 드라이버 불러오기(파일을 다운받지 않고)
+gradle 기반의 빌더
 
-jdbc 절차
-pakage: java.sql.*
-- 드라이버 불러오기(driver loading)
-- 연결(connection)
-- sql 쿼리 수행을 위한 작업(statement(query))
-- 실행(execute)
-- 결과 핸들링(resultset)
-- 연결 종료(close)
+cors: 프론트쪽의 서버(포트번호 3000)이 백엔드쪽의 서버(8000)에 접근
 
-https://mvnrepository.com/artifact/org.mariadb.jdbc/mariadb-java-client/3.5.10
-여기서 MariaDB java client를 lib 폴더에 받기
+컨트롤러, 서비스, 레포지토리가 팩토리에 등록(singleton으로)
 
-connection 하나에 여러 statement(sql)를 만들 수 있음
+프레임워크가 관리하는 객체: bean
 
-rset.getString(column 인덱스)
+객체생성을 위임하는 방법
+- .xml (스키마 기반): 태그 사용
+- annotation 기반
 
-jdbc를 쓰면 mariadbdao.java 파일 통째로 메서드로 구현되어 있음
+@Component를 상속받는 annotation들
+- @Controller - 클래스 첫 글자를 소문자로 하는 객체를 자동으로 생성, 액션을 수행하고 페이지 반환
+- @RestController - 클래스 첫 글자를 소문자로 하는 객체를 자동으로 생성, 액션을 수행하고 데이터(json) 반환
+- @Service
+- @Repository
+- @Mapper
 
-확장: spring boot extension pack, super mybatis 설치
+@RequestMapping(/demo) 클래스는 http:// ip : port / demo 까지의 url에 매핑됨
+@GetMapping(/index) 메서드는 http:// ip : port / index 까지의 url에 매핑됨
 
-gradle project 생성
-java
-spring boot 4.0.8
-packaging: jar
-configuration: properties
-java: 17
-dependencies:
-- spring boot devtools
-- spring configuration processor
-- spring web
-- spring data jpa
-- mybatis
-- MariaDB driver
-- lombok
+자바로 구현할 수 있는 웹 컴포넌트
+servlet, jsp(html에 자바 코드 삽입)
 
+tomcat에는 두 컨테이너가 들어있음
+Catalina(servlet 동작), jasper(jsp 동작)
+jsp는 html 안에 자바 문법을 삽입할 수 있음
+Catalina로 jsp로 보내서 servlet으로 변환, stream으로 브라우저에 출력
 
-main: 자주 사용할 디렉토리
-test: 테스트케이스 넣는 디렉토리
-build.gradle: dependencies 넣는 곳
-- dependencies: group_id : artifact_id : version
-- 이 파일에 따라서 jar 파일이 자동으로 깔리고 사라짐
-static: js와 이미지 파일 폴더
-templates: html 파일 폴더
-application.yml: 설정 저장
-- application-dev: 개발 시 설정
-- application-prod: 배포 시 설정
-- application.yml: 맨 처음 무조건 읽는 것, profile 설정을 보고 dev를 볼지 prod를 볼지 결정
+http:// ip : port / context / action에서
+context까지 매핑: @requestmapping
+action까지 매핑: @get @post @put @patch @delete
 
+dto를 리액트에서 읽을 수 있도록 json으로 변환하는 거: Jackson
 
-spa는 async한 통신: 데이터(json)을 전달
-full browsing: page(jsp)를 전달
+응답을 dto에 담기 보다는 정형화된 ResponseEntity에 담을 수 있음
 
-properties와 yml은 구조가 다름
-properties: xxx.xxx.xxx = xxx
-yml: xxx:xxx:xxx: xxx
+yml에 db연결 정보를 넣을 수 있음
 
-DemoApplication.java를 Run하면
-- 프로젝트를 빌드 -> .jar 파일 생성
-- 서버에 .jar 파일을 올리고 tomcat 서버를 시작
+orm: jdbc를 감싸고 있음
+객체 형태(요청: object / 응답: table -> object)로 데이터를 주고받을 수 있도록 함
+
+xxxMapper.java: mybatis를 구현하는 인터페이스
+xxxRepository.java: jpa를 구현하는 인터페이스
+
+usermapper.java(정의한 메서드)와 usermapper.xml(sql을 담고 있는 파일)을 연결하는건 mybatis
+
+mybatis: jdbc를 감싸는 orm
+
+xml의 문법
+첫줄은 버전, 인코딩
+닫는 태그는 꼭 있어야함
+
+test 폴더 안에 있는 거: testcase
+@springboottest, @test: 테스트케이스임을 알리는 어노테이션
+junit + tdd(test driven development : given when then)
+
+spring
+- inversion of control
+    - dependency injection
+    - dependency lookup
+spring에서는 new 연산자로 객체 생성하지 않기(ioc 위배)
+
+dependency injection 어노테이션
+@RequiredArgConstructor로 final로 선언
+@Autowired: 자동으로 의존성 주입
+@inject
+@Resource(이름으로 가져오기)
+@Qualified
+
+yml 파일에 xml 경로를 줘야함(외부 경로이기 때문에)
+
+mapper에 매개변수와 리턴 타입만 주면 됨
+
+parameter 받는 어노테이션
+@requestparam: queryString으로 데이터가 들어옴
+파라미터 갯수가 변할때마다 다시 작성하기 귀찮으니 매개변수로 DTO를 받을 수 있음
+이때 dto, table의 컬럼, queryString의 변수 이름이 같으면 자동으로 바인딩됨
+param 형태로 넘어올때 dto에 setter를 정의해놓지 않으면 자동으로 바인딩을 못함
+dto로 넘어온 걸 mapper까지 전달
+
+@autowired로 컨테이너로부터 자동으로 주입받을 수 있음
+매번 다른걸 주입받을때마다 쓰긴 귀찮고, 인터페이스를 주입하면 안됨(상속 받는 클래스 중 누굴 주입받을지 애매하니까)
+변수명으로 상속 받는 클래스의 이름(앞에 대문자는 소문자로)을 넣으면 그 클래스를 자동으로 가져옴
+
+@Service 어노테이션에 value로 이름을 부여하고, @Resource 어노테이션으로 이름을 명시해서 인터페이스를 주입해도 클래스가 들어감 - layered architecture
