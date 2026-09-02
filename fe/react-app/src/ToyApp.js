@@ -12,7 +12,7 @@ const ToyApp = () => {
             <Routes>
                 {/* user */}
                 <Route path="/" element={<SignUpPage />} />
-                <Route path="/users/signIn" element={<SignInPage />} />
+                <Route path="/user/signIn" element={<SignInPage />} />
 
                 {/* blog */}
                 <Route path="/blog/index" element={<BlogIndexPage />} />
