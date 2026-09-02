@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.testcasepractice.features.users.domain.DTO.UserRequestDTO;
+import com.example.testcasepractice.features.users.domain.DTO.UserResponseDTO;
 import com.example.testcasepractice.features.users.service.UserEncryptionServiceImpl;
 import com.example.testcasepractice.features.users.service.UserPlainServiceImpl;
 import com.example.testcasepractice.features.users.service.UserService;
@@ -12,6 +13,7 @@ import com.example.testcasepractice.features.users.service.UserService;
 import jakarta.annotation.Resource;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 
@@ -52,9 +54,10 @@ public class UserController {
         System.out.println("User Controller");
         System.out.println("params : " + request);
         System.out.println("userService = " + userService);
-        return null;
+        UserResponseDTO response = userService.signIn(request);
+        return ResponseEntity
+            .status(HttpStatus.OK)
+            .header("access-token", "5bgVR9^#2d6d84DGw3")
+            .body(response);
     }
-
-    @
-    
 }

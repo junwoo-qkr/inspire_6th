@@ -135,13 +135,27 @@ const SignUpPage = () => {
 
     const moveURL = useNavigate();
 
+    // const handleSubmit = async (event) => {
+    //     event.preventDefault();
+    //     await api.post("/users", formData)
+    //         .then(response => {
+    //             if (response.status === 201) {
+    //                 // console.log(response);
+    //                 moveURL("/users/signIn");
+    //             }
+    //         })
+    //         .catch(err => {
+    //             console.log(`err:`, err);
+    //         })
+    // };
+
     const handleSubmit = async (event) => {
         event.preventDefault();
-        await api.post("/users", formData)
+        await api.post("/user/signUp", formData)
             .then(response => {
                 if (response.status === 201) {
                     // console.log(response);
-                    moveURL("/users/signIn");
+                    moveURL("/user/signIn");
                 }
             })
             .catch(err => {

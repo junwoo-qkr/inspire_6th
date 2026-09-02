@@ -115,17 +115,42 @@ const SignInPage = () => {
     // TODO
     // header access token에 접근
     // 인증과 인가
+    // const handleSubmit = async (event) => {
+    //     event.preventDefault();
+    //     await api.get("/user", {
+    //         params: {
+    //             email: formData.email,
+    //         }})
+    //         .then(response => {
+    //             if (response.status === 200 && response.data[0].password === formData.password) {
+    //                 localStorage.setItem("user", response.data[0].email);
+    //                 moveURL("/blog/index");
+    //             }
+    //         })
+    //         .catch(err => {
+    //             console.log(`err:`, err);
+    //         })
+    // };
+
     const handleSubmit = async (event) => {
         event.preventDefault();
-        await api.get("/users", {
-            params: {
-                email: formData.email,
-            }})
+        // await api.get("/user/signIn", {
+        //     params: {
+        //         email: formData.email,
+        //         password: formData.password
+        //     }})
+        await api.get(`/user/signIn?email=${formData.email}&password=${formData.password}`)
             .then(response => {
-                if (response.status === 200 && response.data[0].password === formData.password) {
-                    localStorage.setItem("user", response.data[0].email);
-                    moveURL("/blog/index");
+                console.log(response);
+                if (response.status === 200) {
+                    localStorage.setItem("user", response.data.email);
+                    localStorage.setItem("at", response.headers.get("Authorization"));
+                    localStorage.setItem("rt", response.headers.get("Refresh-Token"));
                 }
+                // if (response.status === 200 && response.data[0].password === formData.password) {
+                    // localStorage.setItem("user", response.data[0].email);
+                    // moveURL("/blog/index");
+                // }
             })
             .catch(err => {
                 console.log(`err:`, err);
