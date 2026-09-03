@@ -62,7 +62,7 @@ const BlogCommentItem = ({comment, deletionHandler, updateHandler}) => {
                     <CommentText>{mention}</CommentText>
             }
             {
-                user === comment.commentEmail &&
+                user === comment.email &&
                 <Button
                     title="삭제"
                     onClick={(e) => deletionHandler(e, comment.id)}

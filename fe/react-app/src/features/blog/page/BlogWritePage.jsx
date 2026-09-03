@@ -205,7 +205,9 @@ const BlogWritePage = () => {
         // console.log(`content: ${content}`);
         // console.log(`category: ${category}`);
         // console.log(`user: ${user}`);
-        await api.post("/posts", {
+
+        // await api.post("/posts", {
+        await api.post("/blog/write", {
             title,
             content,
             category,

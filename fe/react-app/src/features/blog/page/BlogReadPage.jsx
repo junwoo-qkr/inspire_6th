@@ -111,12 +111,16 @@ const WelcomeMessage = styled.div`
 `;
 
 const BlogReadPage = () => {
+
     const {postId} = useParams();
     const user = localStorage.getItem("user");
     const [post, setPost] = useState({});
     const moveURL = useNavigate();
     const [comments, setComments] = useState([]);
     const [comment, setComment] = useState("");
+    const at = localStorage.getItem("at");
+
+    console.log(`BlogReadPage ${postId}, ${user}`);
 
     // 댓글이 없을 때
     // const loadData = async () => {
@@ -134,9 +138,12 @@ const BlogReadPage = () => {
 
     // 댓글이 있을 때
     const loadData = async () => {
-        await api.get(`/posts/${postId}?_embed=comments`)
+        // await api.get(`/posts/${postId}?_embed=comments`)
+        await api.get(`blog/read/${postId}`, {
+            headers : {Authorization : at ? at : ""}
+        })
             .then(response => {
-                // console.log(response);
+                console.log(response);
                 if (response.status === 200) {
                     setPost(response.data);
                     setComments(response.data.comments);
@@ -149,15 +156,16 @@ const BlogReadPage = () => {
     }
 
     const commentHandler = async () => {
-        await api.post("/comments", {
+        await api.post("/comments/write", {
             comment,
             postId: Number(postId),
-            commentEmail: user
+            email: user,
+            headers: {Authorization : at ? at : ""}
         })
             .then(response => {
                 console.log(response);
                 if (response.status === 201) {
-                    setComments(arr => [...arr, response.data]);
+                    setComments(arr => [response.data, ...arr]);
                     setComment("");
                 }
             })
