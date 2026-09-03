@@ -41,19 +41,19 @@
     {
       "comment": "댓글 sdsd",
       "postId": 1,
-      "commentEmail": "p40212@gmail.com",
+      "email": "p40212@gmail.com",
       "id": 1
     },
     {
       "comment": "댓글 2",
       "postId": 1,
-      "commentEmail": "p40212@gmail.com",
+      "email": "p40212@gmail.com",
       "id": 2
     },
     {
       "comment": "댓글 3",
       "postId": 1,
-      "commentEmail": "p40212@gmail.com",
+      "email": "p40212@gmail.com",
       "id": 3
     }
   ]

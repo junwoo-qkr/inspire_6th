@@ -1,60 +1,41 @@
-test하는 클래스에서는 메인의 파일에 접근 가능
+세션, 토큰: 클라이언트의 이전 상태 정보를 유지하기 위한 것
+옛날에 세션을 쓸 때...
+- 서비스에서 세션 아이디를 제공
+- msa로 가니 여러 서비스가 쪼개짐
+- 세션 아이디만으로는 서비스 간에서 인증 정보를 유지하기 힘들어짐
+- (A 서비스에서 받은 세션 아이디를 B, C 서비스에서 쓸 수 없음)
 
-web application server에 올릴 때 소스코드, 라이브러리 등을 묶어서 .jar로 패킹
+이젠 jwt(토큰) 사용
+- header, payload, signature로 이루어짐
+- 응답의 헤더에 넣어야함
+- 헤더에 넣었으니 헤더를 열어줘야함
 
-도메인 당 하나의 mapper xml 할당
+xml에 함수를 쓸 때는 #{}는 빼기(nextval 같은거)
 
-컨트롤러는 서비스를 의존성으로 주입받음
+blogcontroller에서 requestbody를 잘못 import 함
 
-@RequiredArgsConstructor: 멤버 변수 중 상수(final)만 인자로 받는 생성자 만듬 -> 생성자를 통한 의존성 주입
+(TIL 요구사항: 오늘 수업에서 사용된 테이블(testdb의 spring_post_tbl, spring_user_tbl)도 TIL에 포함시키기)
 
-.env 파일을 만들어서 민감한 내용(비밀번호)나 자주 바뀔 수 있는 내용(url이나 id)를 관리할 수 있음
-Dotenv: .env 파일의 내용을 .yml에서 참조할 수 있도록 메모리에 올리기
-gitignore에 .env 추가
+백엔드와 통신하는 영역: blogitem의 return의 moveurl이 아니라 blogreadpage의 loaddata의 api.get
 
-http://localhost:8000/swagger-ui/index.html
-들어가면 api 명세가 보임(swagger를 넣었기 때문)
-@Tag: api의 이름과 설명 추가
-@operation: 엔드포인트에 대한 설명 추가
-@apiresponse(s): 응답에 대한 설명 추가
-swagger의 @requestbody: requestbody에 대한 정보 추가
+인증된 사람만 특정 엔드포인트에 접속하도록 하는 방법: api.get의 두번째 파라미터로 토큰 넣어주기
 
-파라미터를 받는 방법
-@requestparam: querystring의 정보를 받음
-@PathVariable
-@RequestBody + DTO 객체: json으로 들어오는 데이터를 DTO로 받을 때
+interceptor: 만료된 토큰을 받으면, refresh token을 이용해 토큰 재발급하는 과정
 
-bean이 관리하지 않는 객체를 컨트롤러에 등록하면 내부적으로 객체 생성(기본 생성자)
+getmapping에서 path variable을 받으려면 /read/{postid}, 매개변수에 @pathvariable 사용
 
-@mapper가 달린 mapper 인터페이스는 bean으로 관리가 안됨(클래스가 아니기 때문에)
+댓글 정보는 댓글에 관련한 정보를 담은 DTO로 이루어진 list가 되어야 함
+- 한 트랜잭션에 글 select, 댓글 select를 해야함
+- @Transactional을 사용
+- readonly = true : 가져오는 동안 누가 수정해버리는 걸 방지
 
-@Configuration: yml에 설정해야하는 환경설정을 java 코드로 하기
+@RequestHeader: 헤더의 정보를 매개변수로 넣을 수 있음(토큰 같은 거)
 
-인증, 인가의 차이?
+포스트 하나에 댓글을 여러개 매핑하는 방법: Method 1, Method 2
+blogresponsedto에 comments 선언
+blogservice의 read에서 blogresponsedto를 복사(builder의 tobuilder를 true로)하고 거기에 comment만 추가
+(tobuilder: 원래 객체를 복사해서 다시 빌드)
+-> 포스트와 댓글을 불러오는 걸 하나의 트랜잭션으로 처리
 
-jwt
-createAT, createRT는 인풋으로 서명을 받음(해당 사용자의 키 값)
-로그인 시 예외가 터지지 않으면 토큰 발급, Map에 담아서
-토큰이 발행되면 유지되어야 함(OAuth 하는게 아니면 inMemoryDB에 담기)
-access token은 authorization으로, refresh token은 refresh-token으로 httpheaders에 담기
-로그인이 완료된 사용자에 대해서는 authorization을 헤더에 담아서 줘야함
-signIn을 get 방식으로 쓰면 에러가 나는 이유
-- get 방식은 json을 쓰는게 아니라 querystring을 씀
-- 파라미터가 @RequestBody로 들어와서 json을 받아야 해서 에러가 남
--> 파라미터를 @RequestParam으로 받기
--> 추후에 post 방식으로 바꾸기(주소에 아이디 비밀번호가 다 나오기 때문에)
-
-json을 dto로: @RequestBody
-
-리액트 프로젝트의 endpoint를 8000번으로 바꾸고 url 변경
-cors 정책 때문에 연결이 안됨
--> cors 정책을 해결하는 인터페이스 사용(WebMvcConfigurer)
-@Configuration
-
-preflight
-Options가 요청을 허락하면 post, get, patch 등으로 넘어감
-
-signIn에서 queryString으로 넘기든 param 방식으로 넘기든 작동함
-- 어떤 걸로 하던지 결국은 queryString 방식으로 데이터를 보내기 때문
-
-header로 보낸 access token, refresh token을 localstorage에 저장하기
+selectKey로 commentrequestdto에서 id가 안 넘어와도 sql문에서 id를 만들 수 있음 -> dto에 id를 넣어버림
+commentservice의 write에서 id를 반환할 수 있음

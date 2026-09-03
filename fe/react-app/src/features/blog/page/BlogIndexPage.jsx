@@ -136,7 +136,7 @@ const BlogIndexPage = () => {
     }, [posts, selectedCategory]);
 
     const loadData = async () => {
-        await api.get("/posts")
+        await api.get("/blog/index")
             .then(response => {
                 console.log(response);
                 if (response.status === 200) {

@@ -214,7 +214,7 @@ const SignUpPage = () => {
 
                     <SubmitButton type="submit">가입하기</SubmitButton>
                 </Form>
-                <SignInLink to="/users/signIn">로그인 하러가기</SignInLink>
+                <SignInLink to="/user/signIn">로그인 하러가기</SignInLink>
             </SignUpCard>
         </Page>
     );

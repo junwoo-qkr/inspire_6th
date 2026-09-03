@@ -13,8 +13,9 @@ const BlogCommentList = ({comments, deletionHandler, updateHandler}) => {
         <Wrapper>
             {
                 comments.map((comment, idx) => {
-                    return <BlogCommentItem 
-                        key={idx}
+                    return <BlogCommentItem
+                        // ket={idx} 
+                        key={comment.id}
                         comment={comment}
                         deletionHandler={deletionHandler}
                         updateHandler={updateHandler}

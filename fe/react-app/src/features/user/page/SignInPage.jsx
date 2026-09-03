@@ -146,6 +146,7 @@ const SignInPage = () => {
                     localStorage.setItem("user", response.data.email);
                     localStorage.setItem("at", response.headers.get("Authorization"));
                     localStorage.setItem("rt", response.headers.get("Refresh-Token"));
+                    moveURL("/blog/index");
                 }
                 // if (response.status === 200 && response.data[0].password === formData.password) {
                     // localStorage.setItem("user", response.data[0].email);
