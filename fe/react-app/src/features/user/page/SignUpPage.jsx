@@ -117,8 +117,20 @@ const SignInLink = styled(Link)`
     }
 `;
 
+const ErrorMessage = styled.p`
+    color : red;
+    font-size : 13px;
+    margin : 2px 0 0 2px;
+`;
+
 const SignUpPage = () => {
     const [formData, setFormData] = useState({
+        name: "",
+        email: "",
+        password: "",
+    });
+
+    const [errors, setErrors] = useState({
         name: "",
         email: "",
         password: "",
@@ -153,13 +165,15 @@ const SignUpPage = () => {
         event.preventDefault();
         await api.post("/user/signUp", formData)
             .then(response => {
+                console.log(response);
                 if (response.status === 201) {
-                    // console.log(response);
                     moveURL("/user/signIn");
                 }
             })
             .catch(err => {
-                console.log(`err:`, err);
+                const validationErrors = err.response?.data;
+                console.log(validationErrors);
+                setErrors(err.response.data);
             })
     };
 
@@ -179,8 +193,9 @@ const SignUpPage = () => {
                             value={formData.name}
                             onChange={handleChange}
                             autoComplete="name"
-                            required
+                            // required
                         />
+                        { errors.name && <ErrorMessage>{ errors.name }</ErrorMessage> }
                     </Field>
 
                     <Field>
@@ -193,8 +208,9 @@ const SignUpPage = () => {
                             value={formData.email}
                             onChange={handleChange}
                             autoComplete="email"
-                            required
+                            // required
                         />
+                        { errors.email && <ErrorMessage>{ errors.email }</ErrorMessage> }
                     </Field>
 
                     <Field>
@@ -208,8 +224,9 @@ const SignUpPage = () => {
                             onChange={handleChange}
                             autoComplete="new-password"
                             minLength={8}
-                            required
+                            // required
                         />
+                        { errors.password && <ErrorMessage>{ errors.password }</ErrorMessage> }
                     </Field>
 
                     <SubmitButton type="submit">가입하기</SubmitButton>

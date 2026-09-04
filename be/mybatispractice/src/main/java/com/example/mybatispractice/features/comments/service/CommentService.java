@@ -1,5 +1,7 @@
 package com.example.mybatispractice.features.comments.service;
 
+import java.util.Map;
+
 import org.springframework.stereotype.Service;
 
 import com.example.mybatispractice.features.comments.domain.DTO.CommentRequestDTO;
@@ -18,5 +20,16 @@ public class CommentService {
         // return commentMapper.write(request);
         commentMapper.write(request);
         return request.getId();
+    }
+
+    public int delete(int id) {
+        System.out.println("comment service delete");
+        return commentMapper.delete(id);
+    }
+
+    public int update(Map<String, Object> map) {
+        System.out.println("comment service update");
+        System.out.println(map.get("id") + "\t" + map.get("comment"));
+        return commentMapper.update(map);
     }
 }
