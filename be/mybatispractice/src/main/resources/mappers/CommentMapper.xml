@@ -8,15 +8,27 @@
         SELECT COMMENT, POSTID, EMAIL, ID
         FROM SPRING_COMMENT_TBL
         WHERE POSTID = #{postId}
-        ORDER BY ID DESC
+        ORDER BY ID ASC
     </select>
 
     <!-- write --> 
-    <insert id="write" parameterType = "com.example.mybatispractice.features.comments.domain.DTO.CommentRequestDTO">
-        <selectKey keyProperty = "id" resultType = "int" order = "BEFORE">
+    <insert id="write" parameterType="com.example.mybatispractice.features.comments.domain.DTO.CommentRequestDTO">
+        <selectKey keyProperty="id" resultType="int" order="BEFORE">
             SELECT NEXTVAL(COMMENTID)
         </selectKey>
         INSERT INTO SPRING_COMMENT_TBL(ID, COMMENT, POSTID, EMAIL)
         VALUES(#{id}, #{comment}, #{postId}, #{email})
     </insert>
+
+    <!-- delete -->
+    <delete id="delete" parameterType="java.lang.Integer">
+        DELETE FROM SPRING_COMMENT_TBL WHERE ID = ${id}
+    </delete>
+
+    <!-- update --> 
+    <update id="update" parameterType="java.util.HashMap">
+        UPDATE SPRING_COMMENT_TBL
+        SET COMMENT = #{comment}
+        WHERE ID = #{id}
+    </update>
 </mapper>

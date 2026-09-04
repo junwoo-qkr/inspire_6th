@@ -1,41 +1,49 @@
-세션, 토큰: 클라이언트의 이전 상태 정보를 유지하기 위한 것
-옛날에 세션을 쓸 때...
-- 서비스에서 세션 아이디를 제공
-- msa로 가니 여러 서비스가 쪼개짐
-- 세션 아이디만으로는 서비스 간에서 인증 정보를 유지하기 힘들어짐
-- (A 서비스에서 받은 세션 아이디를 B, C 서비스에서 쓸 수 없음)
+spring을 security로 감싸야함
+was(tomcat)
+dispatcherservlet이라는 컨트롤러(프론트 컨트롤러): 모든 요청이 거치는 진입점
+-> session facade 패턴
 
-이젠 jwt(토큰) 사용
-- header, payload, signature로 이루어짐
-- 응답의 헤더에 넣어야함
-- 헤더에 넣었으니 헤더를 열어줘야함
+매핑 객체는 컨테이너를 참조
+컨테이너: 객체들을 관리하는 곳
+ioc: 객체 생성을 프레임워크에게 위임
+@Component, @Controller, @RestController, ...
+컨트롤러는 서비스의 인스턴스, 서비스는 레포지토리의 인스턴스를 가져야함
 
-xml에 함수를 쓸 때는 #{}는 빼기(nextval 같은거)
+반환 객체의 표준 형식: ResponseEntity
 
-blogcontroller에서 requestbody를 잘못 import 함
+mapper: 인터페이스 명세
+xml: sql 쿼리를 보내는 곳
+orm: mybatis 같은거
 
-(TIL 요구사항: 오늘 수업에서 사용된 테이블(testdb의 spring_post_tbl, spring_user_tbl)도 TIL에 포함시키기)
+토큰 존재 유무에 대한 코드를 맨날 컨트롤러에 넣기는 귀찮음
+-> 프론트 컨트롤러 앞에 filter 넣기(web의 컴포넌트)(뒤에 넣으면 spring의 컴포넌트 -> interceptor)
+filter에서 토큰 유무, 유효성 확인
+토큰이 필요없는 엔드포인트는 따로 설정해주기
 
-백엔드와 통신하는 영역: blogitem의 return의 moveurl이 아니라 blogreadpage의 loaddata의 api.get
+aop: 컨트롤러와 서비스 사이에 들어가는 무언가
 
-인증된 사람만 특정 엔드포인트에 접속하도록 하는 방법: api.get의 두번째 파라미터로 토큰 넣어주기
+pathvariable에 댓글 전체를 넣어도 됨
+두번째에 헤더가 들어가면 오류가 나니 두번째에는 null을 넣기
 
-interceptor: 만료된 토큰을 받으면, refresh token을 이용해 토큰 재발급하는 과정
+map을 mapper xml에 보낼땐 파라미터 타입을 map이 아닌 hashmap으로 해야함(map은 인터페이스이기 때문)
 
-getmapping에서 path variable을 받으려면 /read/{postid}, 매개변수에 @pathvariable 사용
+build 폴더 안의 commentmapper.xml에 update를 만들어버려서 에러 발생
 
-댓글 정보는 댓글에 관련한 정보를 담은 DTO로 이루어진 list가 되어야 함
-- 한 트랜잭션에 글 select, 댓글 select를 해야함
-- @Transactional을 사용
-- readonly = true : 가져오는 동안 누가 수정해버리는 걸 방지
+예외 핸들링 하는 방법
+서비스에서 예외 발생, 컨트롤러에서 이를 안 다뤘기 때문에 dispatcherservlet까지 가면 HandlerExceptionResolver가 예외를 전역으로 해결하려고 함
+전역 예외를 해결하지 못하면 무조건 500 internal server error 발생
+사용자 정의 예외를 만들어서 resolver가 이를 해결하도록 함
 
-@RequestHeader: 헤더의 정보를 매개변수로 넣을 수 있음(토큰 같은 거)
+HandlerExceptionResolver: 스프링 프레임워크 내부에 예외를 처리하는 전역 핸들러들이 등록되어 있는 곳
+@RestControllerAdvice: HandlerExceptionResolver에 해당 예외를 등록
+@ExceptionHandler: 예외를 하나의 메서드로 처리하게 돕는 어노테이션
 
-포스트 하나에 댓글을 여러개 매핑하는 방법: Method 1, Method 2
-blogresponsedto에 comments 선언
-blogservice의 read에서 blogresponsedto를 복사(builder의 tobuilder를 true로)하고 거기에 comment만 추가
-(tobuilder: 원래 객체를 복사해서 다시 빌드)
--> 포스트와 댓글을 불러오는 걸 하나의 트랜잭션으로 처리
+프론트에서 회원가입에 빈 문자열을 안 넣었는지 체크
+컨트롤러에서 요청의 유효성 체크
+-> 앞에서부터 걸러내서 필요없는 네트워크 트래픽을 최대한 줄이기
+@Valid: 유효성 검사가 필요하다는 걸 표시
+@NotNull, @NotEmpty, @NotBlank, @Pattern(정규표현식), @Email, ...: 검사할 유형 지정
+유효성 검사 결과를 프레임워크에서 BindingResult 변수에 넣어버림
+getAllErrors()로 에러 내용을 프론트엔드로 보내기 -> err.response.data로 꺼내서 브라우저에서 표시하기
 
-selectKey로 commentrequestdto에서 id가 안 넘어와도 sql문에서 id를 만들 수 있음 -> dto에 id를 넣어버림
-commentservice의 write에서 id를 반환할 수 있음
+해야할 일: 도커 설치 및 도커 허브 회원가입

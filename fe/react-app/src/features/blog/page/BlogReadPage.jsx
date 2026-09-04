@@ -165,7 +165,7 @@ const BlogReadPage = () => {
             .then(response => {
                 console.log(response);
                 if (response.status === 201) {
-                    setComments(arr => [response.data, ...arr]);
+                    setComments(arr => [...arr, response.data]);
                     setComment("");
                 }
             })
@@ -175,26 +175,39 @@ const BlogReadPage = () => {
     // status 204
     // 프론트에서는 삭제된 댓글과 동일한 아이디만 빼버리기
     const commentDeleteHandler = async (e, id) => {
-        await api.delete(`/comments/${id}`)
+        // await api.delete(`/comments/${id}`)
+        await api.delete(`/comments/delete/${id}`, {
+            headers : {Authorization : at ? at : ""}
+        })
             .then(response => {
                 console.log(response);
-                if (response.status === 200) {
+                if (response.status === 204) {
                     setComments(comments.filter((c) => {
                         return c.id !== id
                     }))
                 }
             })
-            .catch()
+            .catch(err => {
+                console.log(err);
+                console.log(id + typeof(id));
+            })
     }
 
     const commentUpdateHandler = async (id, mention) => {
-        // console.log(id, mention);
-        await api.patch(`/comments/${id}`, {
-            comment: mention
-        })
+        // 1번 방법
+        await api.patch(`/comments/update/${id}/${encodeURIComponent(mention)}`,
+            null, 
+        {headers : {Authorization : at ? at : ""}})
+
+        // 2번 방법
+        // await api.patch(`/comments/update/${id}`, {
+        //     comment: mention,
+        // }, {
+        //     headers : {Authorization : at ? at : ""}
+        // })
             .then(response => {
                 console.log(response)
-                if (response.status === 200) {
+                if (response.status === 204) {
                     setComments(arr => {
                         return arr.map(comment => {
                             return comment.id === id ? {...comment, comment : mention} : comment;
