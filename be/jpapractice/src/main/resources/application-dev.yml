@@ -1,0 +1,38 @@
+server:
+  port: 8000
+
+spring:
+  application:
+    name: jpapractice
+
+  # spring mvc view path
+  # mvc:
+  #   view:
+  #     prefix: /WEB-INF/view/  # 파일 경로
+  #     suffix: .jsp  # 확장자
+
+  config:
+    activate:
+      on-profile: dev
+
+  # MariaDB Setting
+  datasource:
+    driver-class-name: ${DB_DRIVER}
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+
+  jpa:
+    hibernate:
+      # create, create-drop, update, none
+      ddl-auto: none
+    show-sql: true
+    properties:
+      hibernate:
+        naming:
+          physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+        dialect: org.hibernate.dialect.MariaDBDialect
+        format_sql: true
+
+# mybatis:
+#   mapper-locations: classpath:/mappers/*.xml

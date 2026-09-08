@@ -1,49 +1,77 @@
-spring을 security로 감싸야함
-was(tomcat)
-dispatcherservlet이라는 컨트롤러(프론트 컨트롤러): 모든 요청이 거치는 진입점
--> session facade 패턴
+오늘은 새 jpa 프로젝트 생성
+mybatispractice의 내용을 jpa로 구현해보기
 
-매핑 객체는 컨테이너를 참조
-컨테이너: 객체들을 관리하는 곳
-ioc: 객체 생성을 프레임워크에게 위임
-@Component, @Controller, @RestController, ...
-컨트롤러는 서비스의 인스턴스, 서비스는 레포지토리의 인스턴스를 가져야함
+스프링은 3.xx로 할거임(spring ai랑 openai 때문에)
+build.gradle에서 버전 수정(3.5.4로)
 
-반환 객체의 표준 형식: ResponseEntity
+BOM: spring boot 버전에 맞게 spring ai의 버전을 가져오겠다고 명시
 
-mapper: 인터페이스 명세
-xml: sql 쿼리를 보내는 곳
-orm: mybatis 같은거
+mavenCentral(): 공식 ~~만 들고오겠다
 
-토큰 존재 유무에 대한 코드를 맨날 컨트롤러에 넣기는 귀찮음
--> 프론트 컨트롤러 앞에 filter 넣기(web의 컴포넌트)(뒤에 넣으면 spring의 컴포넌트 -> interceptor)
-filter에서 토큰 유무, 유효성 확인
-토큰이 필요없는 엔드포인트는 따로 설정해주기
+yml의 name property: 쿠버네티스 등에서 참조
+ddl-auto: 테이블이 없어도 엔티티를 기반으로 자동 생성(자동 쿼리 생성)
+- create 옵션: 서버 기동마다 테이블을 생성해버림, 만약 테이블이 있으면 drop 후 생성해버림
+hibernate는 dto가 아닌 엔티티를 기반으로 작업
+snake case <-> camel case 변경: physical-strategy 옵션
 
-aop: 컨트롤러와 서비스 사이에 들어가는 무언가
+(TIL 요구사항: 생성한 새 프로젝트의 폴더 트리 출력해주기)
 
-pathvariable에 댓글 전체를 넣어도 됨
-두번째에 헤더가 들어가면 오류가 나니 두번째에는 null을 넣기
+entity로는 레이어 간 전송 하지 말기
+-> dto로 요청 받기 -> entity로 바꿔서 db랑 연동 -> dto로 다시 바꿔서 응답
 
-map을 mapper xml에 보낼땐 파라미터 타입을 map이 아닌 hashmap으로 해야함(map은 인터페이스이기 때문)
+@Entity: 엔티티임을 알리는 어노테이션
+@Id: 기본키임을 알리는 어노테이션
+@Table: 테이블의 속성을 명시하는 어노테이션
+@Column: 컬럼의 속성을 명시하는 어노테이션
+@GeneratedValue: 외부 값으로 값을 채울거라고 명시하는 어노테이션
+@<One, Many>To<One, Many>: 일대다, 다대다, 일대일 관계 설정
+- mappedBy: 관계를 형성할 컬럼 이름
+- orphanRemoval: remove cascade 설정
+- fetch: 가져오기 전략
+- optional: null값 허용 여부
+@JoinColumn: 외래키로 뭘 가져올지 명시
 
-build 폴더 안의 commentmapper.xml에 update를 만들어버려서 에러 발생
+hibernate가 외래키 관계를 관리하도록 해야함
+fetch시 외래키 관계로 묶인 테이블도 다 가져와버림 -> FetchType.LAZY로 설정
 
-예외 핸들링 하는 방법
-서비스에서 예외 발생, 컨트롤러에서 이를 안 다뤘기 때문에 dispatcherservlet까지 가면 HandlerExceptionResolver가 예외를 전역으로 해결하려고 함
-전역 예외를 해결하지 못하면 무조건 500 internal server error 발생
-사용자 정의 예외를 만들어서 resolver가 이를 해결하도록 함
+@JoinColumn(name = "email")
+private UserEntity writer;
+-> entity에서 변수의 이름은 writer지만 생성된 컬럼 이름은 email(외래키이기 때문)
 
-HandlerExceptionResolver: 스프링 프레임워크 내부에 예외를 처리하는 전역 핸들러들이 등록되어 있는 곳
-@RestControllerAdvice: HandlerExceptionResolver에 해당 예외를 등록
-@ExceptionHandler: 예외를 하나의 메서드로 처리하게 돕는 어노테이션
+외래키에는 값이 아니라 객체가 담김
 
-프론트에서 회원가입에 빈 문자열을 안 넣었는지 체크
-컨트롤러에서 요청의 유효성 체크
--> 앞에서부터 걸러내서 필요없는 네트워크 트래픽을 최대한 줄이기
-@Valid: 유효성 검사가 필요하다는 걸 표시
-@NotNull, @NotEmpty, @NotBlank, @Pattern(정규표현식), @Email, ...: 검사할 유형 지정
-유효성 검사 결과를 프레임워크에서 BindingResult 변수에 넣어버림
-getAllErrors()로 에러 내용을 프론트엔드로 보내기 -> err.response.data로 꺼내서 브라우저에서 표시하기
+mapper는 프레임워크가 관리하는게 아니었지만 @Repository는 프레임워크가 관리
+<dd, dd>: 테이블을 만드는 엔티티, 기본값
 
-해야할 일: 도커 설치 및 도커 허브 회원가입
+dotenv를 implementation만 해서 테스트에서 못씀
+yml에 import, test case에서 Environment를 import해서 해결
+
+entity.select: Optional<entity>를 반환
+entity.save: 넣은 entity를 그대로 반환
+entity.delete: entity를 받고 반환 x
+update는 없음: 있는 데이터를 save할 시 update 발생
+
+findById에 하나밖에 안 받는 이유(아이디, 비밀번호처럼 두 개 받아야할땐)
+- 비밀번호는 어차피 암호화되서 따로 받기 때문에 아이디만 받음
+
+Repository에 사용자 정의 메서드 추가할 수 있음(그 외엔 할 거 없음)
+네이밍 규칙은 지켜야함
+
+signIn 테스트 오류 이유
+1. user를 사용하지만 외래키 관계 때문에 댓글, post 정보를 다 불러옴
+근데 댓글, post에는 생성자 선언이 안되어 있음 -> @noargs..., @allargs... 추가
+2. insertEntity.get()은 post에 대한 fetch가 발생, 근데 insertEntity을 만드는 것과는 다른 트랜잭션이라 에러
+-> signIn을 @transactional로 묶던가 userApplicationTest를 통째로 @transactional로 묶기
+
+jpa 기반에서는 요청은 RequestDTO, 응답은 ResponseDTO로 하기
+
+현업은 똑같은 url에 요청 방식만 달리함(예: get이랑 delete에 같은 path variable 방식의 url)
+
+userController의 signUp에서 flag를 확인 안해도 되는 이유
+-> 어차피 globalException으로 확인하기 때문
+signIn에서 RequestParam 대신 DTO로 받아도 됨
+
+signUp
+같은 사용자가 있는지 확인하고 그 후 insert
+
+writer의 fetch 전략을 EAGER로 하면 유저를 불러올 때 post 내용을 불러올 수도 있음
