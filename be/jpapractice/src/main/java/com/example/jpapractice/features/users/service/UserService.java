@@ -2,7 +2,6 @@ package com.example.jpapractice.features.users.service;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,11 +39,12 @@ public class UserService {
     @Transactional
     public Map<String, Object> signIn(UserRequestDTO request) {
         System.out.println("service signUp");
+        
         UserEntity entity = userRepository
             .findByEmailAndPassword(request.getEmail(), request.getPassword())
             .orElseThrow(() -> new LoginFailException("Sign In Failed"));
         
-        // 비밀번호가 hash로 관리될 떼
+        // 비밀번호가 hash로 관리될 때
         // userRepository
         //     .findById(request.getEmail())
         //     .orElseThrow(() -> new LoginFailException("Sign In Failed"));

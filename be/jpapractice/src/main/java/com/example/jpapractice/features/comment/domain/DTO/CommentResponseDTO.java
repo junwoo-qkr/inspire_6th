@@ -1,5 +1,7 @@
 package com.example.jpapractice.features.comment.domain.DTO;
 
+import com.example.jpapractice.features.comment.domain.entity.CommentEntity;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -12,7 +14,17 @@ import lombok.ToString;
 @AllArgsConstructor
 @NoArgsConstructor
 public class CommentResponseDTO {
+
     private Integer id;
     private String comment, email;
     private Integer postId;
+
+    public static CommentResponseDTO fromEntity(CommentEntity entity) {
+        return CommentResponseDTO.builder()
+            .id(entity.getCommentId())
+            .comment(entity.getComment())
+            .email(entity.getEmail())
+            .postId(entity.getPost().getPostId())
+            .build();
+    }
 }

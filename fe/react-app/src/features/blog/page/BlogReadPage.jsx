@@ -224,8 +224,8 @@ const BlogReadPage = () => {
 
     return (
         <Wrapper>
-            {!post.id && <Spinner />}
-            {post.id && 
+            {!post.postId && <Spinner />}
+            {post.postId && 
                 <Container>
                     {user && <WelcomeMessage>Hi, {user}</WelcomeMessage>}
                     <Button title="메인 페이지로" onClick={() => moveURL("/blog/index")} />

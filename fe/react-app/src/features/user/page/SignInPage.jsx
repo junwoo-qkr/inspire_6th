@@ -148,10 +148,6 @@ const SignInPage = () => {
                     localStorage.setItem("rt", response.headers.get("Refresh-Token"));
                     moveURL("/blog/index");
                 }
-                // if (response.status === 200 && response.data[0].password === formData.password) {
-                    // localStorage.setItem("user", response.data[0].email);
-                    // moveURL("/blog/index");
-                // }
             })
             .catch(err => {
                 console.log(`err:`, err);

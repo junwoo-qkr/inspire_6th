@@ -134,18 +134,19 @@ const BlogIndexPage = () => {
         ? posts 
         : posts.filter((post) => post.category === selectedCategory);
     }, [posts, selectedCategory]);
+    const at = localStorage.getItem("at");
 
     const loadData = async () => {
-        await api.get("/blog/index")
+        await api.get("/blog/index", {
+            headers : {Authorization : at ? at : "" }
+        })
             .then(response => {
                 console.log(response);
                 if (response.status === 200) {
                     setPosts(response.data);
                 }
             })
-            .catch(
-                console.log("err")
-            )
+            .catch(err => console.log(err));
     }
 
     useEffect(() => {

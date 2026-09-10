@@ -196,6 +196,8 @@ const BlogWritePage = () => {
     const [content, setContent] = useState("");
     const [category, setCategory] = useState("");
 
+    const at = localStorage.getItem("at");
+
     const previousHandler = (event) => {
         moveURL("/blog/index");
     }
@@ -212,6 +214,8 @@ const BlogWritePage = () => {
             content,
             category,
             email: user
+        }, {
+            headers : {Authorization : at ? at : ""}
         })
             .then(response => {
                 console.log(response);

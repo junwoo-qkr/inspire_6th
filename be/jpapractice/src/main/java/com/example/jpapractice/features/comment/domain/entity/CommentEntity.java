@@ -36,5 +36,9 @@ public class CommentEntity {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "postId")
-    private BlogEntity post; 
+    private BlogEntity post;
+    
+    public void updateComment(String comment) {
+        this.comment = comment;
+    }
 }

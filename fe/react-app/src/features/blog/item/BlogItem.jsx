@@ -49,7 +49,8 @@ const BlogItem = ({post}) => {
     const moveURL = useNavigate();
 
     return (
-        <Wrapper onClick={(e) => {moveURL(`/blog/read/${post.id}`);}}>
+        // <Wrapper onClick={(e) => {moveURL(`/blog/read/${post.id}`);}}>
+        <Wrapper onClick={(e) => {moveURL(`/blog/read/${post.postId}`);}}>
             {post.category && <CategoryBadge>{post.category}</CategoryBadge>}
             <TitleText>{post.title}</TitleText>
         </Wrapper>

@@ -1,77 +1,63 @@
-오늘은 새 jpa 프로젝트 생성
-mybatispractice의 내용을 jpa로 구현해보기
+hibernate: 자바와 관계형 데이터베이스를 연결해주는 ORM
+JPA 표준 명세를 구현한 구현체
+flyway: DB 스키마 변경 이력 관리(git처럼)
 
-스프링은 3.xx로 할거임(spring ai랑 openai 때문에)
-build.gradle에서 버전 수정(3.5.4로)
+tomcat: web container
+Catarina: servlet의 동작 컨테이너 / Casper: jsp의 동작 컨테이너
+tomcat 위에 springMVC가 올라가있음
+spring의 container, xxxMapping이 생략되어있음
+token: redis에 관리
+redis는 doker에 만들기
+토큰의 유효성 관리는 Filter에서(DispatcherServlet에 들어오기 전에)
+interceptor or aop: DispatcherServlet과 프레임워크 사이에 있는 filter
 
-BOM: spring boot 버전에 맞게 spring ai의 버전을 가져오겠다고 명시
 
-mavenCentral(): 공식 ~~만 들고오겠다
+https://www.base64decode.org/
+인코딩-디코딩 시연
 
-yml의 name property: 쿠버네티스 등에서 참조
-ddl-auto: 테이블이 없어도 엔티티를 기반으로 자동 생성(자동 쿼리 생성)
-- create 옵션: 서버 기동마다 테이블을 생성해버림, 만약 테이블이 있으면 drop 후 생성해버림
-hibernate는 dto가 아닌 엔티티를 기반으로 작업
-snake case <-> camel case 변경: physical-strategy 옵션
+토큰을 관리할 수 있는 키가 필요
+-> .env 파일에 임의로 선언
 
-(TIL 요구사항: 생성한 새 프로젝트의 폴더 트리 출력해주기)
+@Value: yml에 설정된 값 읽어오기
 
-entity로는 레이어 간 전송 하지 말기
--> dto로 요청 받기 -> entity로 바꿔서 db랑 연동 -> dto로 다시 바꿔서 응답
+읽어온 키를 hmacShaKeyFor로 인코딩 시킴
+Jwts.builder()를 반환
+- 서명 주체
+- 서명 시각
+- 유효 기간
+- 인코딩된 서명
 
-@Entity: 엔티티임을 알리는 어노테이션
-@Id: 기본키임을 알리는 어노테이션
-@Table: 테이블의 속성을 명시하는 어노테이션
-@Column: 컬럼의 속성을 명시하는 어노테이션
-@GeneratedValue: 외부 값으로 값을 채울거라고 명시하는 어노테이션
-@<One, Many>To<One, Many>: 일대다, 다대다, 일대일 관계 설정
-- mappedBy: 관계를 형성할 컬럼 이름
-- orphanRemoval: remove cascade 설정
-- fetch: 가져오기 전략
-- optional: null값 허용 여부
-@JoinColumn: 외래키로 뭘 가져올지 명시
+filter에서 cors와 토큰에 관한걸 다 처리하게 할 수 있음(어차피 프론트엔드의 요청은 필터를 거치니까)
 
-hibernate가 외래키 관계를 관리하도록 해야함
-fetch시 외래키 관계로 묶인 테이블도 다 가져와버림 -> FetchType.LAZY로 설정
+지금은 Spring security가 없으니 jwtfilter.java로 구현
+doFilter: 요청이 들어오면 무조건 실행되는 콜백 함수
+얘를 통과해야 DispatcherServlet으로 갈 수 있음
 
-@JoinColumn(name = "email")
-private UserEntity writer;
--> entity에서 변수의 이름은 writer지만 생성된 컬럼 이름은 email(외래키이기 때문)
+@PostConstruct: 생성자 호출 바로 뒤 실행될 메서드
+(생성자가 없으면 얘를 붙인 메서드가 생성자(?))
 
-외래키에는 값이 아니라 객체가 담김
+dofilter로 요청이 들어옴(chain은 dispatcherservlet
+-> options로 변경
+-> header set 진행
+-> 다시 dofilter로 넣기
+-> 화이트리스트에 있는 엔드포인트에 접속 중이면 그냥 보내기,
+    화이트리스트에 없는 엔드포인트에 접속 중이면 헤더의 토큰을 확인
+    -> 토큰이 있고 유효하면 Dispatcherservlet으로 보내기,
+        없으면 쳐내기
 
-mapper는 프레임워크가 관리하는게 아니었지만 @Repository는 프레임워크가 관리
-<dd, dd>: 테이블을 만드는 엔티티, 기본값
+필터를 여러개 만들어서 엔드포인트별로 적용하는 것도 가능
 
-dotenv를 implementation만 해서 테스트에서 못씀
-yml에 import, test case에서 Environment를 import해서 해결
+Repository 안에 JPQL을 작성할 수도 있음(엔티티를 기반: select * from entity...)
 
-entity.select: Optional<entity>를 반환
-entity.save: 넣은 entity를 그대로 반환
-entity.delete: entity를 받고 반환 x
-update는 없음: 있는 데이터를 save할 시 update 발생
+blogservice의 write: request의 이메일로 select -> BlogEntity(toEntity(UserEntity(email))) -> save()
+blogrequestdto와 blogresponsedto -> 중요함
+(BlogEntity의 writer가 userEntity이기 때문에 mybatispractice와는 조금 다름)
 
-findById에 하나밖에 안 받는 이유(아이디, 비밀번호처럼 두 개 받아야할땐)
-- 비밀번호는 어차피 암호화되서 따로 받기 때문에 아이디만 받음
+blogservice의 read
+글 불러오고 댓글을 불러오면 쿼리를 두번 호출 -> 성능에 문제가 생김
+두 작업을 한번에 처리하도록
 
-Repository에 사용자 정의 메서드 추가할 수 있음(그 외엔 할 거 없음)
-네이밍 규칙은 지켜야함
-
-signIn 테스트 오류 이유
-1. user를 사용하지만 외래키 관계 때문에 댓글, post 정보를 다 불러옴
-근데 댓글, post에는 생성자 선언이 안되어 있음 -> @noargs..., @allargs... 추가
-2. insertEntity.get()은 post에 대한 fetch가 발생, 근데 insertEntity을 만드는 것과는 다른 트랜잭션이라 에러
--> signIn을 @transactional로 묶던가 userApplicationTest를 통째로 @transactional로 묶기
-
-jpa 기반에서는 요청은 RequestDTO, 응답은 ResponseDTO로 하기
-
-현업은 똑같은 url에 요청 방식만 달리함(예: get이랑 delete에 같은 path variable 방식의 url)
-
-userController의 signUp에서 flag를 확인 안해도 되는 이유
--> 어차피 globalException으로 확인하기 때문
-signIn에서 RequestParam 대신 DTO로 받아도 됨
-
-signUp
-같은 사용자가 있는지 확인하고 그 후 insert
-
-writer의 fetch 전략을 EAGER로 하면 유저를 불러올 때 post 내용을 불러올 수도 있음
+jpa로 update할 때
+- dirty checking(변경 내용 감지)
+entity의 내용을 변경하고 transaction을 발생시키지 않으면 변경 내용이 db에 반영이 안됨
+현재 상태와 이전 상태에서 차이가 있으면 update 발생
