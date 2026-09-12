@@ -39,7 +39,7 @@ const BlogCommentItem = ({comment, deletionHandler, updateHandler}) => {
         if (!isEdit) {
             setIsEdit(true);
         } else {
-            updateHandler(comment.id, mention);
+            updateHandler(comment.commentId, mention);
             setIsEdit(false);
         }
     }
@@ -65,7 +65,7 @@ const BlogCommentItem = ({comment, deletionHandler, updateHandler}) => {
                 user === comment.email &&
                 <Button
                     title="삭제"
-                    onClick={(e) => deletionHandler(e, comment.id)}
+                    onClick={(e) => deletionHandler(e, comment.commentId)}
                 />
             }
             {

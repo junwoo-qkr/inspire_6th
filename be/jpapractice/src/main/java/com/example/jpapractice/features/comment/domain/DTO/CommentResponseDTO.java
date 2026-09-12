@@ -15,13 +15,13 @@ import lombok.ToString;
 @NoArgsConstructor
 public class CommentResponseDTO {
 
-    private Integer id;
+    private Integer commentId;
     private String comment, email;
     private Integer postId;
 
     public static CommentResponseDTO fromEntity(CommentEntity entity) {
         return CommentResponseDTO.builder()
-            .id(entity.getCommentId())
+            .commentId(entity.getCommentId())
             .comment(entity.getComment())
             .email(entity.getEmail())
             .postId(entity.getPost().getPostId())

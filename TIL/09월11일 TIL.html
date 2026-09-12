@@ -1,0 +1,768 @@
+<h2 data-ke-size="size26">오늘의 한 줄 요약</h2>
+<ul style="list-style-type: disc;" data-ke-list-type="disc">
+<li>Docker로 Redis 실행 환경을 구성하고, <code>RedisTemplate</code>과 TTL을 이용해 Refresh Token을 저장&middot;삭제하는 흐름을 학습했다.</li>
+<li>BCrypt로 비밀번호를 해싱하고, 로그인할 때 입력한 비밀번호와 저장된 해시를 비교하도록 변경했다.</li>
+<li><code>JwtFilter</code>와 <code>JwtAuthenticationFilter</code>를 비교하며, JWT 검증 결과를 Spring Security의 인증 정보로 등록하는 과정을 이해했다.</li>
+<li><code>SecurityContextHolder</code>에서 현재 사용자의 이메일을 꺼내 게시글 작성자 확인과 로그아웃에 활용했다.</li>
+</ul>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">키워드 정리</h2>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 23.7209%;"><b>키워드</b></td>
+<td style="width: 76.2791%;"><b>설명 또는 예시</b></td>
+</tr>
+<tr>
+<td style="width: 23.7209%;">Redis</td>
+<td style="width: 76.2791%;">키와 값으로 데이터를 다루는 메모리 기반 저장소</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;">Docker 이미지&middot;컨테이너</td>
+<td style="width: 76.2791%;">실행 환경을 담은 패키지와 그 패키지를 실행한 인스턴스</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;">포트 매핑</td>
+<td style="width: 76.2791%;"><span style="color: #333333; text-align: start;"><code>-p 호스트포트:컨테이너포트</code></span></td>
+</tr>
+<tr>
+<td style="width: 23.7209%;">TTL(Time To Live)</td>
+<td style="width: 76.2791%;">데이터가 만료되기까지의 유효 시간</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>@Bean</code></td>
+<td style="width: 76.2791%;">메서드가 반환한 객체를 Spring 관리 대상으로 등록</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>RedisConnectionFactory</code></td>
+<td style="width: 76.2791%;">Redis 연결을 제공&middot;관리하는 객체</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>RedisTemplate</code></td>
+<td style="width: 76.2791%;">Redis 데이터 작업을 수행하는 도구</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>StringRedisSerializer</code></td>
+<td style="width: 76.2791%;">문자열과 저장용 바이트 사이의 변환 담당</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;">BCrypt</td>
+<td style="width: 76.2791%;">비밀번호 저장에 사용하는 단방향 해싱 방식</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>PasswordEncoder</code></td>
+<td style="width: 76.2791%;">비밀번호 해싱과 일치 검증을 제공하는 인터페이스</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>SecurityFilterChain</code></td>
+<td style="width: 76.2791%;">요청에 적용할 보안 필터와 접근 규칙 구성</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>OncePerRequestFilter</code></td>
+<td style="width: 76.2791%;">동일 요청 디스패치의 중복 필터 처리를 방지하는 기반 클래스</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>UsernamePasswordAuthenticationToken</code></td>
+<td style="width: 76.2791%;">신원&middot;인증 정보&middot;권한을 담는 인증 객체</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>SecurityContextHolder</code></td>
+<td style="width: 76.2791%;">현재 요청의 인증 정보에 접근하는 통로</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>STATELESS</code></td>
+<td style="width: 76.2791%;">인증 정보를 HTTP 세션에 저장하지 않는 정책</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;">CORS&middot;CSRF</td>
+<td style="width: 76.2791%;">교차 출처 접근 규칙과 인증 상태를 악용하는 요청 위조 공격</td>
+</tr>
+</tbody>
+</table>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">오늘 배운 것</h2>
+<h4 data-ke-size="size20">Docker 이미지와 컨테이너로 실행 환경 구성하기</h4>
+<p data-ke-size="size16"><b>Docker</b>는 외부와 격리된 <b>컨테이너(Container)</b>라는 가상 환경을 만들어 어떤 환경에서든 일관되게 애플리케이션을 실행할 수 있게 해주는 플랫폼이다.&nbsp;<b>Docker 이미지(image)</b>는 프로그램 실행에 필요한 파일&middot;라이브러리&middot;설정을 묶은 패키지이고, <b>컨테이너</b>는 그 이미지를 실행한 인스턴스이다. 컨테이너는 실행 환경의 커널을 공유하면서 프로세스와 실행 환경을 격리한다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 50%;"><b>실행 방식</b></td>
+<td style="width: 50%;"><b>서비스를 실행하는 구조</b></td>
+</tr>
+
+
+<tr>
+<td style="width: 50%;">베어메탈</td>
+<td style="width: 50%;">물리 서버의 운영체제 위에 서비스를 직접 실행한다.</td>
+</tr>
+<tr>
+<td style="width: 50%;">가상 머신</td>
+<td style="width: 50%;">하이퍼바이저 위의 가상 머신마다 운영체제를 두고 서비스를 실행한다.</td>
+</tr>
+<tr>
+<td style="width: 50%;">컨테이너</td>
+<td style="width: 50%;">커널을 공유하고 격리된 실행 환경에서 서비스를 실행한다.</td>
+</tr>
+</tbody>
+</table>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">다음 명령어를 사용해 Redis를 컨테이너로 실행했다. Docker가 실행 중인 환경의 터미널에서 사용한다.</p>
+<pre class="angelscript"><code># Redis를 백그라운드로 실행하고 호스트 6379번을 컨테이너 6379번에 연결한다.
+docker run -d --name redis-container -p 6379:6379 redis:7.2
+
+# 실행 중인 Redis 컨테이너 안에서 명령줄 관리 도구를 연다.
+docker exec -it redis-container redis-cli
+
+# Redis 관리 화면을 실행하고 브라우저에서 접근할 호스트 포트를 8001로 정한다.
+docker run -d --name redis-insight -p 8001:5540 redis/redisinsight:latest</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16"><code>-d</code>는 백그라운드 실행, <code>--name</code>은 이름 지정, <code>-p</code>는 포트 연결에 사용한다. 호스트는 컨테이너를 실행하는 컴퓨터를 뜻하며, 컨테이너 안의 localhost는 해당 컨테이너 자신을 가리킨다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 50%;"><b>접속하는 쪽 &rarr; 대상</b></td>
+<td style="width: 50%;"><b>수업 환경의 접속 주소</b></td>
+</tr>
+
+
+<tr>
+<td style="width: 50%;">호스트의 Spring 애플리케이션 &rarr; Redis</td>
+<td style="width: 50%;"><code>localhost:6379</code></td>
+</tr>
+<tr>
+<td style="width: 50%;">브라우저 &rarr; RedisInsight</td>
+<td style="width: 50%;"><code>http://localhost:8001</code></td>
+</tr>
+<tr>
+<td style="width: 50%;">Docker Desktop의 RedisInsight 컨테이너 &rarr; 호스트에 공개된 Redis 포트</td>
+<td style="width: 50%;"><code>host.docker.internal:6379</code></td>
+</tr>
+</tbody>
+</table>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">Redis 연결&middot;직렬화&middot;데이터 작업의 역할 구분하기</h4>
+<p data-ke-size="size16"><b>Redis</b>는 키를 기준으로 값을 저장하는 메모리 기반 저장소이다. 데이터에 만료 시간을 지정할 수 있어 토큰, 인증 코드, 쿠폰의 유효기간 관리에 활용할 수 있다. Spring에서 Redis를 사용할 때는 연결을 제공하는 역할과 데이터 명령을 실행하는 역할을 구분한다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 50%;"><b>구성 요소</b></td>
+<td style="width: 50%;"><b>담당하는 일</b></td>
+</tr>
+
+
+<tr>
+<td style="width: 50%;"><code>RedisConnectionFactory</code></td>
+<td style="width: 50%;">Redis 연결을 제공하고 관리한다.</td>
+</tr>
+<tr>
+<td style="width: 50%;"><code>RedisTemplate</code></td>
+<td style="width: 50%;">연결을 사용해 저장&middot;조회&middot;삭제 작업을 실행한다.</td>
+</tr>
+<tr>
+<td style="width: 50%;"><code>StringRedisSerializer</code></td>
+<td style="width: 50%;">문자열을 바이트로 변환하고 읽을 때 문자열로 복원한다.</td>
+</tr>
+</tbody>
+</table>
+<p data-ke-size="size16">&nbsp;</p>
+<pre id="code_1789133729711" class="java" data-ke-language="java" data-ke-type="codeblock"><code>// RedisConfig.java
+// 서버 기동 시 프로젝트를 Redis와 연결
+@Configuration 
+public class RedisConfig {
+    
+    @Bean 
+    public RedisTemplate&lt;String, Object&gt; redisTemplate(RedisConnectionFactory rcf) {
+        RedisTemplate&lt;String, Object&gt; template = new RedisTemplate&lt;&gt;();
+        template.setConnectionFactory(rcf);
+        template.setKeySerializer(new StringRedisSerializer());
+        template.setValueSerializer(new StringRedisSerializer());
+        
+        return template;
+    }
+}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16"><code>@Configuration</code>은 설정 클래스를 등록하고, <code>@Bean</code>은 설정 메서드가 반환한 객체를 Spring이 관리하도록 한다. 이렇게 등록한 객체는 필요한 클래스에서 생성자 주입으로 받아 사용한다.</p>
+<p data-ke-size="size16">&nbsp;</p>
+<pre id="code_1789134000674" class="java" data-ke-language="java" data-ke-type="codeblock"><code>// RedisService.java
+// 토큰 저장 / 삭제 메서드 선언
+@Service 
+@RequiredArgsConstructor 
+public class RedisService {
+
+    private static final long RT_TTL = 60 * 60 * 24 * 7;  // 7일
+    private final RedisTemplate&lt;String, Object&gt; redisTemplate;
+
+    // 토큰 저장
+    public void saveToken(String email, String rt) {
+        System.out.println("RedisService save RT");
+        redisTemplate.opsForValue()
+            .set("RT: " + email, rt, RT_TTL, TimeUnit.SECONDS);
+    }
+    
+    // 토큰 삭제(TTL이 지나기 전에 삭제하고 싶을 때)
+    public void deleteToken(String email) {
+        System.out.println("RedisService delete RT");
+        redisTemplate.delete("RT: " + email);
+    }
+}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">TTL은 데이터가 유효한 기간이며 저장 시 시간 단위를 함께 지정할 수 있다. 다음 예시는 문자열 데이터를 60초 동안 유효하도록 저장하는 방법이다.</p>
+<pre class="gams"><code>// opsForValue()로 값을 저장하고, 60초가 지나면 해당 키가 만료되도록 한다.
+redisTemplate.opsForValue().set("sample:key", "value", 60, TimeUnit.SECONDS);</code></pre>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">BCrypt 검증과 DTO 복사 이해하기</h4>
+<p data-ke-size="size16">Hashing을 이용해 DB에 비밀번호 원문을 그대로 저장하지 않고, 입력값이 맞는지를 검증할 수 있는 값을 저장한다. Hashing 방법 중 하나인 BCrypt는 salt를 포함해 같은 비밀번호도 다른 해시 결과를 만들 수 있으므로, 로그인 검증에는 <code>PasswordEncoder</code>의 <code>matches</code>를 사용한다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 33.3333%;"><b>구분</b></td>
+<td style="width: 33.3333%;"><b>특징</b></td>
+<td style="width: 33.3333%;"><b>사용 목적</b></td>
+</tr>
+
+
+<tr>
+<td style="width: 33.3333%;">해싱</td>
+<td style="width: 33.3333%;">원문 복원을 목적으로 하지 않는 단방향 변환</td>
+<td style="width: 33.3333%;">비밀번호 저장과 일치 검증</td>
+</tr>
+<tr>
+<td style="width: 33.3333%;">암호화</td>
+<td style="width: 33.3333%;">키로 암호문을 원문으로 복호화할 수 있는 변환</td>
+<td style="width: 33.3333%;">원문 복원이 필요한 데이터 보호</td>
+</tr>
+</tbody>
+</table>
+<pre class="arduino"><code>PasswordEncoder encoder = new BCryptPasswordEncoder();
+String hash = encoder.encode("practice-password"); // 저장할 비밀번호 해시 생성
+boolean matched = encoder.matches("practice-password", hash); // 같은 입력이므로 true</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">DTO의 일부 값만 바꾼 복사본이 필요하면 Lombok의 toBuilder를 사용할 수 있다. <code>@Builder(toBuilder = true)</code>가 붙은 클래스에서 기존 값으로 시작하는 빌더를 만들어 필요한 필드만 교체한다.</p>
+<pre class="reasonml"><code>// 기존 이메일과 비밀번호는 복사하고 이름만 바꾼 새 DTO를 만든다.
+UserRequestDTO renamed = request.toBuilder().name("새 이름").build();
+// 원래 request 객체의 이름은 그대로 유지된다.</code></pre>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">Spring Security의 인증&middot;인가와 세션 정책 이해하기</h4>
+<p data-ke-size="size16"><b>Spring Security</b>는 Spring 기반의 애플리케이션의 보안(인증, 권한 관리 등)을 담당하는 프레임워크이다. 요청이 들어오면 Spring Security 내의 여러 필터, 사용자 정의 필터, 마지막으로 Dispatcher를 거쳐 Controller로 전달된다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 50%;"><b>설정</b></td>
+<td style="width: 50%;"><b>의미</b></td>
+</tr>
+
+
+<tr>
+<td style="width: 50%;"><code>permitAll()</code></td>
+<td style="width: 50%;">인증 없이 해당 경로에 접근을 허용한다.</td>
+</tr>
+<tr>
+<td style="width: 50%;"><code>authenticated()</code></td>
+<td style="width: 50%;">인증된 사용자만 접근하도록 한다.</td>
+</tr>
+<tr>
+<td style="width: 50%;"><code>hasRole("ADMIN")</code></td>
+<td style="width: 50%;">기본 접두사 규칙에 따라 <code>ROLE_ADMIN</code> 권한을 요구한다.</td>
+</tr>
+<tr>
+<td style="width: 50%;"><code>addFilterBefore(...)</code></td>
+<td style="width: 50%;">지정한 필터보다 앞의 위치에 사용자 정의 필터를 배치한다.</td>
+</tr>
+</tbody>
+</table>
+<pre class="java" data-ke-language="java"><code>// SecurityConfig.java
+// Spring Security가 제공하는 필터, CORS 설정, 사용자 정의 필터를 연결
+@Bean
+public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    System.out.println("SecurityConfig filterChain");
+    // http.build(): 설정을 바탕으로 필터 체인 생성
+    http
+        .cors(Customizer.withDefaults())
+        .csrf(csrf -&gt; csrf.disable())
+        .authorizeHttpRequests(auth -&gt; auth
+            .requestMatchers("/user/**", "/swagger-ui/**","/v3/api-docs/**").permitAll()
+            .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+            .requestMatchers("/admin/**").hasRole("ADMIN")
+            .anyRequest().authenticated()
+        ).sessionManagement(session -&gt; session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+	
+    // 1. CorsConfigurationSource를 보안 필터 체인에 적용
+    // 2. csrf 보호 기능 비활성화 
+    // 3. 언제나 허용할 패턴 명시: "/user/**", "/swagger-ui/**","/v3/api-docs/**"
+    // 4. OPTIONS 요청일 땐 모든 패턴 허용
+    // 5. role이 ADMIN일 땐 "/admin/**" 패턴 허용
+    // 6. 나머지 요청은 토큰 필요
+    // 7. 한 요청이 끝나고 인증 정보를 정리 -&gt; 다음 요청에서는 인증 정보를 새로 등록
+
+    // Spring Security가 제공하는 UsernamePasswordAuthenticationFilter 이전에 사용자 필터 등록
+    http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
+    return http.build();
+}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16"><code>SecurityContextHolder</code>는 현재 요청을 처리하는 동안 사용자의 인증 정보(<code>SecurityContext</code>)를 보관한다. <code>STATELESS</code> 정책에서는 한 HTTP 요청이 끝나면, <code>SecurityContext</code>를 정리해 다음 요청에서 다시 AT를 검사해 그 요청만을 위한 인증 정보를 재등록한다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">JwtFilter와 JwtAuthenticationFilter 비교하기</h4>
+<p data-ke-size="size16">두 필터 모두 JWT 검증을 수행하지만, 검증 결과를 이후 처리에 전달하는 방식과 접근 규칙을 맡기는 위치가 다르다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 33.3333%;"><b>비교 항목</b></td>
+<td style="width: 33.3333%;"><b>기존 <code>JwtFilter</code></b></td>
+<td style="width: 33.3333%;"><b><code>JwtAuthenticationFilter</code></b></td>
+</tr>
+
+
+<tr>
+<td style="width: 33.3333%;">기반</td>
+<td style="width: 33.3333%;">Servlet의 Filter 구현</td>
+<td style="width: 33.3333%;"><code>OncePerRequestFilter</code>: 하나의 요청 당 한번만 실행</td>
+</tr>
+<tr>
+<td style="width: 33.3333%;">처리 메서드</td>
+<td style="width: 33.3333%;">doFilter</td>
+<td style="width: 33.3333%;"><code>doFilterInternal</code></td>
+</tr>
+<tr>
+<td style="width: 33.3333%;">요청&middot;응답 타입</td>
+<td style="width: 33.3333%;">ServletRequest와 ServletResponse를 HTTP 타입으로 변환</td>
+<td style="width: 33.3333%;">HTTP 요청&middot;응답 타입을 직접 받음</td>
+</tr>
+<tr>
+<td style="width: 33.3333%;">공개 경로 판단</td>
+<td style="width: 33.3333%;">필터 안의 WHITE_LIST와 AntPathMatcher</td>
+<td style="width: 33.3333%;"><code>SecurityConfig</code>의 접근 규칙</td>
+</tr>
+<tr>
+<td style="width: 33.3333%;">토큰이 없는 요청</td>
+<td style="width: 33.3333%;">공개 경로가 아니면 필터가 직접 401로 차단</td>
+<td style="width: 33.3333%;">다음 필터로 넘기고 접근 규칙에서 허용 여부 판단</td>
+</tr>
+<tr>
+<td style="width: 33.3333%;">검증 성공 후 처리</td>
+<td style="width: 33.3333%;">사용자 이메일을 읽고 다음 처리로 전달</td>
+<td style="width: 33.3333%;">인증 객체를 <code>SecurityContext</code>에 등록한 뒤 다음 처리로 전달</td>
+</tr>
+<tr>
+<td style="width: 33.3333%;">권한 정보 활용</td>
+<td style="width: 33.3333%;">현재 코드에 역할 기반 인가 연계가 없음</td>
+<td style="width: 33.3333%;">인증 객체의 <code>authorities</code>를 인가 검사에서 활용</td>
+</tr>
+<tr>
+<td style="width: 33.3333%;">CORS 구성</td>
+<td style="width: 33.3333%;"><code>OPTIONS</code> 분기에서 헤더 직접 설정</td>
+<td style="width: 33.3333%;">Security의 CORS 설정과 연결</td>
+</tr>
+<tr>
+<td style="width: 33.3333%;">예외 처리</td>
+<td style="width: 33.3333%;">로그 출력 후 반환하며 응답 상태를 명시하지 않음</td>
+<td style="width: 33.3333%;">catch에서 401 상태 지정</td>
+</tr>
+</tbody>
+</table>
+<p data-ke-size="size16">&nbsp;</p>
+<pre id="code_1789138878554" class="bash" data-ke-language="bash" data-ke-type="codeblock"><code>요청 도착
+  &darr;
+OPTIONS 요청인가?  &lt;------------------------------ 1번
+  ├─ 예 &rarr; 그대로 다음 필터로 전달
+  └─ 아니오
+       &darr;
+Authorization 헤더에 Bearer 토큰이 있는가?  &lt;------ 2번
+  ├─ 아니오 &rarr; 다음 필터로 전달
+  └─ 예
+       &darr;
+JWT 서명과 만료 시간 검사  &lt;----------------------- 3번
+       &darr;
+email과 role 추출  &lt;------------------------------ 4번
+       &darr;
+Authentication 객체 생성  &lt;----------------------- 5번	
+       &darr;
+SecurityContext에 저장  &lt;------------------------- 6번
+       &darr;
+다음 필터로 전달  &lt;------------------------------- 7번</code></pre>
+<pre id="code_1789138916944" class="bash" data-ke-language="bash" data-ke-type="codeblock"><code>@Override
+protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    String endPoint = request.getRequestURI();
+    String method = request.getMethod();
+
+	// 1번: OPTIONS 요청인가?
+    if("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+        filterChain.doFilter(request, response);
+        return ;
+    }
+
+	// 2번: Authorization 헤더에 Bearer 토큰이 있는가?
+    String header = request.getHeader("Authorization");
+    if (header == null || !header.startsWith("Bearer ")) {
+        filterChain.doFilter(request, response);
+        return ;
+    }
+
+    String token = header.substring(7);
+
+    try {
+    	// 3번: JWT 서명과 만료 시간 검사
+        Claims claims = Jwts.parserBuilder()
+            .setSigningKey(key)
+            .build()
+            .parseClaimsJws(token)
+            .getBody();
+
+		// 4번: email과 role 추출
+        String email = claims.getSubject();
+        String role = claims.get("role", String.class);
+        System.out.println("JwtAuthenticationFilter token claims email : " + email);
+        System.out.println("JwtAuthenticationFilter token claims role : " + role);
+		
+        // 5번: Authentication 객체 생성
+        // JWT 검증이 끝났기 때문에 credentials는 null로 지정
+        UsernamePasswordAuthenticationToken authenticationToken =
+        new UsernamePasswordAuthenticationToken(email,
+            null,
+            role != null
+                ? java.util.List.of(() -&gt; "ROLE_" + role)
+                : java.util.List.of()
+        );
+        
+        // 5-1번: 현재 HTTP 요청에서 부가 정보를 만들어 Authentication 객체에 저장
+        authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+        
+        // 6번: SecurityContext에 저장
+        SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+        
+        // 7번: 다음 필터로 전달
+        filterChain.doFilter(request, response);
+    } catch(Exception e) {
+        e.printStackTrace();
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        return ;
+    }
+}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">검증된 사용자를 나타내는 <code>UsernamePasswordAuthenticationToken</code>은 다음 정보를 담는다. 위 코드는 JWT 검증을 이미 마쳤다는 전제로 인증 정보를 등록하고 있다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 33.3333%;"><b>구성 요소</b></td>
+<td style="width: 33.3333%;"><b>의미</b></td>
+<td style="width: 33.3333%;"><b>JWT 인증에서의 예</b></td>
+</tr>
+
+
+<tr>
+<td style="width: 33.3333%;"><code>principal</code></td>
+<td style="width: 33.3333%;">인증된 주체</td>
+<td style="width: 33.3333%;">사용자 이메일</td>
+</tr>
+<tr>
+<td style="width: 33.3333%;"><code>credentials</code></td>
+<td style="width: 33.3333%;">인증을 증명하는 데 쓰는 정보</td>
+<td style="width: 33.3333%;">JWT 검증이 끝난 뒤에는 null 사용 가능</td>
+</tr>
+<tr>
+<td style="width: 33.3333%;"><code>authorities</code></td>
+<td style="width: 33.3333%;">부여된 권한 목록</td>
+<td style="width: 33.3333%;">관리자 권한 또는 빈 목록</td>
+</tr>
+</tbody>
+</table>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">CORS&middot;CSRF와 HTTP 요청 설정 구분하기</h4>
+<p data-ke-size="size16"><b>CORS(Cross-Origin Resource Sharing)</b>는 브라우저에서 서로 다른 출처 사이의 요청과 응답 접근을 제어하는 규칙이다. 출처에는 프로토콜&middot;호스트&middot;포트가 포함되므로 포트가 달라도 다른 출처로 구분한다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 50%;"><b>CORS 설정</b></td>
+<td style="width: 50%;"><b>제어하는 대상</b></td>
+</tr>
+
+
+<tr>
+<td style="width: 50%;"><code>allowedOrigins</code></td>
+<td style="width: 50%;">허용할 요청 출처</td>
+</tr>
+<tr>
+<td style="width: 50%;"><code>allowedMethods</code></td>
+<td style="width: 50%;">허용할 HTTP 메서드</td>
+</tr>
+<tr>
+<td style="width: 50%;"><code>allowedHeaders</code></td>
+<td style="width: 50%;">클라이언트가 보낼 수 있는 요청 헤더</td>
+</tr>
+<tr>
+<td style="width: 50%;"><code>exposedHeaders</code></td>
+<td style="width: 50%;">브라우저의 JavaScript가 읽을 수 있는 응답 헤더</td>
+</tr>
+<tr>
+<td style="width: 50%;"><code>allowCredentials</code></td>
+<td style="width: 50%;">쿠키 등 자격 증명을 포함한 교차 출처 요청 허용 여부</td>
+</tr>
+</tbody>
+</table>
+<p data-ke-size="size16">&nbsp;</p>
+<pre id="code_1789140189478" class="java" data-ke-language="java" data-ke-type="codeblock"><code>// SecurityConfig.java
+@Bean 
+public CorsConfigurationSource corsConfigurationSource() {
+    CorsConfiguration configuration = new CorsConfiguration();
+    configuration.setAllowedOrigins(List.of("http://localhost:3000"));
+    configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+    configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Refresh-token"));
+    configuration.setExposedHeaders(List.of("Authorization"));
+    configuration.setAllowCredentials(true);
+
+    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    source.registerCorsConfiguration("/**", configuration);
+    return source;
+}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16"><code>OPTIONS</code> 요청은 실제 요청 전에 허용 여부를 확인하는 브라우저의 사전 요청이다. CORS 처리를 인증보다 앞에 두면 인증 정보가 없는 사전 요청도 허용 규칙에 따라 처리할 수 있다.</p>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16"><b> CSRF(Cross-Site Request Forgery)</b>는 브라우저가 자동으로 보내는 인증 정보 등을 악용해 원치 않는 요청을 유도하는 공격이다. 실습의 코드에서는 CSRF를 보호하는 기능을 비활성화했다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">오늘의 코드 1 - RedisTemplate의 연결과 문자열 직렬화</h2>
+<h4 data-ke-size="size20">RedisConfig.java</h4>
+<pre class="arduino"><code>@Bean
+public RedisTemplate&lt;String, Object&gt; redisTemplate(RedisConnectionFactory rcf) {
+    RedisTemplate&lt;String, Object&gt; template = new RedisTemplate&lt;&gt;();
+    template.setConnectionFactory(rcf);
+    template.setKeySerializer(new StringRedisSerializer());
+    template.setValueSerializer(new StringRedisSerializer());
+
+    return template;
+}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16"><code>RedisConnectionFactory</code>를 주입받아 <code>RedisTemplate</code>에 연결하고, 키와 값에 문자열 직렬화를 설정했다. 이 Bean은 <code>RedisService</code>에 주입되며, 현재 개발 설정은 Redis 접속 주소 <code>localhost:6379</code>와 타임아웃 <code>6000ms</code>를 사용한다. 코드상 키와 값에 동일한 문자열 변환기가 지정된 것을 확인했다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">오늘의 코드 2 - JWT 발급과 Redis의 RT 저장&middot;삭제</h2>
+<h4 data-ke-size="size20">JwtProvider.java</h4>
+<pre class="angelscript"><code>private final long ACCESS_TOKEN_EXPIRY = 1000L * 60 * 30;  // 30분
+private final long REFRESH_TOKEN_EXPIRY = 1000L * 60 * 60 * 24 * 7;  // 7일</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16"><code>JwtProvider</code>에서 JWT 만료 시간을 계산할 때 사용하는 상수이다. 밀리초를 기준으로 AT는 30분, RT는 7일 뒤에 만료되도록 설정되어 있다.</p>
+<h4 data-ke-size="size20">JwtProvider.java</h4>
+<pre class="reasonml"><code>public String createRT(String email) {
+    System.out.println("JwtProvider createRT");
+    return Jwts.builder()
+        .setSubject(email)
+        .setIssuedAt(new Date())
+        .setExpiration(new Date(System.currentTimeMillis() + REFRESH_TOKEN_EXPIRY))
+        .signWith(getSecretKey())
+        .compact();
+}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">로그인 서비스가 이메일을 전달하면 <code>subject</code>&middot;발급 시각&middot;만료 시각을 포함한 RT를 생성한다. <code>getSecretKey()</code>로 얻은 키로 서명하고 <code>compact()</code>가 토큰 문자열을 반환하므로, 발급은 <code>JwtProvider</code>의 JWT 코드에서 이루어진다.</p>
+<h4 data-ke-size="size20">RedisService.java</h4>
+<pre class="arduino"><code>private static final long RT_TTL = 60 * 60 * 24 * 7;  // 7일
+private final RedisTemplate&lt;String, Object&gt; redisTemplate;
+
+// 토큰 저장
+public void saveToken(String email, String rt) {
+    System.out.println("RedisService save RT");
+    redisTemplate.opsForValue()
+        .set("RT: " + email, rt, RT_TTL, TimeUnit.SECONDS);
+}
+
+// 토큰 삭제(TTL이 지나기 전에 삭제하고 싶을 때)
+public void deleteToken(String email) {
+    System.out.println("RedisService delete RT");
+    redisTemplate.delete("RT: " + email);
+}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">RT 저장과 삭제에 모두 같은 이메일 기반 키를 사용하며, 키의 RT: 뒤에는 공백이 포함되어 있다. 저장할 때 <code>TimeUnit.SECONDS</code>를 전달하므로 <code>RT_TTL</code>은 초 단위로 적용되고, 같은 이메일로 다시 저장하면 해당 키의 값과 만료 시간이 갱신되도록 구성되어 있다.</p>
+<h4 data-ke-size="size20">UserService.java</h4>
+<pre class="reasonml"><code>String at = jwtProvider.createAT(request.getEmail());
+String rt = jwtProvider.createRT(request.getEmail());
+
+// RT를 redis에 저장
+redisService.saveToken(entity.getEmail(), rt);</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">비밀번호 검증을 통과한 로그인 처리에서 AT와 RT를 생성한 뒤 RT를 <code>RedisService</code>에 전달한다. 이 뒤에 사용자 응답과 두 토큰을 반환하는 Map을 구성하며, 현재 재발급용 RT 조회&middot;비교 API는 아직 구현되어 있지 않다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">오늘의 코드 3 - BCrypt 해싱을 적용한 회원가입</h2>
+<h4 data-ke-size="size20">SecurityConfig.java</h4>
+<pre class="aspectj"><code>@Bean
+public PasswordEncoder passwordEncoder() {
+    return new BCryptPasswordEncoder();
+}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16"><code>SecurityConfig</code>가 반환한 <code>BCryptPasswordEncoder</code>를 <code>PasswordEncoder</code> Bean으로 등록했다. <code>UserService</code>는 이 객체를 주입받아 회원가입의 <code>encode</code>와 로그인의 <code>matches</code>에 사용한다.</p>
+<h4 data-ke-size="size20">UserService.java</h4>
+<pre class="reasonml"><code>UserEntity entity = UserRequestDTO.toEntity(request.toBuilder()
+    .password(passwordEncoder.encode(request.getPassword()))
+    .build());  // request의 password를 encoding하고 다시 request에 넣기
+return UserResponseDTO.fromEntity(userRepository.save(entity));</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">회원가입 요청을 <code>toBuilder()</code>로 복사하면서 password만 해시로 교체하고, 그 복사본을 UserEntity로 변환해 저장한다. 원본 요청 DTO를 직접 변경하는 호출은 없으며, 코드에서 저장 대상 Entity를 해싱한 복사본으로 만드는 흐름을 확인했다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">오늘의 코드 4 - SecurityFilterChain에 접근 규칙과 JWT 필터 연결</h2>
+<h4 data-ke-size="size20">SecurityConfig.java</h4>
+<pre class="less"><code>http
+    .cors(Customizer.withDefaults())
+    .csrf(csrf -&gt; csrf.disable())
+    .authorizeHttpRequests(auth -&gt; auth.requestMatchers(
+            "/user/**",
+            "/swagger-ui/**",
+            "/v3/api-docs/**").permitAll()
+        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+        .requestMatchers("/admin/**").hasRole("ADMIN")
+        .anyRequest().authenticated()  // 나머지 요청은 토큰 필요
+    ).sessionManagement(session -&gt; session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+
+// Spring Security에 필터 등록
+http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
+return http.build();</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">현재 <code>/user/**</code>와 Swagger 관련 경로, <code>OPTIONS</code> 요청을 공개하고 나머지 요청에 인증 또는 관리자 권한을 요구한다. 세션 정책을 <code>STATELESS</code>로 정하고 JWT 필터를 지정한 인증 필터보다 앞에 배치했다. 관리자 인가까지 연결하려면 현재 발급 코드에 없는 role 클레임을 제공하고, 권한 문자열의 <code>ROLE_</code> 접두사도 맞춰야 한다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">오늘의 코드 5 - 기존 필터의 통과 처리와 새 필터의 인증 정보 등록</h2>
+<h4 data-ke-size="size20">JwtFilter.java</h4>
+<pre class="reasonml"><code>Claims claims = Jwts.parserBuilder()
+    .setSigningKey(key)
+    .build()
+    .parseClaimsJws(token)
+    .getBody();
+
+String email = claims.getSubject();
+chain.doFilter(request, response);</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">기존 <code>JwtFilter</code>의 토큰 검증 성공 분기이다. JWT에서 이메일을 읽은 뒤 <code>chain.doFilter()</code>를 호출하며, 이 코드에는 인증 객체를 <code>SecurityContext</code>에 등록하는 단계가 없다.</p>
+<h4 data-ke-size="size20">JwtAuthenticationFilter.java</h4>
+<pre class="lasso"><code>String header = request.getHeader("Authorization");
+if (header == null || !header.startsWith("Bearer ")) {
+    filterChain.doFilter(request, response);
+    return ;
+}
+
+String token = header.substring(7);</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">새 필터는 <code>Authorization</code> 헤더를 읽고, 헤더가 없거나 <code>Bearer</code> 형식이 아니면 인증 정보 없이 다음 단계로 넘긴다. 보호된 경로의 접근 허용 여부는 이후 <code>SecurityConfig</code>의 규칙이 판단하고, <code>Bearer</code> 형식이면 접두사를 제거한 문자열을 JWT 검증에 사용한다.</p>
+<h4 data-ke-size="size20">JwtAuthenticationFilter.java</h4>
+<pre class="reasonml"><code>authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+filterChain.doFilter(request, response);</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">JWT 검증 후 이메일과 권한으로 만든 <code>authenticationToken</code>에 요청 부가 정보를 넣고 <code>SecurityContext</code>에 등록하는 부분이다. 이 등록 지점이 있어서 이후 <code>BlogService</code>와 <code>UserService</code>에서 현재 요청자의 정보를 조회할 수 있다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">오늘의 코드 6 - Spring Security의 CORS 설정</h2>
+<h4 data-ke-size="size20">SecurityConfig.java</h4>
+<pre class="accesslog"><code>CorsConfiguration configuration = new CorsConfiguration();
+configuration.setAllowedOrigins(List.of("http://localhost:3000"));
+configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Refresh-token"));
+configuration.setExposedHeaders(List.of("Authorization"));
+configuration.setAllowCredentials(true);
+
+UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+source.registerCorsConfiguration("/**", configuration);
+return source;</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">이 설정은 프런트 출처 <code>localhost:3000</code>과 사용할 요청 메서드&middot;헤더를 등록하고 모든 경로에 적용한다. 공통 응답 노출 헤더에는 <code>Authorization</code>이 있으며, 로그인 컨트롤러에는 <code>Authorization</code>과 <code>Refresh-Token</code>을 노출하는 응답 헤더도 별도로 작성되어 있다. 현재 기존 <code>CorsConfig</code>의 <code>@Configuration</code>은 주석 처리되어 <code>SecurityConfig</code>가 CORS 설정을 담당한다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">오늘의 코드 7 - 인증 정보에서 게시글 작성자 확인</h2>
+<h4 data-ke-size="size20">BlogService.java</h4>
+<pre class="reasonml"><code>Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+String email = auth.getName();
+System.out.println("request.getEmail() : " + request.getEmail());
+System.out.println("SecurityContextHolder email : " + email);
+
+// return userRepository.findById(request.getEmail())
+return userRepository.findById(email)
+    .map(user -&gt; {
+        BlogEntity post = blogRepository.save(request.toEntity(user));
+        return BlogResponseDTO.fromEntity(post);
+    })
+    .orElseThrow(() -&gt; new RuntimeException("Blog Service write Failed"));</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">게시글 작성 시 <code>SecurityContext</code>에서 인증된 이메일을 얻어 사용자 조회에 사용한다. 로그에는 요청 본문의 이메일과 인증된 이메일을 각각 출력하고, 실제 저장 경로는 인증된 이메일로 찾은 사용자와 게시글을 연결한다. 현재 <code>JwtAuthenticationFilter</code>의 등록 결과가 서비스의 작성자 결정까지 이어지는 것을 코드로 확인했다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">오늘의 코드 8 - 로그아웃 요청과 Redis의 RT 삭제 연결</h2>
+<h4 data-ke-size="size20">UserController.java</h4>
+<pre class="css"><code>@PostMapping("/signOut")
+public ResponseEntity&lt;?&gt; signOut() {
+    userService.signOut();
+    return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">POST <code>/user/signOut</code> 요청을 <code>UserService</code>의 로그아웃 처리로 전달한다. 서비스 호출이 예외 없이 끝나면 응답 본문 없이 204 상태를 반환하도록 작성되어 있다.</p>
+<h4 data-ke-size="size20">UserService.java</h4>
+<pre class="reasonml"><code>public void signOut() {
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    String email = auth.getName();
+    redisService.deleteToken(email);
+}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">현재 요청의 인증 정보에서 이메일을 얻어 <code>RedisService</code>에 삭제 대상으로 전달한다. 이 처리는 유효한 AT로 사용자가 확인된 요청을 전제로 하며, 현재 <code>/user/**</code> 공개 규칙에 포함된 로그아웃 경로는 인증 필수 여부를 구체화할 필요가 있다. Redis의 RT 삭제와 별도로, 이미 발급한 AT는 만료 전까지 자체 검증을 통과할 수 있다.</p>
+<h4 data-ke-size="size20">BlogIndexPage.jsx</h4>
+<pre class="javascript"><code>const logoutHandler = async (e) =&gt; {
+    await api.post(
+        "/user/signOut",
+        null,
+        { headers : {Authorization : at ? at : "" }})
+        .then(response =&gt; {
+            console.log(response);
+            if (response.status === 204) {
+                moveURL("/");
+            }
+        })
+        .catch(err =&gt; console.log(err));
+}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">로그아웃 버튼에서 본문 없이 POST 요청을 보내고 세 번째 인자에 <code>Authorization</code> 헤더를 지정한다. 서버의 204 응답을 받은 경우 첫 화면으로 이동하지만, 이 핸들러에는 <code>localStorage</code>의 저장 토큰을 삭제하는 처리가 포함되어 있지 않다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">오늘의 코드 9 - 댓글 기본키 commentId로 데이터 연결</h2>
+<h4 data-ke-size="size20">CommentResponseDTO.java</h4>
+<pre class="reasonml"><code>private Integer commentId;
+private String comment, email;
+private Integer postId;
+
+public static CommentResponseDTO fromEntity(CommentEntity entity) {
+    return CommentResponseDTO.builder()
+        .commentId(entity.getCommentId())
+        .comment(entity.getComment())
+        .email(entity.getEmail())
+        .postId(entity.getPost().getPostId())
+        .build();
+}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">Entity의 <code>commentId</code>를 응답 DTO의 같은 이름 필드에 담는다. 댓글 작성 응답과 댓글 목록에서 사용할 식별자 이름을 맞춰, 프런트가 응답 객체의 <code>commentId</code>를 읽도록 연결했다.</p>
+<h4 data-ke-size="size20">BlogCommentList.jsx</h4>
+<pre class="ini"><code>key={comment.commentId}
+comment={comment}
+deletionHandler={deletionHandler}
+updateHandler={updateHandler}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">댓글 목록에서 <code>BlogCommentItem</code>을 생성할 때 전달하는 속성 부분이다. React의 key에는 <code>commentId</code>를 사용하고 댓글 객체와 수정&middot;삭제 함수를 함께 내려주므로, 렌더링 식별 기준과 이벤트 처리 데이터가 같은 댓글에 연결된다.</p>
+<h4 data-ke-size="size20">BlogReadPage.jsx</h4>
+<pre class="lisp"><code>setComments(comments.filter((c) =&gt; {
+    return c.commentId !== commentId
+}))</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">삭제 요청의 204 응답을 처리하는 분기에서 호출된다. 삭제한 <code>commentId</code>와 다른 댓글만 새 배열에 남겨 상태를 교체하므로, 전체 목록을 다시 요청하지 않고 해당 항목을 화면에서 제외하도록 작성되어 있다.</p>
+<h4 data-ke-size="size20">BlogReadPage.jsx</h4>
+<pre class="xquery"><code>setComments(arr =&gt; {
+    return arr.map(comment =&gt; {
+        return comment.commentId === commentId ? {...comment, comment : mention} : comment;
+    })
+})</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">수정 요청의 204 응답을 처리하는 분기에서 실행된다. 같은 <code>commentId</code>의 항목만 새 댓글 내용을 가진 객체로 바꾸고 나머지 항목은 유지하므로, 수정 대상의 식별 기준을 응답 DTO와 동일하게 맞췄다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">오늘의 코드 10 - 댓글 작성 시 Authorization 헤더 전달</h2>
+<h4 data-ke-size="size20">BlogReadPage.jsx</h4>
+<pre class="routeros"><code>await api.post("/comments/write", {
+    comment,
+    postId: Number(postId),
+    email: user
+}, {
+    headers: {Authorization : at ? at : ""}
+})</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">댓글 작성 버튼에서 실행하는 POST 호출 중 요청 구성 부분이다. <code>postId</code>는 숫자로 변환해 본문에 넣고, 저장된 AT는 세 번째 인자의 <code>headers</code>에 배치했다. 현재 코드에서는 <code>headers</code>가 댓글 JSON 본문 밖의 요청 설정으로 분리된 것을 확인했다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">어려웠던 점 / 각종 오류</h2>
+<p data-ke-size="size16">댓글 작성 때 CORS 오류가 보여 요청 헤더를 확인했고, <code>headers</code>가 JSON 본문 안에 들어가 있던 문제를 찾았다. 기존 <code>JwtFilter</code>의 토큰 누락 응답과 브라우저의 응답 접근 제한이 함께 나타난 사례여서, 오류 메시지뿐 아니라 실제 요청 구성을 확인해야 함을 배웠다.</p>
+<p data-ke-size="size16">RT만 Redis에 보관하는 이유가 궁금해 일반 API 인증과 토큰 재발급의 차이를 비교했다. 특히 로그아웃 처리에서 무엇이 삭제되고 어떤 효력이 남는지를 따로 살펴보면서 토큰별 관리 목적을 구분했다.</p>
+<p data-ke-size="size16"><code>RedisTemplate</code>이 어떤 객체인지 이해하기 위해 연결 제공, 데이터 변환, 명령 실행을 나눠 살펴봤다. 설정 객체가 주입되는 순서와 서비스의 실제 호출 지점을 함께 읽으니 각 클래스의 역할이 명확해졌다.</p>
+<p data-ke-size="size16">수업에서는 댓글 식별자 이름이 프런트와 백엔드에서 달라 오류가 발생한 사례를 다뤘다. 내 코드는 양쪽을 id로 쓰고 있었으며, 이번 변경에서는 DTO부터 화면의 비교식과 디버그 출력까지 <code>commentId</code>가 일관되게 전달되는지 점검했다.</p>
+<p data-ke-size="size16">두 JWT 필터를 비교할 때는 검증 성공만으로 Spring Security에 사용자 정보가 전달되는지 확인하는 것이 핵심이었다. 새 필터의 인증 정보 등록 지점에서 게시글 작성자 조회와 로그아웃 호출까지 이어서 읽으며 차이를 정리했다.</p>

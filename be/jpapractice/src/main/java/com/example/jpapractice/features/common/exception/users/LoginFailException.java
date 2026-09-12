@@ -1,4 +1,4 @@
-package com.example.jpapractice.features.commons.exception.users;
+package com.example.jpapractice.features.common.exception.users;
 
 public class LoginFailException extends RuntimeException {
     

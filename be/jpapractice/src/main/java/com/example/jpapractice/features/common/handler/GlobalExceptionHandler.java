@@ -1,11 +1,11 @@
-package com.example.jpapractice.features.commons.handler;
+package com.example.jpapractice.features.common.handler;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import com.example.jpapractice.features.commons.exception.users.LoginFailException;
+import com.example.jpapractice.features.common.exception.users.LoginFailException;
 
 @RestControllerAdvice 
 public class GlobalExceptionHandler {

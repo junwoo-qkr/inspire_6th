@@ -20,7 +20,7 @@ public class CommentRequestDTO {
 
     private String comment, email;
     private Integer postId;
-    private Integer id;
+    private Integer commentId;
 
     public CommentEntity toEntity(BlogEntity post) {
         return CommentEntity.builder()

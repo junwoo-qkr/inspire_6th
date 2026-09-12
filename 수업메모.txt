@@ -1,63 +1,64 @@
-hibernate: 자바와 관계형 데이터베이스를 연결해주는 ORM
-JPA 표준 명세를 구현한 구현체
-flyway: DB 스키마 변경 이력 관리(git처럼)
+오늘 배우는거: redis, spring security
+security 기반의 토큰을 생성하고, redis에 넣기
+redis : key: value로 데이터를 담는 inmemorydb 중 하나(리눅스에서 동작)
 
-tomcat: web container
-Catarina: servlet의 동작 컨테이너 / Casper: jsp의 동작 컨테이너
-tomcat 위에 springMVC가 올라가있음
-spring의 container, xxxMapping이 생략되어있음
-token: redis에 관리
-redis는 doker에 만들기
-토큰의 유효성 관리는 Filter에서(DispatcherServlet에 들어오기 전에)
-interceptor or aop: DispatcherServlet과 프레임워크 사이에 있는 filter
+devops
+클라우드 마이그레이션
+스케일 아웃
+코드를 통한 인프라 관리
 
+베어메탈: 서버에 서비스를 그대로 올려놓음
+하이퍼바이저: 서버에 서비스를 vm에 넣어서 올려놓음
+컨테이너: 서버에 서비스를 컨테이너에 넣어서 올려놓음
 
-https://www.base64decode.org/
-인코딩-디코딩 시연
+도커: 컨테이너 기반 가상화 서비스
+os, 설정, 서비스를 묶어서 하나의 이미지 생성 -> 컨테이너에서 실행
 
-토큰을 관리할 수 있는 키가 필요
--> .env 파일에 임의로 선언
+docker hub에서 redis 이미지 가져올 명령어
+docker run -d --name redis-container -p 6379:6379 redis:7.2
+docker exec -it redis-container redis-cli
+docker run -d --name redis-insight -p 8001:5540 redis/redisinsight:latest
+(redisinsight: redis에 대한 ui 툴)
+-> 8001번 포트로 redisinsight에 접근 가능
 
-@Value: yml에 설정된 값 읽어오기
+host를 host.docker.internal로 설정해서 redis database를 추가
 
-읽어온 키를 hmacShaKeyFor로 인코딩 시킴
-Jwts.builder()를 반환
-- 서명 주체
-- 서명 시각
-- 유효 기간
-- 인코딩된 서명
+redis의 TTL(Time To Live, 유효기간)은 초 단위로
 
-filter에서 cors와 토큰에 관한걸 다 처리하게 할 수 있음(어차피 프론트엔드의 요청은 필터를 거치니까)
+redisconfig: 서버 기동 시 redis와 연결을 위한 설정
+RedisConnectionFactory: 연결을 관리하는 factory
+RedisTemplate 객체는 뭐지?
 
-지금은 Spring security가 없으니 jwtfilter.java로 구현
-doFilter: 요청이 들어오면 무조건 실행되는 콜백 함수
-얘를 통과해야 DispatcherServlet으로 갈 수 있음
+@Bean: 프레임워크에게 해당 메서드를 관리하라고 알려주는 어노테이션
 
-@PostConstruct: 생성자 호출 바로 뒤 실행될 메서드
-(생성자가 없으면 얘를 붙인 메서드가 생성자(?))
+redis를 통해 토큰에 더해서 2 way factor, 쿠폰 유효기간 등을 관리 가능
 
-dofilter로 요청이 들어옴(chain은 dispatcherservlet
--> options로 변경
--> header set 진행
--> 다시 dofilter로 넣기
--> 화이트리스트에 있는 엔드포인트에 접속 중이면 그냥 보내기,
-    화이트리스트에 없는 엔드포인트에 접속 중이면 헤더의 토큰을 확인
-    -> 토큰이 있고 유효하면 Dispatcherservlet으로 보내기,
-        없으면 쳐내기
+수업에서는 백엔드에서 댓글의 기본키를 commentId로 바꿔서 프론트와 변수 이름이 달라 오류가 났는데, 나는 그냥 id로 써서 오류가 나지 않음
+-> 백엔드, 프론트엔드 댓글 기본키를 commentId로 수정
 
-필터를 여러개 만들어서 엔드포인트별로 적용하는 것도 가능
+......
 
-Repository 안에 JPQL을 작성할 수도 있음(엔티티를 기반: select * from entity...)
+security 인증 정보를 담을 수 있는 객체
+principal, credential, authorities
+UsernamePasswordAuthenticationToken
+SecurityContextHolder에 user의 아이디
 
-blogservice의 write: request의 이메일로 select -> BlogEntity(toEntity(UserEntity(email))) -> save()
-blogrequestdto와 blogresponsedto -> 중요함
-(BlogEntity의 writer가 userEntity이기 때문에 mybatispractice와는 조금 다름)
+사용자의 정보를 SecurityContextHolder에 저장하고 필요하면 controller나 service에서 로드해 정보 비교
 
-blogservice의 read
-글 불러오고 댓글을 불러오면 쿼리를 두번 호출 -> 성능에 문제가 생김
-두 작업을 한번에 처리하도록
+onceperrequestfilter: spring security 내부적으로 filterchain으로 많은 필터를 거쳐서 dispatcherservlet으로 보냄
+security form filter 때문에 localhost:8000/login의 화면이 원래와 다름
 
-jpa로 update할 때
-- dirty checking(변경 내용 감지)
-entity의 내용을 변경하고 transaction을 발생시키지 않으면 변경 내용이 db에 반영이 안됨
-현재 상태와 이전 상태에서 차이가 있으면 update 발생
+hashing: 복호화 안됨, 단방향
+encryption: 키가 있으면 복호화 가능, 양방향 -> 비밀번호 저장에 적합하지 않음
+
+corsconfig 주석처리하기
+
+securityconfig
+url 당 서로 다른 configuration 적용 가능
+cross-site request forgery(csrf): 공격자가 사용자가 의도하지 않은 요청을 보내도록 하는 것을 방지
+permitAll(): 토큰 없이도 허용
+
+if("OPTIONS"... 주석처리해도 작동함
+
+blogservice의 글 작성: 요청의 이메일을 들고옴 -> 현재 로그인된 사용자의 contextholder로부터 이메일을 가져오도록 변경
+

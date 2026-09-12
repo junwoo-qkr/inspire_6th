@@ -1,5 +1,8 @@
 package com.example.jpapractice.features.users.ctrl;
 
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -36,6 +39,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 @RequiredArgsConstructor
 public class UserController {
 
+    private final PasswordEncoder passwordEncoder;
     private final UserService userService;
 
     // SignUp
@@ -117,4 +121,11 @@ public class UserController {
                 .headers(headers)
                 .body((UserResponseDTO)map.get("response"));
         }
+    
+    @PostMapping("/signOut")
+    public ResponseEntity<?> signOut() {
+        userService.signOut();
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
+    
 }

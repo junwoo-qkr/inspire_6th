@@ -15,7 +15,7 @@ const BlogCommentList = ({comments, deletionHandler, updateHandler}) => {
                 comments.map((comment, idx) => {
                     return <BlogCommentItem
                         // ket={idx} 
-                        key={comment.id}
+                        key={comment.commentId}
                         comment={comment}
                         deletionHandler={deletionHandler}
                         updateHandler={updateHandler}

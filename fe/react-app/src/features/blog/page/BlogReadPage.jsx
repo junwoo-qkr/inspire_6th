@@ -159,7 +159,8 @@ const BlogReadPage = () => {
         await api.post("/comments/write", {
             comment,
             postId: Number(postId),
-            email: user,
+            email: user
+        }, {
             headers: {Authorization : at ? at : ""}
         })
             .then(response => {
@@ -174,33 +175,33 @@ const BlogReadPage = () => {
 
     // status 204
     // 프론트에서는 삭제된 댓글과 동일한 아이디만 빼버리기
-    const commentDeleteHandler = async (e, id) => {
-        // await api.delete(`/comments/${id}`)
-        await api.delete(`/comments/delete/${id}`, {
+    const commentDeleteHandler = async (e, commentId) => {
+        // await api.delete(`/comments/${commentId}`)
+        await api.delete(`/comments/delete/${commentId}`, {
             headers : {Authorization : at ? at : ""}
         })
             .then(response => {
                 console.log(response);
                 if (response.status === 204) {
                     setComments(comments.filter((c) => {
-                        return c.id !== id
+                        return c.commentId !== commentId
                     }))
                 }
             })
             .catch(err => {
                 console.log(err);
-                console.log(id + typeof(id));
+                console.log(`commentId: ${commentId}, type: ${typeof commentId}`);
             })
     }
 
-    const commentUpdateHandler = async (id, mention) => {
+    const commentUpdateHandler = async (commentId, mention) => {
         // 1번 방법
-        await api.patch(`/comments/update/${id}/${encodeURIComponent(mention)}`,
+        await api.patch(`/comments/update/${commentId}/${encodeURIComponent(mention)}`,
             null, 
         {headers : {Authorization : at ? at : ""}})
 
         // 2번 방법
-        // await api.patch(`/comments/update/${id}`, {
+        // await api.patch(`/comments/update/${commentId}`, {
         //     comment: mention,
         // }, {
         //     headers : {Authorization : at ? at : ""}
@@ -210,7 +211,7 @@ const BlogReadPage = () => {
                 if (response.status === 204) {
                     setComments(arr => {
                         return arr.map(comment => {
-                            return comment.id === id ? {...comment, comment : mention} : comment;
+                            return comment.commentId === commentId ? {...comment, comment : mention} : comment;
                         })
                     })
                 }  

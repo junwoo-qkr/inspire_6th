@@ -1,4 +1,4 @@
-package com.example.jpapractice.features.commons.handler;
+package com.example.jpapractice.features.common.handler;
 
 import lombok.Builder;
 import lombok.Getter;

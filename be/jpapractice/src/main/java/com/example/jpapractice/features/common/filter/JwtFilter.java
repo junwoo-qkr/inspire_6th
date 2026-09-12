@@ -1,4 +1,4 @@
-package com.example.jpapractice.features.commons.filter;
+package com.example.jpapractice.features.common.filter;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 
+import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
@@ -20,7 +21,7 @@ import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-@Component
+// @Component
 public class JwtFilter implements Filter {
 
     @Value("${jwt.secret}")
@@ -98,13 +99,14 @@ public class JwtFilter implements Filter {
         System.out.println("JwtFilter token exists, token : " + token); 
 
         try {
-            Jwts.parserBuilder()
+            Claims claims = Jwts.parserBuilder()
                 .setSigningKey(key)
                 .build()
-                .parseClaimsJws(token);
-            System.out.println("JwtFilter token validation success, move to DispatchServlet");
-            chain.doFilter(request, response); 
-            
+                .parseClaimsJws(token)
+                .getBody();
+
+            String email = claims.getSubject();
+            chain.doFilter(request, response);
         } catch(Exception e) {
             e.printStackTrace();
             System.out.println("JwtFilter token validation fail"); 

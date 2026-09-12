@@ -1,4 +1,4 @@
-package com.example.jpapractice.features.comments.service;
+package com.example.jpapractice.features.comment.service;
 
 import java.util.Map;
 
@@ -34,24 +34,24 @@ public class CommentService {
     }
 
     @Transactional 
-    public int delete(int id) {
+    public int delete(int commentId) {
         System.out.println("comment service delete");
         // CommentEntity entity = commentRepository
-        //     .findById(id)
-        //     .orElseThrow(() -> new RuntimeException("Comment not found, id : " + id));
+        //     .findById(commentId)
+        //     .orElseThrow(() -> new RuntimeException("Comment not found, commentId : " + commentId));
         // commentRepository.delete(entity);
-        commentRepository.deleteById(id);
+        commentRepository.deleteById(commentId);
         return 1;
     }
 
     @Transactional
     public int update(Map<String, Object> map) {
         System.out.println("comment service update");
-        System.out.println(map.get("id") + "\t" + map.get("comment"));
+        System.out.println("commentId : " + map.get("commentId") + "\tcomment : " + map.get("comment"));
 
         CommentEntity entity = commentRepository
-            .findById((Integer)map.get("id"))
-            .orElseThrow(() -> new RuntimeException("Comment not found, id : " + (Integer)map.get("id")));
+            .findById((Integer)map.get("commentId"))
+            .orElseThrow(() -> new RuntimeException("Comment not found, commentId : " + (Integer)map.get("commentId")));
         
         entity.updateComment((String)(map.get("comment")));
         // commentRepository.save(entity);

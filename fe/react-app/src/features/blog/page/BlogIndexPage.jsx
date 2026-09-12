@@ -159,6 +159,20 @@ const BlogIndexPage = () => {
         moveURL("/blog/write");
     }
 
+    const logoutHandler = async (e) => {
+        await api.post(
+            "/user/signOut", 
+            null,
+            { headers : {Authorization : at ? at : "" }})
+            .then(response => {
+                console.log(response);
+                if (response.status === 204) {
+                    moveURL("/");
+                }
+            })
+            .catch(err => console.log(err));
+    }
+
     return (
         <Page>
             <PageContainer>
@@ -170,7 +184,7 @@ const BlogIndexPage = () => {
                     <WriteButtonArea>
                         <Button title="날씨" onClick={(e) => moveURL("/openapi/index")} />
                         <Button title="글쓰기" onClick={(e) => writeHandler(e)} />
-                        <Button title="로그아웃" onClick={(e) => {moveURL("/");}} />
+                        <Button title="로그아웃" onClick={(e) => logoutHandler(e)} />
                     </WriteButtonArea>
                 </Header>
                 <CategoryFilter aria-label="게시글 카테고리 필터">

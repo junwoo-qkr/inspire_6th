@@ -1,4 +1,4 @@
-package com.example.jpapractice.features.commons.token;
+package com.example.jpapractice.features.common.token;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
