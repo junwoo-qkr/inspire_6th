@@ -1,64 +1,53 @@
-오늘 배우는거: redis, spring security
-security 기반의 토큰을 생성하고, redis에 넣기
-redis : key: value로 데이터를 담는 inmemorydb 중 하나(리눅스에서 동작)
+바이브코딩
+- 코드 작성 없이 AI랑 대화를 주고받으며 프로그램 개발
 
-devops
-클라우드 마이그레이션
-스케일 아웃
-코드를 통한 인프라 관리
+ai 어시스턴트의 발전 과정
+뉴럴 네트워크 - 딥러닝 - 트랜스포머 - llm
 
-베어메탈: 서버에 서비스를 그대로 올려놓음
-하이퍼바이저: 서버에 서비스를 vm에 넣어서 올려놓음
-컨테이너: 서버에 서비스를 컨테이너에 넣어서 올려놓음
+기존 ai: 주어진 데이터 분류, 예측에 초점(사진 분류, 주식 예측 등)
+생성형 ai: 학습 데이터를 바탕으로 새로운 컨텐츠 제작
 
-도커: 컨테이너 기반 가상화 서비스
-os, 설정, 서비스를 묶어서 하나의 이미지 생성 -> 컨테이너에서 실행
+할루시네이션: 그럴듯하지만 사실이 아닌 정보를 만들어내는 현상
 
-docker hub에서 redis 이미지 가져올 명령어
-docker run -d --name redis-container -p 6379:6379 redis:7.2
-docker exec -it redis-container redis-cli
-docker run -d --name redis-insight -p 8001:5540 redis/redisinsight:latest
-(redisinsight: redis에 대한 ui 툴)
--> 8001번 포트로 redisinsight에 접근 가능
+프롬프트: ai에게 입력하는 글
+명확성, 구체성, 맥락 제공이 중요
 
-host를 host.docker.internal로 설정해서 redis database를 추가
+프롬프팅 전략: RACE, CARE, RISE, CO-STAR
 
-redis의 TTL(Time To Live, 유효기간)은 초 단위로
+5w1h 프레임워크
 
-redisconfig: 서버 기동 시 redis와 연결을 위한 설정
-RedisConnectionFactory: 연결을 관리하는 factory
-RedisTemplate 객체는 뭐지?
+프롬프팅 4대 전략
+- 명확한 지침 작성
+- 참조 텍스트 제공
+- 하위 작업으로 분할
+- 생각할 시간 부여
 
-@Bean: 프레임워크에게 해당 메서드를 관리하라고 알려주는 어노테이션
+오늘 할 일
+- 프롬프팅(openai의 role)
+- json형태의 텍스트로 출력 -> json로 parse(ObjectMapper) -> dto
 
-redis를 통해 토큰에 더해서 2 way factor, 쿠폰 유효기간 등을 관리 가능
+system: ai의 페르소나, 제약조건 등을 세팅
+user: 사용자의 질문, 요청 데이터
+assistant: 문맥을 이해하는 role
+(TIL 요구사항: openai의 메시지 포맷 출력해주기(openaiservice를 참고해서))
 
-수업에서는 백엔드에서 댓글의 기본키를 commentId로 바꿔서 프론트와 변수 이름이 달라 오류가 났는데, 나는 그냥 id로 써서 오류가 나지 않음
--> 백엔드, 프론트엔드 댓글 기본키를 commentId로 수정
+okhttp3의 Request로 openai와 통신하기 위한 객체 생성
+objectMapper, chatClient, okHttpClient는 자동으로 매핑이 안됨 -> config에서 bean 생성
 
-......
+securityconfig에서 permitall()에 openai의 엔드포인트 추가
 
-security 인증 정보를 담을 수 있는 객체
-principal, credential, authorities
-UsernamePasswordAuthenticationToken
-SecurityContextHolder에 user의 아이디
+objectMapper가 exr을 자동으로 dto로 매핑
+@ignoreUnknown: 매핑 시 없는 필드는 무시하기
 
-사용자의 정보를 SecurityContextHolder에 저장하고 필요하면 controller나 service에서 로드해 정보 비교
+inner class란?
 
-onceperrequestfilter: spring security 내부적으로 filterchain으로 많은 필터를 거쳐서 dispatcherservlet으로 보냄
-security form filter 때문에 localhost:8000/login의 화면이 원래와 다름
+ChatClient로 model, 엔드포인트 등을 요청마다 명시할 필요없이 간편하게 작성 가능
 
-hashing: 복호화 안됨, 단방향
-encryption: 키가 있으면 복호화 가능, 양방향 -> 비밀번호 저장에 적합하지 않음
+chatclient: yml의 설정을 읽어서 api를 알아서 호출해줌
 
-corsconfig 주석처리하기
+mcp(model context protocol)
+모델이 외부 도구나 데이터와 연결할 때 사용하는 통신 프로토콜
+모델이 외부 시스템에 직접 접근(api는 외부 시스템의 기능을 잠깐 빌려오는 인터페이스)
+로컬 mcp와 원격 mcp
 
-securityconfig
-url 당 서로 다른 configuration 적용 가능
-cross-site request forgery(csrf): 공격자가 사용자가 의도하지 않은 요청을 보내도록 하는 것을 방지
-permitAll(): 토큰 없이도 허용
-
-if("OPTIONS"... 주석처리해도 작동함
-
-blogservice의 글 작성: 요청의 이메일을 들고옴 -> 현재 로그인된 사용자의 contextholder로부터 이메일을 가져오도록 변경
-
+controller에 들어온 요청을 agent로 -> agent가 요청을 분석해 필요한 tool(날씨 조회, 가게 검색 등)을 사용하고 조합해 응답

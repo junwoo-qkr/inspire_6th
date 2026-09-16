@@ -1,6 +1,7 @@
 package com.example.jpapractice.features.blog.ctrl;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -52,6 +53,14 @@ public class BlogController {
 
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
+
+    @PostMapping("/ai/agent")
+    public ResponseEntity<?> agent(@RequestBody Map<String, Object> map) {
+        System.out.println("blog controller agent param :" + map.get("category") + "\t" + map.get("keyword"));
+        
+        return ResponseEntity.status(HttpStatus.CREATED).body(blogService.contentGenerate(map));
+    }
+    
     
     
     

@@ -1,0 +1,391 @@
+<h2 data-ke-size="size26">오늘의 한 줄 요약</h2>
+<ul style="list-style-type: disc;" data-ke-list-type="disc">
+<li>프롬프트에 역할, 요청 조건, 출력 형식을 구체적으로 담고 OpenAI 메시지의 역할을 구분했다.</li>
+<li><code>OkHttpClient</code>로 요청을 보내는 과정과 <code>ObjectMapper</code>로 JSON 응답을 DTO로 변환하는 과정을 연결했다.</li>
+<li><code>ChatClient</code>를 사용해 맛집 추천·문제 출제 결과를 DTO로 받고, 블로그 본문은 문자열로 받는 코드를 작성했다.</li>
+<li>키워드 입력부터 본문 상태 갱신까지 연결하고, 클릭 이벤트의 prop 이름과 MCP·에이전트의 역할을 정리했다.</li>
+</ul>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">키워드 정리</h2>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr><td style="width: 23.7209%;"><b>키워드</b></td><td style="width: 76.2791%;"><b>설명 또는 예시</b></td></tr>
+<tr><td style="width: 23.7209%;"><b>생성형 AI</b></td><td style="width: 76.2791%;">학습한 패턴과 입력을 바탕으로 글·이미지 등의 콘텐츠를 생성하는 AI</td></tr>
+<tr><td style="width: 23.7209%;"><b>할루시네이션</b></td><td style="width: 76.2791%;">그럴듯하지만 사실과 다른 정보를 생성하는 현상</td></tr>
+<tr><td style="width: 23.7209%;"><b>프롬프트</b></td><td style="width: 76.2791%;">모델에 전달하는 지침, 질문, 조건과 참고 맥락</td></tr>
+<tr><td style="width: 23.7209%;"><b><code>role</code></b></td><td style="width: 76.2791%;">메시지의 역할을 나타내는 필드. 실습에서는 <code>system</code>과 <code>user</code>를 사용했다.</td></tr>
+<tr><td style="width: 23.7209%;"><b><code>OkHttpClient</code> / <code>Request</code></b></td><td style="width: 76.2791%;">HTTP 요청을 실행하는 클라이언트 / URL·헤더·본문을 담은 요청 객체</td></tr>
+<tr><td style="width: 23.7209%;"><b><code>ObjectMapper</code></b></td><td style="width: 76.2791%;">Java 객체와 JSON 사이의 변환을 담당하는 Jackson 객체</td></tr>
+<tr><td style="width: 23.7209%;"><b>DTO</b></td><td style="width: 76.2791%;">주고받을 데이터의 필드와 타입을 정리한 객체</td></tr>
+<tr><td style="width: 23.7209%;"><b><code>@JsonIgnoreProperties</code></b></td><td style="width: 76.2791%;"><code>@JsonIgnoreProperties(ignoreUnknown = true)</code>: DTO에 대응하지 않는 JSON 속성을 무시한다.</td></tr>
+<tr><td style="width: 23.7209%;"><b>정적 중첩 클래스</b></td><td style="width: 76.2791%;">다른 클래스 안에 선언한 <code>static class</code>. 바깥 객체 없이 생성할 수 있다.</td></tr>
+<tr><td style="width: 23.7209%;"><b><code>@Bean</code></b></td><td style="width: 76.2791%;">설정 메서드가 반환하는 객체를 Spring이 관리하도록 등록한다.</td></tr>
+<tr><td style="width: 23.7209%;"><b><code>ChatClient</code></b></td><td style="width: 76.2791%;">프롬프트 구성, 모델 호출과 응답 변환을 연결하는 Spring AI API</td></tr>
+<tr><td style="width: 23.7209%;"><b><code>.formatted()</code></b></td><td style="width: 76.2791%;"><code>"주제: %s".formatted(subject)</code>처럼 문자열에 값을 넣는다.</td></tr>
+<tr><td style="width: 23.7209%;"><b>MCP</b></td><td style="width: 76.2791%;">Model Context Protocol. AI 애플리케이션과 외부 도구·데이터를 연결하는 통신 규약</td></tr>
+<tr><td style="width: 23.7209%;"><b>에이전트</b></td><td style="width: 76.2791%;">요청과 작업 상태를 바탕으로 필요한 행동이나 도구 사용을 결정하며 작업을 진행하는 구성</td></tr>
+</tbody>
+</table>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">오늘 배운 것</h2>
+<h4 data-ke-size="size20">생성형 AI와 구체적인 프롬프트 작성</h4>
+<ul style="list-style-type: disc;" data-ke-list-type="disc">
+<li>분류·예측에 초점을 둔 AI 활용과 달리, 생성형 AI 활용은 새로운 콘텐츠를 만드는 데 초점을 둔다. 생성된 내용에는 할루시네이션이 포함될 수 있어 사실 확인이 필요하다.</li>
+<li>신경망은 넓은 모델 범주이고, 딥러닝은 여러 층의 신경망을 활용한다. 트랜스포머는 신경망 구조의 하나이며, 많은 LLM이 이를 기반으로 언어를 처리하고 생성한다.</li>
+<li>바이브 코딩은 자연어로 AI와 대화하며 코드를 생성·수정하는 개발 방식이다. 직접 작성하는 양을 줄일 수 있지만 결과의 동작을 검토하고 확인해야 한다.</li>
+<li>프롬프트에는 무엇을 만들지, 어떤 조건을 지킬지, 어떤 형식으로 답할지를 명확하게 적는다. 수업에서는 RACE, CARE, RISE, CO-STAR, 5W1H처럼 요청을 구조화하는 틀도 다뤘다.</li>
+<li>명확한 지침 작성, 참조 텍스트 제공, 하위 작업으로 분할, 답을 점검할 여유를 주는 방식으로 요청을 구체화한다.</li>
+</ul>
+<pre class="reasonml"><code>// Java: 역할·대상·분량을 명시해 원하는 답변의 범위를 정한다.
+String prompt = """
+    너는 학습 내용을 설명하는 도우미야.
+    %s를 처음 배우는 사람에게 세 문장으로 설명해줘.
+    주어진 자료에서 확인되지 않는 내용은 단정하지 마.
+    """.formatted("JSON과 DTO"); // %s 자리에 학습 주제가 들어간다.</code></pre>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">OpenAI 메시지 역할과 요청 포맷</h4>
+<p data-ke-size="size16">Chat Completions 요청은 사용할 <code>model</code>과 대화를 담은 <code>messages</code>로 구성한다. 각 메시지는 <code>role</code>과 <code>content</code>를 가지며, 실습에서 다룬 역할은 다음과 같다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr><td style="width: 23.7209%;"><b>역할</b></td><td style="width: 76.2791%;"><b>의미</b></td></tr>
+<tr><td style="width: 23.7209%;"><code>system</code></td><td style="width: 76.2791%;">모델이 따를 지침, 역할과 출력 제약을 전달한다.</td></tr>
+<tr><td style="width: 23.7209%;"><code>user</code></td><td style="width: 76.2791%;">사용자의 질문, 요청과 입력 조건을 전달한다.</td></tr>
+<tr><td style="width: 23.7209%;"><code>assistant</code></td><td style="width: 76.2791%;">모델의 답변을 나타낸다. 이전 답변을 대화 이력에 포함하면 이후 요청의 맥락이 된다.</td></tr>
+</tbody>
+</table>
+<p data-ke-size="size16">아래는 <code>OpenAIService.recommend()</code>의 요청 구조를 바탕으로 사용자 프롬프트를 줄인 예시다. 메시지 순서는 실제 코드의 <code>List.of(user, system)</code>을 따랐다. <code>${OPENAI_MODEL}</code>은 설정의 환경 변수 표기이며, 실제 요청에는 설정에서 읽은 모델명이 들어간다.</p>
+<pre class="reasonml"><code>// JSONC: 구조 설명을 위한 주석이며, 실제 전송하는 JSON에는 주석을 넣지 않는다.
+{
+  "model": "${OPENAI_MODEL}",
+  "messages": [
+    {
+      "role": "user",
+      "content": "주어진 날씨와 지역에 맞는 맛집을 지정한 JSON 형식으로 추천해줘."
+    },
+    {
+      "role": "system",
+      "content": "전처리된 JSON 형태로만 반환할 것."
+    }
+  ]
+}</code></pre>
+<p data-ke-size="size16">실습 요청에는 이전 대화를 나타내는 <code>assistant</code> 메시지를 넣지 않았다. 직접 호출하는 주소는 <code>https://api.openai.com/v1/chat/completions</code>이며, 모델명은 요청 본문으로 전달한다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">HTTP 요청과 JSON 응답을 Java 객체로 연결하기</h4>
+<p data-ke-size="size16"><code>Request</code>에 URL, 인증 헤더와 JSON 본문을 담고 <code>OkHttpClient</code>로 실행한다. 응답 전체를 담은 JSON과 그 안에서 모델이 작성한 <code>content</code> 문자열을 구분해야 한다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr><td style="width: 23.7209%;"><b>메서드</b></td><td style="width: 76.2791%;"><b>변환 방향과 역할</b></td></tr>
+<tr><td style="width: 23.7209%;"><code>writeValueAsString()</code></td><td style="width: 76.2791%;">Java 객체를 전송 가능한 JSON 문자열로 직렬화한다.</td></tr>
+<tr><td style="width: 23.7209%;"><code>readTree()</code></td><td style="width: 76.2791%;">JSON 문자열을 <code>JsonNode</code> 트리로 읽어 필요한 값을 찾는다.</td></tr>
+<tr><td style="width: 23.7209%;"><code>readValue()</code></td><td style="width: 76.2791%;">JSON 문자열을 지정한 Java 타입으로 역직렬화한다.</td></tr>
+</tbody>
+</table>
+<pre class="reasonml"><code>// Java: 동일한 데이터를 전송용 문자열과 탐색용 트리로 바꿔 본다.
+String json = objectMapper.writeValueAsString(Map.of("weather", "비"));
+// json의 내용: {"weather":"비"}
+JsonNode data = objectMapper.readTree(json);
+System.out.println(data.at("/weather").asText()); // 비</code></pre>
+<p data-ke-size="size16">실습에서는 응답 전체를 트리로 읽고 <code>/choices/0/message/content</code>에서 생성된 문자열을 꺼냈다. 그 문자열 자체가 DTO 구조에 맞는 JSON일 때 다시 <code>readValue()</code>로 변환한다. 프롬프트로 JSON을 요청하는 것과 실제 응답이 올바른 JSON·타입인지 확인하는 것은 별개의 단계다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">중첩 JSON을 DTO와 정적 중첩 클래스로 표현하기</h4>
+<p data-ke-size="size16">JSON 배열은 <code>List</code>로, 배열 안의 객체는 별도 DTO 타입으로 표현한다. 관련 DTO를 바깥 응답 DTO 안에 모아 선언하면 데이터의 포함 관계를 함께 읽을 수 있다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr><td style="width: 23.7209%;"><b>종류</b></td><td style="width: 76.2791%;"><b>특징</b></td></tr>
+<tr><td style="width: 23.7209%;">내부 클래스</td><td style="width: 76.2791%;"><code>static</code> 없이 선언하며, 인스턴스 생성에 바깥 클래스의 객체가 필요하다.</td></tr>
+<tr><td style="width: 23.7209%;">정적 중첩 클래스</td><td style="width: 76.2791%;"><code>static class</code>로 선언하며, 바깥 클래스의 객체 없이 생성할 수 있다. 실습의 <code>RestaurantDTO</code>와 <code>Quiz</code>가 해당한다.</td></tr>
+</tbody>
+</table>
+<pre class="reasonml"><code>// Java: 바깥 RecommendResponseDTO 객체를 만들지 않고도 생성할 수 있다.
+RecommendResponseDTO.RestaurantDTO item =
+    new RecommendResponseDTO.RestaurantDTO();</code></pre>
+<p data-ke-size="size16"><code>@JsonIgnoreProperties(ignoreUnknown = true)</code>는 JSON에 존재하지만 DTO에서 인식하지 못하는 속성을 무시한다. 잘못된 JSON 문법이나 필드 타입 불일치를 모두 해결해 주는 설정은 아니다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">Bean 등록과 의존성 주입</h4>
+<p data-ke-size="size16">Spring이 관리하는 객체를 Bean이라고 한다. <code>@Configuration</code> 안의 <code>@Bean</code> 메서드로 객체를 등록하고, 필요한 서비스가 생성자를 통해 전달받도록 구성할 수 있다.</p>
+<pre class="reasonml"><code>// Java: 등록된 Bean을 생성자 매개변수로 전달받는 기본 형태다.
+public OpenAIService(ChatClient chatClient,
+                     ObjectMapper objectMapper,
+                     OkHttpClient okHttpClient) {
+    this.chatClient = chatClient;
+    this.objectMapper = objectMapper;
+    this.okHttpClient = okHttpClient;
+} // 실습에서는 final 필드와 @RequiredArgsConstructor로 이 생성자를 생성한다.</code></pre>
+<p data-ke-size="size16">실습의 <code>OpenAIConfig</code>는 세 객체를 명시적으로 등록한다. <code>ChatClient</code>는 자동 구성된 <code>ChatClient.Builder</code>로 생성하며, <code>ObjectMapper</code>는 Spring Boot의 Jackson 자동 구성으로 제공받을 수도 있다. Bean을 등록해 객체를 전달받는 과정과 <code>ObjectMapper</code>로 데이터를 변환하는 과정은 역할이 다르다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">ChatClient의 문자열 응답과 DTO 응답</h4>
+<p data-ke-size="size16"><code>ChatClient</code>는 설정된 모델을 바탕으로 프롬프트와 호출 과정을 연결한다. 요청마다 HTTP 주소·인증 헤더·응답 탐색 코드를 직접 조립하는 부분을 줄일 수 있다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr><td style="width: 23.7209%;"><b>응답 처리</b></td><td style="width: 76.2791%;"><b>사용 목적</b></td></tr>
+<tr><td style="width: 23.7209%;"><code>.call().content()</code></td><td style="width: 76.2791%;">생성된 글을 <code>String</code>으로 받는다. 블로그 본문 생성에 사용했다.</td></tr>
+<tr><td style="width: 23.7209%;"><code>.call().entity(DTO.class)</code></td><td style="width: 76.2791%;">생성 결과를 지정한 DTO로 변환한다. 맛집 추천과 문제 출제에 사용했다.</td></tr>
+</tbody>
+</table>
+<pre class="reasonml"><code>// Java: 지침과 사용자 요청을 분리하고 생성된 설명을 문자열로 받는다.
+String answer = chatClient.prompt()
+    .system("처음 배우는 사람에게 쉽게 설명해줘.")
+    .user("JSON이 무엇인지 한 문장으로 설명해줘.")
+    .call()
+    .content(); // answer에는 모델이 생성한 설명이 들어간다.</code></pre>
+<p data-ke-size="size16">프로젝트에서는 <code>spring.ai.openai.api-key</code>와 <code>spring.ai.openai.chat.options.model</code> 설정을 사용한다. <code>.entity()</code>의 변환 대상은 일반 Java DTO이며, 데이터베이스의 JPA 엔티티로 저장한다는 뜻은 아니다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">생성된 응답을 React 상태로 관리하기</h4>
+<p data-ke-size="size16">React에서 서버 응답을 화면에 반영하려면 해당 데이터를 상태에 저장한다. 입력 요소의 <code>value</code>에 상태를 연결하면 상태 변경에 따라 표시되는 값도 갱신된다.</p>
+<pre class="reasonml"><code>// JavaScript: 응답 데이터를 상태에 넣으면 그 상태를 사용하는 화면이 갱신된다.
+const [content, setContent] = useState("");
+const applyContent = (text) =&gt; setContent(text);
+// applyContent("생성된 본문") 호출 후 content는 "생성된 본문"이 된다.</code></pre>
+<p data-ke-size="size16">요청에 필요한 인증 정보와 성공 응답의 상태 코드·본문 형식을 백엔드와 맞춰야 한다. 응답으로 작성 칸을 채우는 동작과 그 내용을 게시물로 저장하는 동작은 별개의 요청으로 구성할 수 있다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">MCP와 도구를 사용하는 에이전트</h4>
+<p data-ke-size="size16">MCP는 AI 애플리케이션이 외부 도구와 데이터를 공통된 방식으로 연결하도록 정한 프로토콜이다. 애플리케이션의 MCP 클라이언트가 MCP 서버와 통신하며, 서버는 도구와 데이터를 제공한다. 서버의 도구가 외부 API를 호출하도록 구현할 수도 있다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr><td style="width: 23.7209%;"><b>구분</b></td><td style="width: 76.2791%;"><b>연결 대상</b></td></tr>
+<tr><td style="width: 23.7209%;">로컬 MCP</td><td style="width: 76.2791%;">같은 컴퓨터에서 실행되는 MCP 서버와 연결한다.</td></tr>
+<tr><td style="width: 23.7209%;">원격 MCP</td><td style="width: 76.2791%;">네트워크를 통해 원격 MCP 서버와 연결한다.</td></tr>
+</tbody>
+</table>
+<p data-ke-size="size16">수업에서는 컨트롤러가 받은 요청을 에이전트에 전달하고, 필요한 날씨 조회·가게 검색 도구의 결과를 조합하는 흐름을 다뤘다. 현재 미커밋 블로그 구현은 프롬프트를 보내 본문 문자열을 받는 단계이며, 해당 메서드에 외부 도구를 선택·호출하는 코드는 없다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">오늘의 코드 1 - OpenAI 요청 메시지 구성과 HTTP 호출</h2>
+<h4 data-ke-size="size20">OpenAIService.java</h4>
+<pre class="reasonml"><code>// Java: recommend()에서 model과 prompt를 사용해 요청 본문을 구성하는 부분이다.
+Map&lt;String, Object&gt; messages = new HashMap&lt;&gt;();
+messages.put("model", model);
+
+Map&lt;String, Object&gt; user = new HashMap&lt;&gt;();
+user.put("role", "user");
+user.put("content", prompt);
+
+Map&lt;String, Object&gt; system = new HashMap&lt;&gt;();
+system.put("role", "system");
+system.put("content", "전처리된 JSON 형태로만 반환할 것.");
+
+messages.put("messages", List.of(user, system));
+
+String requestJSON = null;
+try {
+    requestJSON = objectMapper.writeValueAsString(messages);
+} catch (JsonProcessingException e) {
+    e.printStackTrace();
+}
+
+Request request = new Request.Builder()
+    .url(endPoint)
+    .header("Authorization", "Bearer " + key)
+    .header("Content-Type", "application/json")
+    .post(RequestBody.create(requestJSON, MediaType.parse("application/json")))
+    .build();</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">날씨·지역·추천 결과 형식을 담은 <code>prompt</code>를 사용자 메시지로 넣고, JSON 출력 지침을 별도 메시지로 구성했다. 코드상 <code>Map</code>은 모델명과 메시지 배열을 담는 JSON으로 직렬화되며, API 키는 인증 헤더에 들어간다.</p>
+<h4 data-ke-size="size20">OpenAIService.java</h4>
+<pre class="reasonml"><code>// Java: recommend()의 try 블록 안에서 요청을 실행하고 응답 본문을 읽는다.
+response = okHttpClient.newCall(request).execute();
+System.out.println("response :\n" + response);
+
+String responseJSON = response.body().string();</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16"><code>Request</code>를 만드는 단계와 실제 네트워크 요청을 실행하는 단계를 구분했다. 이 코드에서 얻는 <code>responseJSON</code>은 모델의 답변만이 아니라 API 응답 전체를 담은 문자열이다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 2 - 생성된 JSON 문자열을 DTO로 변환</h2>
+<h4 data-ke-size="size20">OpenAIService.java</h4>
+<pre class="reasonml"><code>// Java: 응답 전체에서 생성된 텍스트를 찾은 뒤 DTO로 변환한다.
+JsonNode node = objectMapper.readTree(responseJSON);
+String exr = node.at("/choices/0/message/content").asText();
+System.out.println("exr :\n" + exr);
+
+RecommendResponseDTO result = objectMapper.readValue(exr, RecommendResponseDTO.class);
+return result;</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">응답 트리의 첫 번째 선택지에서 메시지 내용을 꺼내는 경로를 확인했다. <code>exr</code>이 요청한 구조의 JSON이면 <code>weather</code>, <code>location</code>, <code>restaurants</code>를 가진 <code>RecommendResponseDTO</code>로 변환하도록 작성했다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 3 - 배열과 정적 중첩 DTO 구성</h2>
+<h4 data-ke-size="size20">RecommendResponseDTO.java</h4>
+<pre class="reasonml"><code>// Java: 추천 응답의 필드와 그 안에 포함되는 음식점 타입을 발췌했다.
+private String weather;
+private String location;
+private List&lt;RestaurantDTO&gt; restaurants;
+
+@Builder
+@Getter
+@ToString
+@NoArgsConstructor
+@AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
+public static class RestaurantDTO {
+    private String name;
+    private String category;
+    private String reason;
+}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">음식점 배열의 각 항목을 이름·분류·추천 이유를 가진 <code>RestaurantDTO</code>로 정의했다. 바깥 <code>RecommendResponseDTO</code>에도 같은 무시 설정이 선언되어 있으며, 각 DTO가 인식하지 못하는 추가 JSON 속성을 무시하도록 구성한 것을 확인했다.</p>
+<h4 data-ke-size="size20">QuizResponseDTO.java</h4>
+<pre class="reasonml"><code>// Java: 문제 목록과 문제 하나의 데이터 구조를 발췌했다.
+private List&lt;Quiz&gt; quizes;
+
+@Builder
+@Getter
+@ToString
+@NoArgsConstructor
+@AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
+public static class Quiz {
+    private String question;
+    private List&lt;String&gt; options;
+    private String answer;
+    private String desc;
+}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">문제·보기·정답·해설을 하나의 DTO로 묶고 이를 목록으로 받도록 작성했다. 실습 코드에서는 목록 필드와 프롬프트의 JSON 키가 모두 <code>quizes</code>라는 이름을 사용하고 있다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 4 - AI 연동 객체를 Bean으로 등록</h2>
+<h4 data-ke-size="size20">OpenAIConfig.java</h4>
+<pre class="reasonml"><code>// Java: @Configuration 클래스 안에서 사용할 객체를 Bean으로 등록한다.
+@Bean
+public ObjectMapper objectMapper() {
+    return new ObjectMapper();
+}
+
+@Bean
+public ChatClient chatClient(ChatClient.Builder builder) {
+    return builder.build();
+}
+
+@Bean
+public OkHttpClient okHttpClient() {
+    return new OkHttpClient();
+}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">JSON 변환 객체, AI 대화 클라이언트와 HTTP 클라이언트를 서비스에 주입할 수 있도록 등록했다. 현재 설정은 <code>ObjectMapper</code>를 직접 만들며, <code>ChatClient</code>는 전달받은 빌더로 생성한다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 5 - ChatClient로 문제 출제 결과 받기</h2>
+<h4 data-ke-size="size20">OpenAIService.java</h4>
+<pre class="reasonml"><code>// Java: quiz()에서 subject를 프롬프트에 넣고 QuizResponseDTO로 받는 부분이다.
+QuizResponseDTO result = chatClient
+    .prompt()
+    .system(
+        """
+            너는 문제 출제 전문가야.
+            반드시 JSON 형태로만 출력해줘.
+        """)
+    .user(
+        """
+            너는 문제 출제를 전문으로 하는 위원이고, %s 전공의 박사학위 수준의 문제를 출제할거야.
+            &lt;조건&gt;
+                - 총 10개의 문제를 출력해줘.
+                - 백틱(`)은 쓰지마.
+                - 반드시 JSON 형태로 출력해줘.
+            &lt;/조건&gt;
+            &lt;출력예시&gt;
+                {
+                    "quizes" : [
+                        {
+                            "question" : &lt;문제&gt;,
+                            "options" : [보기1, 보기2, 보기3, 보기4],
+                            "answer" : &lt;정답&gt;,
+                            "desc" : &lt;해설&gt;
+                        }
+                    ]
+                }
+            &lt;/출력예시&gt;
+        """.formatted(subject))
+    .call()
+    .entity(QuizResponseDTO.class);</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">주제에 맞는 문제 10개와 보기·정답·해설을 요청하고, 결과를 <code>QuizResponseDTO</code>로 변환하도록 작성했다. 프롬프트 속 <code>&lt;문제&gt;</code>·<code>보기1</code> 등은 출력 모양을 설명하는 표기이며, 실제 응답은 문자열 값에 따옴표가 있는 유효한 JSON이어야 한다. 코드에서 요청 조건과 반환 타입은 확인했지만, 실제 생성된 문제의 개수나 정확도는 별도로 확인해야 한다.</p>
+<h4 data-ke-size="size20">OpenAIController.java</h4>
+<pre class="reasonml"><code>// Java: /openai 클래스 경로 아래의 /recommend 요청에서 사용하는 반환 부분이다.
+return ResponseEntity
+    .status(HttpStatus.OK)
+    .body(openAIService.recommend2(weather, location));</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">맛집 추천 컨트롤러는 현재 <code>ChatClient</code>를 사용하는 <code>recommend2()</code>에 연결되어 있다. 직접 HTTP 요청을 작성한 <code>recommend()</code>도 실습 파일에 있지만, 현재 컨트롤러에서 선택한 호출 경로는 <code>recommend2()</code>임을 확인했다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 6 - AI 실습 경로의 접근 정책</h2>
+<h4 data-ke-size="size20">SecurityConfig.java</h4>
+<pre class="reasonml"><code>// Java: authorizeHttpRequests 안의 요청 경로별 접근 규칙이다.
+.requestMatchers("/user/**", "/swagger-ui/**","/v3/api-docs/**", "/openai/**").permitAll()
+.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+.requestMatchers("/admin/**").hasRole("ADMIN")
+.anyRequest().authenticated()</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">맛집 추천과 문제 출제에 사용하는 <code>/openai/**</code>를 허용 경로에 추가했다. <code>/blog/ai/agent</code>는 이 패턴에 포함되지 않으므로 현재 접근 규칙상 인증이 필요한 경로다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 7 - 키워드로 생성한 블로그 본문을 화면에 반영</h2>
+<h4 data-ke-size="size20">BlogService.java</h4>
+<pre class="reasonml"><code>// Java: 입력받은 카테고리와 키워드를 사용해 본문 문자열을 생성한다.
+public String contentGenerate(Map&lt;String, Object&gt; map) {
+    String result = chatClient
+        .prompt()
+        .user(
+            """
+                너는 블로그 작성 전문가야.
+                주어지는 카테고리와 키워드를 활용해서 차분한 톤의 블로그를 작성해줘.
+                글자수는 500자 이내로 작성해줘.
+                &lt;조건&gt;
+                    - 카테고리 : "%s"
+                    - 키워드 : "%s"
+                &lt;/조건&gt;
+            """.formatted(map.get("category"), map.get("keyword")))
+        .call()
+        .content();
+
+    return result;
+}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">카테고리·키워드·말투·분량을 프롬프트에 넣고 일반 텍스트를 받도록 작성했다. 500자 제한은 모델에 전달한 요청 조건이며, 현재 메서드에는 반환된 글의 길이를 별도로 검사하는 코드가 없다.</p>
+<h4 data-ke-size="size20">BlogController.java</h4>
+<pre class="reasonml"><code>// Java: 클래스 경로 /blog와 결합해 POST /blog/ai/agent 요청을 받는다.
+@PostMapping("/ai/agent")
+public ResponseEntity&lt;?&gt; agent(@RequestBody Map&lt;String, Object&gt; map) {
+    System.out.println("blog controller agent param :" + map.get("category") + "\t" + map.get("keyword"));
+
+    return ResponseEntity.status(HttpStatus.CREATED).body(blogService.contentGenerate(map));
+}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">요청 JSON을 <code>Map</code>으로 받아 본문 생성 서비스에 넘긴다. 정상적으로 메서드가 끝나면 DTO 포장이 없는 본문 문자열을 <code>201 Created</code>로 반환하도록 연결되어 있다.</p>
+<h4 data-ke-size="size20">BlogWritePage.jsx</h4>
+<pre class="reasonml"><code>// JSX: keyword 상태를 변경하고, 클릭 시 전송 함수를 호출하는 입력 영역이다.
+&lt;TextInput
+    height={48}
+    value={keyword}
+    placeholder="키워드를 입력하세요"
+    handler={(e) =&gt; {
+        setKeyword(e.target.value);
+    }} /&gt;
+&lt;Button title="키워드 전송" onClick={keywordHandler} /&gt;</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">입력한 값을 <code>keyword</code> 상태에 반영하고, 버튼 클릭을 <code>keywordHandler</code>에 연결했다. 현재 파일에서 버튼 prop 이름이 <code>onClick</code>으로 작성된 것을 확인했다.</p>
+<h4 data-ke-size="size20">BlogWritePage.jsx</h4>
+<pre class="reasonml"><code>// JavaScript: 카테고리와 키워드를 전송하고 응답 본문으로 상태를 갱신한다.
+const keywordHandler = async () =&gt; {
+    console.log(`keyword : ${keyword}`);
+
+    await api.post("/blog/ai/agent", {
+        category,
+        keyword
+    }, {
+        headers : {Authorization : at ? at : ""}
+    })
+        .then(response =&gt; {
+            if(response.status === 201) {
+                setContent(response.data);
+            }
+        })
+        .catch(err =&gt; {
+            console.log(err);
+        })
+}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">카테고리·키워드와 저장된 인증 값을 보내고, 상태 코드가 <code>201</code>이면 응답 문자열을 <code>content</code>에 넣는다. 본문 입력 요소는 <code>value={content}</code>를 사용하므로 상태 변경을 화면에 반영하는 구조다. 이 요청은 작성 칸을 채우며, 게시물 저장은 별도의 <code>/blog/write</code> 요청으로 처리한다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">어려웠던 점 / 각종 오류</h2>
+<p data-ke-size="size16">키워드 전송 버튼을 눌러도 <code>keywordHandler</code>가 실행되지 않는 원인을 확인했다. 버튼에 전달한 이름은 <code>onclick</code>이었지만, 사용하는 <code>Button</code> 컴포넌트는 <code>props.onClick</code>을 읽고 있었다. JavaScript는 대소문자를 구분하므로 서로 다른 prop이 되어 이벤트 함수가 연결되지 않았고, 전달 이름을 <code>onClick</code>으로 맞추는 것이 해결 방법이었다. 현재 <code>BlogWritePage.jsx</code>에는 이 수정이 반영되어 있다.</p>
+<p data-ke-size="size16">수업 메모에 남긴 내부 클래스 질문은 DTO의 선언 형태를 기준으로 구분했다. 클래스 안에 정의했다고 모두 같은 생성 방식을 쓰는 것은 아니며, 실습의 <code>RestaurantDTO</code>와 <code>Quiz</code>는 <code>static</code>이 붙어 있어 바깥 DTO 객체 없이 생성할 수 있는 정적 중첩 클래스다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 style="color: #000000; text-align: start;" data-ke-size="size26">하루를 정리하며</h2>
+<p style="color: #222222; text-align: start;" data-ke-size="size16">LG CNS 6기</p>
+<p style="color: #222222; text-align: start;" data-ke-size="size16">LGCNSINSIRECAMP</p>
+<p style="color: #222222; text-align: start;" data-ke-size="size16">개발자</p>

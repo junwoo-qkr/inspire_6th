@@ -96,7 +96,7 @@ const TitleInputArea = styled(TextAreaField)`
 
 const ContentInputArea = styled(TextAreaField)`
     & > textarea {
-        min-height: 280px;
+        min-height: 48px;
     }
 `;
 
@@ -195,6 +195,7 @@ const BlogWritePage = () => {
     const [title, setTitle] = useState("");
     const [content, setContent] = useState("");
     const [category, setCategory] = useState("");
+    const [keyword, setKeyword] = useState("");
 
     const at = localStorage.getItem("at");
 
@@ -221,6 +222,25 @@ const BlogWritePage = () => {
                 console.log(response);
                 if (response.status === 201) {
                     moveURL("/blog/index");
+                }
+            })
+            .catch(err => {
+                console.log(err);
+            })
+    }
+
+    const keywordHandler = async () => {
+        console.log(`keyword : ${keyword}`);
+        
+        await api.post("/blog/ai/agent", {
+            category,
+            keyword
+        }, {
+            headers : {Authorization : at ? at : ""}
+        })
+            .then(response => {
+                if(response.status === 201) {
+                    setContent(response.data);
                 }
             })
             .catch(err => {
@@ -270,6 +290,15 @@ const BlogWritePage = () => {
                     <Field>
                         <FieldLabel>내용</FieldLabel>
                         <ContentInputArea>
+                            <TextInput
+                                height={48}
+                                value={keyword}
+                                placeholder="키워드를 입력하세요"
+                                handler={(e) => {
+                                    setKeyword(e.target.value);
+                                }} />
+                            <Button title="키워드 전송" onClick={keywordHandler} />
+
                             <TextInput
                                 height={280}
                                 value={content}
