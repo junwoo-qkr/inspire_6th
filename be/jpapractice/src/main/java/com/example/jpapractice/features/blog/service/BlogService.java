@@ -58,22 +58,32 @@ public class BlogService {
             .orElseThrow(() -> new RuntimeException("Post not found, postId : " + postId));
     }
 
-    public String contentGenerate(Map<String, Object> map) {
-        String result = chatClient
-            .prompt()
-            .user(
-                """
-                    너는 블로그 작성 전문가야.
-                    주어지는 카테고리와 키워드를 활용해서 차분한 톤의 블로그를 작성해줘.
-                    글자수는 500자 이내로 작성해줘.
-                    <조건>
-                        - 카테고리 : "%s"
-                        - 키워드 : "%s"
-                    </조건>
-                """.formatted(map.get("category"), map.get("keyword")))
-            .call()
-            .content();
+    // public String contentGenerate(Map<String, Object> map) {
+    //     String result = chatClient
+    //         .prompt()
+    //         .user(
+    //             """
+    //                 너는 블로그 작성 전문가야.
+    //                 주어지는 카테고리와 키워드를 활용해서 차분한 톤의 블로그를 작성해줘.
+    //                 글자수는 500자 이내로 작성해줘.
+    //                 <조건>
+    //                     - 카테고리 : "%s"
+    //                     - 키워드 : "%s"
+    //                 </조건>
+    //             """.formatted(map.get("category"), map.get("keyword")))
+    //         .call()
+    //         .content();
 
-        return result;
+    //     return result;
+    // }
+
+    // Tool이 모델에 전달할 게시물 목록
+    @Transactional(readOnly = true)
+    public List<BlogResponseDTO> searchByKeyword(String category, String keyword) {
+        return blogRepository
+            .findByContentContainingIgnoreCaseAndCategory(keyword, category)
+            .stream()
+            .map(BlogResponseDTO::fromEntity)
+            .toList();
     }
 }

@@ -42,3 +42,8 @@ spring:
       chat:
         options:
           model: ${OPENAI_MODEL}
+  
+openapi:
+  serviceKey: ${OPENAPI_SERVICE_KEY}
+  callBackURL: ${OPENAPI_CALLBACKURL}
+  dataType: ${OPENAPI_TYPE}

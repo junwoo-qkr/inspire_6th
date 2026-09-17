@@ -1,5 +1,6 @@
 package com.example.jpapractice.features.blog.ctrl;
 
+import com.example.jpapractice.features.blog.AI.agent.BlogAIAgent;
 import java.util.List;
 import java.util.Map;
 
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 @RequiredArgsConstructor
 public class BlogController {
 
+    private final BlogAIAgent blogAIAgent;
     private final BlogService blogService;
 
     @GetMapping("/index")
@@ -55,10 +57,12 @@ public class BlogController {
     }
 
     @PostMapping("/ai/agent")
-    public ResponseEntity<?> agent(@RequestBody Map<String, Object> map) {
-        System.out.println("blog controller agent param :" + map.get("category") + "\t" + map.get("keyword"));
+    public ResponseEntity<?> agent(@RequestBody Map<String, Object> request) {
+        System.out.println("blog controller agent param :" + request.get("category") + "\t" + request.get("keyword"));
         
-        return ResponseEntity.status(HttpStatus.CREATED).body(blogService.contentGenerate(map));
+        return ResponseEntity
+            .status(HttpStatus.CREATED)
+            .body(blogAIAgent.generate(request));
     }
     
     

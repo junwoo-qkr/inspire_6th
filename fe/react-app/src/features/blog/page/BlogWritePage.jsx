@@ -204,12 +204,6 @@ const BlogWritePage = () => {
     }
 
     const writeHandler = async () => {
-        // console.log(`title: ${title}`);
-        // console.log(`content: ${content}`);
-        // console.log(`category: ${category}`);
-        // console.log(`user: ${user}`);
-
-        // await api.post("/posts", {
         await api.post("/blog/write", {
             title,
             content,
@@ -230,12 +224,7 @@ const BlogWritePage = () => {
     }
 
     const keywordHandler = async () => {
-        console.log(`keyword : ${keyword}`);
-        
-        await api.post("/blog/ai/agent", {
-            category,
-            keyword
-        }, {
+        await api.post("/blog/ai/agent", { category, keyword }, {
             headers : {Authorization : at ? at : ""}
         })
             .then(response => {

@@ -56,7 +56,7 @@ public class SecurityConfig {
             .cors(Customizer.withDefaults())  // CorsConfigurationSource를 보안 필터 체인에 적용
             .csrf(csrf -> csrf.disable())  // csrf 보호 기능 비활성화
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/user/**", "/swagger-ui/**","/v3/api-docs/**", "/openai/**").permitAll()  // 언제나 허용할 엔드포인트 패턴
+                .requestMatchers("/user/**", "/swagger-ui/**","/v3/api-docs/**", "/openai/**", "/openapi/**").permitAll()  // 언제나 허용할 엔드포인트 패턴
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()  // OPTIONS 요청일 땐 모든 패턴 허용
                 .requestMatchers("/admin/**").hasRole("ADMIN")  // role이 ADMIN일 때 허용할 패턴
                 .anyRequest().authenticated()  // 나머지 요청은 토큰 필요
