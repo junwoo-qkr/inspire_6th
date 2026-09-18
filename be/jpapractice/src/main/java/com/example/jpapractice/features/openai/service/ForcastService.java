@@ -14,6 +14,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import com.example.jpapractice.features.openai.domain.ForcastRequestDTO;
 import com.example.jpapractice.features.openai.domain.ForcastResponseDTO;
+import com.example.jpapractice.features.openai.util.CategoryCode;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -42,8 +43,9 @@ public class ForcastService {
             .queryParam("serviceKey", key)
             .queryParam("beach_num", request.getBeach_num())
             .queryParam("base_date", request.getBase_date())
-            .queryParam("base_time", request.getBase_date())
+            .queryParam("base_time", request.getBase_time())
             .queryParam("dataType", type)
+            .build(true)
             .toUriString();
 
         HttpURLConnection http = null;
@@ -88,6 +90,20 @@ public class ForcastService {
         }
 
         list.stream().forEach(System.out::println);
-        return null;
+
+        list = list.stream()
+            .map(dto -> {
+                dto.setCategoryName(CategoryCode.valueOf(dto.getCategory()).getName());
+                String value = CategoryCode.getCodeValue(dto.getCategory(), dto.getFcstValue());
+                String unit = CategoryCode.valueOf(dto.getCategory()).getUnit();
+                dto.setFcstValue(value + unit);
+                return dto;
+            })
+            .toList();
+
+        System.out.println();
+        list.stream().forEach(System.out::println);
+
+        return list;
     }
 }

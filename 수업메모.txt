@@ -1,53 +1,26 @@
-바이브코딩
-- 코드 작성 없이 AI랑 대화를 주고받으며 프로그램 개발
+원래 프로젝트 구조: monolithic
+- 다양한 서비스가 한 프로젝트 안에 존재
+- 접근 용이
+- 한 서비스에 에러가 나면 전부 작동하지 않음
+- 클라우드 환경에 부적합
+    - scale out(똑같은 서버 증설) 등이 제한적
 
-ai 어시스턴트의 발전 과정
-뉴럴 네트워크 - 딥러닝 - 트랜스포머 - llm
+msa: micro service architecture
+- 한 프로젝트에는 한 서비스만 존재
+- 요청, 응답은 게이트웨이를 통과
+- 각 서비스가 discovery service에 등록되어 있어야함
+- 각 서비스 간의 통신은 비동기 방식으로
+- 서비스들은 cluster(spring cloud)로 묶여있어야함
+- scale out이 간편
+- monolithic보다 복잡
+- db의 트랜잭션을 유지하기 어려움
 
-기존 ai: 주어진 데이터 분류, 예측에 초점(사진 분류, 주식 예측 등)
-생성형 ai: 학습 데이터를 바탕으로 새로운 컨텐츠 제작
+spring cloud framework
+- spring boot 기반으로 제작
 
-할루시네이션: 그럴듯하지만 사실이 아닌 정보를 만들어내는 현상
+discovery service
+- 서비스들을 관리하는 서버
+- netflix의 Eureka Server 등
 
-프롬프트: ai에게 입력하는 글
-명확성, 구체성, 맥락 제공이 중요
-
-프롬프팅 전략: RACE, CARE, RISE, CO-STAR
-
-5w1h 프레임워크
-
-프롬프팅 4대 전략
-- 명확한 지침 작성
-- 참조 텍스트 제공
-- 하위 작업으로 분할
-- 생각할 시간 부여
-
-오늘 할 일
-- 프롬프팅(openai의 role)
-- json형태의 텍스트로 출력 -> json로 parse(ObjectMapper) -> dto
-
-system: ai의 페르소나, 제약조건 등을 세팅
-user: 사용자의 질문, 요청 데이터
-assistant: 문맥을 이해하는 role
-(TIL 요구사항: openai의 메시지 포맷 출력해주기(openaiservice를 참고해서))
-
-okhttp3의 Request로 openai와 통신하기 위한 객체 생성
-objectMapper, chatClient, okHttpClient는 자동으로 매핑이 안됨 -> config에서 bean 생성
-
-securityconfig에서 permitall()에 openai의 엔드포인트 추가
-
-objectMapper가 exr을 자동으로 dto로 매핑
-@ignoreUnknown: 매핑 시 없는 필드는 무시하기
-
-inner class란?
-
-ChatClient로 model, 엔드포인트 등을 요청마다 명시할 필요없이 간편하게 작성 가능
-
-chatclient: yml의 설정을 읽어서 api를 알아서 호출해줌
-
-mcp(model context protocol)
-모델이 외부 도구나 데이터와 연결할 때 사용하는 통신 프로토콜
-모델이 외부 시스템에 직접 접근(api는 외부 시스템의 기능을 잠깐 빌려오는 인터페이스)
-로컬 mcp와 원격 mcp
-
-controller에 들어온 요청을 agent로 -> agent가 요청을 분석해 필요한 tool(날씨 조회, 가게 검색 등)을 사용하고 조합해 응답
+api gateway: 단일 진입점 = 대표 도메인
+- 외부 서버와 내부 서버 분리 가능

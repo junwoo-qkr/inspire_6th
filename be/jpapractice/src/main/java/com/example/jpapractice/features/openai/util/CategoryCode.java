@@ -25,11 +25,11 @@ public enum CategoryCode {
         this.unit = unit;
     }
 
-    private String getName() {
+    public String getName() {
         return name;
     }
 
-    private String getUnit() {
+    public String getUnit() {
         return unit;
     }
 

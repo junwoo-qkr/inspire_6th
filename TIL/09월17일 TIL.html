@@ -1,0 +1,310 @@
+<h2 data-ke-size="size26">오늘의 한 줄 요약</h2>
+<ul style="list-style-type: disc;" data-ke-list-type="disc">
+<li>모놀리식 아키텍처와 MSA의 구조적 차이와 장단점을 비교했다.</li>
+<li>MSA에서 서비스 디스커버리와 API 게이트웨이가 담당하는 역할을 배웠다.</li>
+<li>Spring Cloud가 Spring Boot 기반 분산 시스템 개발을 지원하는 도구 모음이라는 점을 정리했다.</li>
+<li>외부 해수욕장 예보 API를 호출하고 응답을 가공해 React 화면에 표시하는 흐름을 구현했다.</li>
+</ul>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">키워드 정리</h2>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 23.7209%;"><b>키워드</b></td>
+<td style="width: 76.2791%;"><b>설명 또는 예시</b></td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>Monolithic Architecture</code></b></td>
+<td style="width: 76.2791%;">여러 기능과 서비스가 하나의 애플리케이션 안에 함께 구성되는 구조</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>MSA</code></b></td>
+<td style="width: 76.2791%;">기능을 독립적인 작은 서비스로 나누고 네트워크를 통해 협력하게 하는 구조</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>Scale Out</code></b></td>
+<td style="width: 76.2791%;">같은 역할의 서버 인스턴스를 추가해 처리량을 늘리는 수평 확장 방식</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>Service Discovery</code></b></td>
+<td style="width: 76.2791%;">서비스의 위치와 상태를 등록하고 다른 서비스가 이를 찾을 수 있게 하는 방식</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>API Gateway</code></b></td>
+<td style="width: 76.2791%;">외부 요청을 받아 적절한 내부 서비스로 전달하는 단일 진입점</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>Spring Cloud</code></b></td>
+<td style="width: 76.2791%;">Spring Boot 기반 분산 시스템에 필요한 설정, 라우팅, 서비스 탐색 등의 기능을 지원하는 도구 모음</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>UriComponentsBuilder</code></b></td>
+<td style="width: 76.2791%;">기본 URL에 <code>queryParam()</code>으로 요청 파라미터를 추가해 URI를 만드는 도구</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>HttpURLConnection</code></b></td>
+<td style="width: 76.2791%;"><code>getResponseCode()</code>와 입력 스트림을 이용해 HTTP 응답을 처리하는 Java 클래스</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>JsonNode</code></b></td>
+<td style="width: 76.2791%;">JSON을 트리 구조로 읽고 필요한 노드를 탐색할 때 사용하는 Jackson 타입</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>enum</code></b></td>
+<td style="width: 76.2791%;">정해진 상수와 관련 정보를 하나의 타입으로 묶어 관리하는 Java 문법</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>useLocation</code></b></td>
+<td style="width: 76.2791%;">React Router에서 현재 위치와 <code>navigate()</code>로 전달한 상태를 읽는 훅</td>
+</tr>
+</tbody>
+</table>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">오늘 배운 것</h2>
+<h4 data-ke-size="size20">모놀리식 아키텍처와 MSA 비교</h4>
+<p data-ke-size="size16">모놀리식 아키텍처는 여러 기능이 하나의 애플리케이션에 모여 있어 개발 초기에 구조를 이해하고 실행하기 쉽다. 반면 한 부분의 장애나 배포가 전체 애플리케이션에 영향을 줄 수 있고, 특정 기능만 따로 확장하기 어렵다.</p>
+<p data-ke-size="size16"><code>MSA</code>는 기능을 독립적인 서비스로 분리한다. 각 서비스를 개별적으로 배포하고 필요한 서비스만 확장할 수 있지만, 서비스 간 통신과 데이터 일관성 관리가 추가되어 전체 시스템 운영은 더 복잡해진다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td><b>구분</b></td>
+<td><b>모놀리식</b></td>
+<td><b>MSA</b></td>
+</tr>
+<tr>
+<td>구성</td>
+<td>여러 기능이 하나의 애플리케이션에 포함된다.</td>
+<td>기능별 서비스가 독립적으로 구성된다.</td>
+</tr>
+<tr>
+<td>배포</td>
+<td>전체 애플리케이션을 함께 배포한다.</td>
+<td>서비스별로 독립 배포할 수 있다.</td>
+</tr>
+<tr>
+<td>확장</td>
+<td>대체로 전체 애플리케이션 단위로 확장한다.</td>
+<td>부하가 큰 서비스만 선택적으로 확장할 수 있다.</td>
+</tr>
+<tr>
+<td>장애 영향</td>
+<td>한 기능의 장애가 전체 서비스에 영향을 줄 가능성이 크다.</td>
+<td>서비스가 분리되어 장애 범위를 제한하기 쉽다.</td>
+</tr>
+<tr>
+<td>데이터 관리</td>
+<td>하나의 데이터베이스 트랜잭션으로 관리하기 쉽다.</td>
+<td>서비스별 데이터가 분리되면 분산 트랜잭션과 데이터 일관성 관리가 어렵다.</td>
+</tr>
+</tbody>
+</table>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">서비스 통신과 서비스 디스커버리</h4>
+<p data-ke-size="size16">MSA에서는 서비스가 서로 다른 프로세스나 서버에서 실행될 수 있으므로 네트워크를 통해 통신한다. 즉시 응답이 필요하면 HTTP나 gRPC 같은 동기 방식을 사용할 수 있고, 느슨한 결합과 안정적인 이벤트 처리가 중요하면 메시지 큐를 이용한 비동기 방식을 사용할 수 있다.</p>
+<p data-ke-size="size16"><code>Service Discovery</code>는 실행 중인 서비스의 주소와 상태를 관리하고 필요한 서비스의 위치를 찾게 해 준다. Netflix의 Eureka Server가 대표적인 구현이지만, 모든 MSA가 별도의 디스커버리 서버를 반드시 사용하는 것은 아니며 배포 환경에 따라 다른 방식을 선택할 수 있다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">API 게이트웨이와 Spring Cloud</h4>
+<p data-ke-size="size16"><code>API Gateway</code>는 클라이언트가 여러 내부 서비스에 직접 접근하지 않도록 외부 요청을 받는 단일 진입점 역할을 한다. 요청 경로에 맞는 서비스로 트래픽을 전달하므로 외부와 내부 서비스의 구조를 분리할 수 있다.</p>
+<p data-ke-size="size16"><code>Spring Cloud</code>는 Spring Boot 애플리케이션에서 설정 관리, 서비스 탐색, 게이트웨이 같은 분산 시스템 기능을 구현하도록 돕는다. Spring Cloud 자체가 클러스터는 아니며, MSA 구축에 활용할 수 있는 프레임워크와 라이브러리의 모음이다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">외부 API 요청과 응답 처리</h4>
+<p data-ke-size="size16">외부 API를 호출할 때는 명세에 맞는 엔드포인트와 쿼리 파라미터를 정확하게 조합해야 한다. <code>UriComponentsBuilder</code>로 요청 URL을 만들고 <code>HttpURLConnection</code>으로 연결한 뒤, 상태 코드가 성공일 때 응답 스트림을 읽을 수 있다.</p>
+<pre class="reasonml"><code>// 쿼리 파라미터를 URI에 추가한 뒤 외부 API를 호출한다.
+String requestUrl = UriComponentsBuilder.fromUriString(endpoint)
+    .queryParam("date", date)
+    .build()
+    .toUriString();
+
+HttpURLConnection connection =
+    (HttpURLConnection) new URL(requestUrl).openConnection();
+
+// 상태 코드가 200이면 응답 본문을 읽을 수 있다.
+if (connection.getResponseCode() == 200) {
+    InputStream stream = connection.getInputStream();
+}</code></pre>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">JSON 파싱과 열거형을 이용한 값 변환</h4>
+<p data-ke-size="size16"><code>ObjectMapper.readTree()</code>는 JSON을 <code>JsonNode</code> 트리로 만들며, 필요한 배열 노드를 DTO 배열로 변환할 수 있다. 외부 API의 짧은 코드와 숫자값은 <code>enum</code>에 이름, 단위, 변환 규칙을 모아 두면 응답을 화면 친화적인 값으로 바꾸기 쉽다.</p>
+<pre class="reasonml"><code>// JSON 배열을 DTO 배열로 변환한다.
+JsonNode root = objectMapper.readTree(json);
+JsonNode items = root.findValue("item");
+List&lt;ResponseDto&gt; responses =
+    Arrays.asList(objectMapper.treeToValue(items, ResponseDto[].class));
+
+// 열거형에 코드와 표시 이름을 함께 둔다.
+enum WeatherCode {
+    TMP("기온", "℃");
+
+    private final String name;
+    private final String unit;
+}</code></pre>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">React에서 요청 결과를 다음 화면으로 전달하기</h4>
+<p data-ke-size="size16">입력 폼의 제출 이벤트에서 <code>preventDefault()</code>로 기본 동작을 막고 Axios로 서버에 POST 요청을 보낼 수 있다. 응답을 받은 뒤 <code>navigate()</code>의 <code>state</code>에 데이터를 담아 결과 경로로 이동하면, 결과 컴포넌트는 <code>useLocation()</code>으로 값을 받아 목록을 렌더링할 수 있다.</p>
+<pre class="reasonml"><code>// 요청이 성공하면 응답 데이터를 결과 화면으로 전달한다.
+const response = await api.post("/api/forecast", request);
+navigate("/forecast/result", {
+    state: { forecasts: response.data },
+});
+
+// 결과 화면에서 전달받은 데이터를 읽는다.
+const { state } = useLocation();
+const forecasts = state?.forecasts ?? [];</code></pre>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">오늘의 코드 1 - 외부 해수욕장 예보 API 호출</h2>
+<h4 data-ke-size="size20">ForcastService.java</h4>
+<pre class="reasonml"><code>String requestURL = UriComponentsBuilder
+    .fromUriString(endPoint)
+    .queryParam("serviceKey", key)
+    .queryParam("beach_num", request.getBeach_num())
+    .queryParam("base_date", request.getBase_date())
+    .queryParam("base_time", request.getBase_time())
+    .queryParam("dataType", type)
+    .build(true)
+    .toUriString();
+
+URL url = new URL(requestURL);
+http = (HttpURLConnection)url.openConnection();
+int status = http.getResponseCode();
+
+if(status == 200) {
+    return readString(http.getInputStream());
+}</code></pre>
+<p data-ke-size="size16">해변 코드, 날짜, 시간, 응답 형식을 쿼리 파라미터로 조합해 기상청 API를 호출했다. 이미 인코딩된 일반 인증키가 다시 인코딩되지 않도록 <code>build(true)</code>를 사용하고, 상태 코드가 <code>200</code>일 때만 응답 스트림을 읽었다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 2 - 예보 응답 가공</h2>
+<h4 data-ke-size="size20">ForcastService.java</h4>
+<pre class="reasonml"><code>JsonNode node = objectMapper.readTree(result);
+JsonNode item = node.findValue("item");
+
+List&lt;ForcastResponseDTO&gt; list = null;
+if(item.isArray()) {
+    list = Arrays.asList(
+        objectMapper.treeToValue(item, ForcastResponseDTO[].class)
+    );
+}
+
+list = list.stream()
+    .map(dto -&gt; {
+        dto.setCategoryName(
+            CategoryCode.valueOf(dto.getCategory()).getName()
+        );
+        String value = CategoryCode.getCodeValue(
+            dto.getCategory(),
+            dto.getFcstValue()
+        );
+        String unit = CategoryCode
+            .valueOf(dto.getCategory())
+            .getUnit();
+        dto.setFcstValue(value + unit);
+        return dto;
+    })
+    .toList();
+
+return list;</code></pre>
+<h4 data-ke-size="size20">CategoryCode.java</h4>
+<pre class="reasonml"><code>public enum CategoryCode {
+    POP("강수확률", "%"),
+    PTY("강수형태", ""),
+    SKY("하늘상태", ""),
+    TMP("1시간 기온", "℃"),
+    WSD("풍속", "m/s");
+
+    private final String name;
+    private final String unit;
+
+    public static String getCodeValue(String name, String value) {
+        CategoryCode c = CategoryCode.valueOf(name);
+
+        if(c == CategoryCode.SKY) {
+            switch(value) {
+                case "1" : return "맑음";
+                case "3" : return "구름많음";
+                case "4" : return "흐림";
+            }
+        }
+        return value;
+    }
+}</code></pre>
+<p data-ke-size="size16">응답 JSON의 <code>item</code> 배열을 DTO 목록으로 변환한 뒤 각 카테고리 코드에 한글 이름과 단위를 추가했다. <code>CategoryCode</code> 열거형은 하늘 상태와 강수 형태처럼 숫자로 전달되는 값을 사용자가 이해할 수 있는 문장으로 변환한다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 3 - 예보 조건 전송과 결과 화면 이동</h2>
+<h4 data-ke-size="size20">ForcastPage.jsx</h4>
+<pre class="reasonml"><code>const submitHandler = async (event) =&gt; {
+    event.preventDefault();
+    setLoading(true);
+    setError("");
+
+    const request = {
+        beach_num: form.beach_num,
+        base_date: form.base_date.replaceAll("-", ""),
+        base_time: form.base_time.replace(":", ""),
+    };
+
+    try {
+        const response = await api.post("/openapi/fcst", request);
+        navigate("/openapi/result", {
+            state: {
+                forecasts: Array.isArray(response.data)
+                    ? response.data
+                    : [],
+                request,
+            },
+        });
+    } catch (err) {
+        console.error(err);
+        setError(
+            "예보 정보를 불러오지 못했습니다. 입력값을 확인해 주세요."
+        );
+    } finally {
+        setLoading(false);
+    }
+};</code></pre>
+<p data-ke-size="size16">HTML 날짜와 시간 입력값에서 구분 문자를 제거해 서버 DTO가 요구하는 형식으로 변환했다. POST 요청이 성공하면 응답 데이터와 조회 조건을 라우터 상태에 담아 <code>/openapi/result</code>로 이동하고, 실패하면 오류 메시지를 화면에 표시한다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 4 - 예보 결과 목록과 카드 출력</h2>
+<h4 data-ke-size="size20">ToyApp.js</h4>
+<pre class="reasonml"><code>&lt;Route path="/openapi/index" element={&lt;ForcastPage /&gt;} /&gt;
+&lt;Route path="/openapi/result" element={&lt;ForcastList /&gt;} /&gt;</code></pre>
+<h4 data-ke-size="size20">ForcastList.jsx</h4>
+<pre class="reasonml"><code>const { state } = useLocation();
+const forecasts = state?.forecasts ?? [];
+
+{forecasts.length &gt; 0 ? (
+    &lt;Grid&gt;
+        {forecasts.map((forecast, index) =&gt; (
+            &lt;ForcastItem
+                key={`${forecast.category}-${index}`}
+                forecast={forecast}
+            /&gt;
+        ))}
+    &lt;/Grid&gt;
+) : (
+    &lt;EmptyMessage&gt;
+        표시할 예보 데이터가 없습니다. 다시 조회해 주세요.
+    &lt;/EmptyMessage&gt;
+)}</code></pre>
+<h4 data-ke-size="size20">ForcastItem.jsx</h4>
+<pre class="reasonml"><code>const ForcastItem = ({ forecast }) =&gt; {
+    return (
+        &lt;Card&gt;
+            &lt;Category&gt;
+                {forecast.categoryName || forecast.category}
+            &lt;/Category&gt;
+            &lt;Value&gt;{forecast.fcstValue}&lt;/Value&gt;
+            {forecast.categoryName &amp;&amp; (
+                &lt;Code&gt;{forecast.category}&lt;/Code&gt;
+            )}
+        &lt;/Card&gt;
+    );
+};</code></pre>
+<p data-ke-size="size16"><code>/openapi/result</code> 라우트에서 전달받은 예보 배열을 순회해 카드 컴포넌트로 출력했다. 데이터가 없거나 결과 URL에 직접 접근한 경우에는 빈 목록 대신 다시 조회하라는 안내를 표시한다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">어려웠던 점 / 각종 오류</h2>
+<p data-ke-size="size16">외부 API가 처음에는 <code>400 Bad Request</code>를 반환했다. 요청 URL에서 <code>base_time</code>에 <code>request.getBase_date()</code>를 넣어 날짜가 중복 전송되었고, 엔드포인트에도 실제 기능 경로인 <code>/getVilageFcstBeach</code>가 빠져 있었기 때문에 시간 getter와 전체 요청 주소를 올바르게 수정했다.</p>
+<p data-ke-size="size16">주소를 수정한 뒤에는 <code>403 Forbidden</code>이 발생했다. 공공데이터포털의 일반 인증키는 이미 URL 인코딩된 값이므로 <code>toUriString()</code> 과정에서 다시 인코딩되지 않게 <code>build(true)</code>로 URI를 생성해 인증키를 그대로 전달했다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 style="color: #000000; text-align: start;" data-ke-size="size26">하루를 정리하며</h2>
+<p style="color: #222222; text-align: start;" data-ke-size="size16">LG CNS 6기</p>
+<p style="color: #222222; text-align: start;" data-ke-size="size16">LGCNSINSIRECAMP</p>
+<p style="color: #222222; text-align: start;" data-ke-size="size16">개발자</p>
