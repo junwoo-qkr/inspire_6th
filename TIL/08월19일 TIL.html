@@ -1,0 +1,205 @@
+<h2 data-ke-size="size26">오늘의 한 줄 요약</h2>
+<ul style="list-style-type: disc;" data-ke-list-type="disc">
+<li>예외가 발생하는 코드와 처리 코드를 나누고 사용자 정의 예외를 호출자에게 전달했다.</li>
+<li>팩토리에서 DAO·Service·Controller를 연결하고 콘솔 요청이 전체 조회 결과로 돌아오는 흐름을 구현했다.</li>
+</ul>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">키워드 정리</h2>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 23.7209%;"><b>키워드</b></td>
+<td style="width: 76.2791%;"><b>설명 또는 예시</b></td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b>Checked exception</b></td>
+<td style="width: 76.2791%;">컴파일러가 <code>catch</code> 또는 <code>throws</code> 여부를 검사하는 예외</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b>Unchecked exception</b></td>
+<td style="width: 76.2791%;"><code>RuntimeException</code>과 <code>Error</code> 계열의 검사 비강제 예외</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>try / catch / finally</code></b></td>
+<td style="width: 76.2791%;">실행할 코드 / 예외 처리 / 블록을 벗어날 때의 마무리</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>throw / throws</code></b></td>
+<td style="width: 76.2791%;">예외 발생 / 메서드가 전달할 수 있는 예외 선언</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b>생성자 주입</b></td>
+<td style="width: 76.2791%;">필요한 객체를 생성자의 인자로 받기</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b>프론트 컨트롤러</b></td>
+<td style="width: 76.2791%;">요청을 받아 담당 컨트롤러로 연결하는 공통 진입점</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b>팩토리·싱글톤</b></td>
+<td style="width: 76.2791%;">객체 생성·조회 담당 / 인스턴스 공유 방식</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b>DTO·DAO</b></td>
+<td style="width: 76.2791%;">전달할 데이터 / 데이터 접근 담당 객체</td>
+</tr>
+</tbody>
+</table>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">오늘 배운 것</h2>
+<h4 data-ke-size="size20">예외 분류와 처리 위치</h4>
+<p data-ke-size="size16">Checked exception도 실행 중 발생한다. 컴파일 시점에는 처리 여부를 검사하며, <code>IOException</code>과 이번 <code>CustomException</code>이 예다. <code>RuntimeException</code> 계열은 처리 선언이 강제되지 않으며, 배열 범위를 벗어나거나 문자열을 숫자로 바꾸지 못할 때 발생할 수 있다.</p>
+<pre class="reasonml"><code>// Java
+try {
+    int menu = Integer.parseInt("abc"); // 정수로 변환할 수 없음
+} catch (NumberFormatException e) {
+    System.out.println("숫자를 입력하세요."); // 예외 처리 결과
+} finally {
+    System.out.println("입력 확인 끝"); // 처리 후 실행
+}</code></pre>
+<p data-ke-size="size16">여러 <code>catch</code>를 쓰면 구체적인 하위 예외를 먼저 둔다. <code>finally</code>는 정상 완료·예외·<code>return</code>으로 블록을 벗어나는 과정에서 실행되지만, <code>System.exit</code>로 JVM이 종료되면 실행이 보장되지 않는다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">throw와 throws로 사용자 정의 예외 전달하기</h4>
+<p data-ke-size="size16"><code>throw</code>는 예외 객체를 던져 현재 실행 흐름을 바꾼다. <code>throws</code>는 메서드 밖으로 전달될 수 있는 예외를 선언하며 예외를 처리하는 동작 자체는 아니다. <code>Exception</code>을 상속한 <code>CustomException</code>은 호출자가 처리하거나 다시 선언해야 한다.</p>
+<pre class="reasonml"><code>// Java
+static void validate(int value) throws CustomException {
+    if (value &lt; 0) {
+        throw new CustomException("0 이상을 입력하세요."); // 음수 거부
+    }
+} // validate(0)은 통과, validate(-1)은 호출자에게 예외 전달</code></pre>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">계층 분리와 생성자 주입</h4>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 23.7209%;"><b>구성 요소</b></td>
+<td style="width: 76.2791%;"><b>이번 실습의 역할</b></td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>BlogReactView</code></b></td>
+<td style="width: 76.2791%;">콘솔 메뉴 입력과 DTO 출력</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>BlogFrontController / BlogBeanFactory</code></b></td>
+<td style="width: 76.2791%;">요청 키로 컨트롤러 찾기 / 객체 생성과 연결</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>ListController</code></b></td>
+<td style="width: 76.2791%;">서비스의 전체 조회 호출</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>BlogReactService / BlogReactSerciveImpl</code></b></td>
+<td style="width: 76.2791%;">서비스 계약 / DAO 호출 구현</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>BlogReactDao</code></b></td>
+<td style="width: 76.2791%;">메모리의 게시글 목록 반환</td>
+</tr>
+</tbody>
+</table>
+<p data-ke-size="size16">생성자 주입은 객체가 사용할 의존 객체를 외부에서 받는 방식이다. 팩토리가 <code>DAO → Service → Controller</code> 순서로 만들고 연결하며, 컨트롤러는 서비스 인터페이스 타입을 사용한다.</p>
+<pre class="reasonml"><code>// Java
+BlogReactDao dao = new BlogReactDao();
+BlogReactService service = new BlogReactSerciveImpl(dao); // DAO 전달
+ListController controller = new ListController(service); // Service 전달
+System.out.println(controller.list().size()); // 디버그 로그 다음에 4</code></pre>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">싱글톤 팩토리와 콘솔 MVC의 범위</h4>
+<p data-ke-size="size16"><code>BlogBeanFactory.getInstance()</code>는 단일 스레드의 이 콘솔 실습에서 같은 팩토리를 반환한다. 팩토리는 <code>list.posts</code> 키에 컨트롤러를 저장하고, <code>getBean</code>은 객체를 조회한다. 이 구현에는 동시 초기화를 막는 처리가 없다.</p>
+<pre class="reasonml"><code>// Java
+BlogBeanFactory first = BlogBeanFactory.getInstance();
+BlogBeanFactory second = BlogBeanFactory.getInstance();
+System.out.println(first == second); // 같은 팩토리이므로 true</code></pre>
+<p data-ke-size="size16">DAO와 Service는 팩토리 생성 시 한 번 만들어 공유하지만 각각이 싱글톤 클래스로 구현된 것은 아니다. 현재는 HTTP·서블릿·DB가 없는 콘솔 구조이며 전체 조회만 연결되어 있다. <code>List.of(...)</code>는 수정 불가 목록을 만들고, 이를 감싼 <code>new ArrayList&lt;&gt;(...)</code>는 요소 추가·삭제가 가능한 목록을 만든다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">오늘의 코드 1 - 배열 범위 예외 처리와 finally</h2>
+<h4 data-ke-size="size20">ExceptionApp.java</h4>
+<pre class="reasonml"><code>// Java
+String[] strArr = {"Oasis", "Maroon 5", "YOASOBI"};
+try {
+    for (int i = 0; i &lt;= strArr.length; i++) {
+        System.out.println(strArr[i]);
+    }
+} catch(ArrayIndexOutOfBoundsException e) {
+    e.printStackTrace();
+} finally {
+    System.out.println("예외 발생 여부와 상관없이 실행");
+}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">요소 세 개를 출력한 뒤 인덱스 3 접근에서 <code>ArrayIndexOutOfBoundsException</code>을 재현했다. <code>catch</code>에서 예외를 출력하고 <code>finally</code>를 실행한 뒤 다음 입력 코드로 진행했다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 2 - 사용자 정의 예외 발생과 전파</h2>
+<h4 data-ke-size="size20">CustomException.java</h4>
+<pre class="reasonml"><code>// Java
+public class CustomException extends Exception {
+    public CustomException() {
+    }
+    public CustomException(String msg) {
+        super(msg);
+    }
+}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">기존 <code>Exception</code>을 상속하고 생성자로 받은 메시지를 부모 생성자에 전달했다. 호출자는 <code>catch (CustomException e)</code>로 이 예외를 구분해 처리할 수 있다.</p>
+<h4 data-ke-size="size20">ExceptionDemo.java</h4>
+<pre class="reasonml"><code>// Java
+public void sample(int x) throws CustomException {
+    System.out.println("sample 시작");
+    try {
+        if(x &lt; 0) {
+            throw new CustomException("양의 정수를 입력하세요.");
+        }
+    } finally {
+        System.out.println("sample 끝");
+    }
+}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16"><code>sample(-1)</code>은 시작·끝을 출력하고 예외를 호출자인 <code>ExceptionApp</code>으로 전달했다. 실제 조건은 음수만 거부하므로 0도 허용하며, 메시지의 양의 정수라는 표현과 허용 범위가 다르다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 3 - 팩토리에서 의존 객체 연결하기</h2>
+<h4 data-ke-size="size20">BlogBeanFactory.java</h4>
+<pre class="reasonml"><code>// Java
+private BlogBeanFactory() {
+    map = new HashMap&lt;&gt;();
+    dao = new BlogReactDao();
+    service = new BlogReactSerciveImpl(dao);
+    map.put("list.posts", new ListController(service));
+}
+
+public static BlogBeanFactory getInstance() {
+    if(instance == null) {
+        instance = new BlogBeanFactory();
+    }
+    return instance;
+}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">DAO를 서비스에, 서비스를 컨트롤러에 생성자로 전달했다. 전체 조회 실행 시 팩토리에 등록된 컨트롤러에서 서비스와 DAO로 호출이 이어졌다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 4 - 요청 키로 조회하고 DTO 목록 출력하기</h2>
+<h4 data-ke-size="size20">BlogFrontController.java</h4>
+<pre class="reasonml"><code>// Java
+public List&lt;BlogResponseDTO&gt; list(String endPoint) {
+    System.out.println("debug &gt;&gt;&gt;&gt; BlogFrontController.list, endPoint = " + endPoint);
+    Object controller = factory.getBean(endPoint);
+    return ((ListController)controller).list();
+}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16"><code>list.posts</code>에 등록된 객체를 <code>ListController</code>로 변환해 조회를 요청했다. 등록되지 않은 키에는 <code>null</code>이 반환되므로 그대로 호출할 수 없다.</p>
+<h4 data-ke-size="size20">BlogReactView.java</h4>
+<pre class="reasonml"><code>// Java
+public void list() {
+    System.out.println("&gt;&gt;&gt;&gt; 데이터 출력 &lt;&lt;&lt;&lt;");
+    String endPoint = "list.posts";
+    List&lt;BlogResponseDTO&gt; response = front.list(endPoint);
+    response.stream().forEach(System.out::println);
+}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">조회 결과가 <code>List&lt;BlogResponseDTO&gt;</code>로 돌아와 게시글 1~4가 콘솔에 출력됐다. <code>@ToString</code>이 적용되어 각 DTO의 필드 값을 확인할 수 있었다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">어려웠던 점 / 각종 오류</h2>
+<p data-ke-size="size16">배열 반복 조건을 <code>i &lt;= strArr.length</code>로 쓰면 길이와 같은 인덱스에 접근해 예외가 발생한다. 모든 요소만 순회하려면 <code>i &lt; strArr.length</code>로 수정해야 한다.</p>
+<p data-ke-size="size16">콘솔에 숫자가 아닌 값을 입력하면 <code>Integer.parseInt</code>에서 <code>NumberFormatException</code>이 발생한다. View의 <code>catch</code>가 안내 문구를 출력한 뒤 메뉴를 다시 표시하므로 올바른 번호를 다시 입력할 수 있다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 style="color: #000000; text-align: start;" data-ke-size="size26">하루를 정리하며</h2>
+<p style="color: #222222; text-align: start;" data-ke-size="size16">LG CNS 6기</p>
+<p style="color: #222222; text-align: start;" data-ke-size="size16">LGCNSINSIRECAMP</p>
+<p style="color: #222222; text-align: start;" data-ke-size="size16">개발자</p>
