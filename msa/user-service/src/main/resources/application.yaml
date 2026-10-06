@@ -1,0 +1,16 @@
+server:
+#  port: 60000
+  port: 0  # Random Port
+
+spring:
+  application:
+    name: user-service
+
+eureka:
+  instance:
+    instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
+  client:
+    regitster-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://127.0.0.1:8761/eureka  # 자신의 위치 정보를 등록할 Eureka Server 정보
