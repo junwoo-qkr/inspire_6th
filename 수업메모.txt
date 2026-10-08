@@ -1,58 +1,16 @@
-IntelliJ 처음 실행
-maven 타입으로 프로젝트 생성
+h2 database
+- java로 작성된 오픈소스 rdbms
+- embedded, server-client 가능
+- jpa 연동 가능
 
-maven의 clean, compile, package
-- compile: 코드 컴파일
-- clean: 컴파일했던 산출물 삭제
-- package: 배포할 수 있도록 .jar 파일 생성
+POST localhost:60000/user-service/users에 postman으로 접속
+- header Authorization에 username는 user, password는 password
+- body에 email, name, userId 넣고 보내면 201
 
-배포된 파일 실행해보기
-- target 폴더로 들어가서 java -jar <jar 파일 이름> 입력
-- pom.xml이 있는 폴더에서 mvn spring-boot:run 입력
+localhost:60000/h2-console에 접속
+- SELECT * FROM USERS; 실행 ->postman에서 만들었던 user가 나옴
 
-spring cloud Netflix eureka: service discovery(registry) 중 하나
-- 각 microservice는 서로의 주소를 알고 있어야 함
-- 서로의 주소를 하드코딩하기엔 주소가 바뀔수도 있고 너무 많음
-  -> eureka 서버에 각 서버의 정보를 저장, load balancer가 트래픽을 배분
+usercontroller에서 requestmapping을 "/"(지금 주석처리된 것)로 바꿔버리면 api gateway로 접속 못함
+-> api gateway에서는 prefix로 user-service를 가지는데 이와 충돌됨
 
-group id는 도메인을 뒤집는게 일반적
-예) test.com -> com.test
-
-Java ARchive -> jar
-Web ARchive -> war
-
-spring cloud와 spring boot의 버전을 맞춰주는게 중요함
-
-@EnableEurekaServer: 해당 클래스가 eureka 서버로 동작하게 만드는 어노테이션
-
-eureka 서버의 포트 번호는 8761
-eureka 서버는 register-with-eureka, fetch-registry를 false로 설정
-localhost:8761로 eureka server 대시보드에 접근 가능
-
-eureka 클라이언트의 위치 명시, register-with-eureka, fetch-registry는 true로 설정
-@EnableEurekaClient
-
-userService 여러개 동시에 실행하는 방법
-1. ide에서 실행하기
-- 실행중인 거 설정 -> 구성 -> 편집
-- vm 옵션 추가 -> -Dserver.port=60001
-- 강사님은 현재 실행중인 걸 그대로 복사할 수 있는데 안되서 직접 설정함
-2. ide 내부 터미널로 실행하기
-- 터미널에 mvn spring-boot:run "-Dspring-boot.run.jvmArguments=-Dserver.port=60002" 입력
-3. 외부 터미널로 실행하기
-- userService 프로젝트 폴더에서 터미널 실행
-- mvn compile, mvn package 실행
-- target 폴더에서 java -jar "-Dserver.port=60003" .\user-service-0.0.1-SNAPSHOT.jar 실행
-
-scale out 할때마다 포트를 설정해주기 번거로움 -> random port 사용하기
-- 서비스 실행 시 포트 번호를 0으로 지정하면 자동으로 랜덤한 포트 사용
--> eureka dashboard에는 instance가 1개만 표시됨(전부 포트가 0) -> instance의 id 값도 random하게 설정하기
--> eureka.instance.instance-id= ...
-
-api gateway
-- 모든 트래픽의 단일 진입점
-- service discovery로부터 모든 서비스의 정보를 전달받음 -> 요청을 분석 후 각 서비스로 라우팅
-
-내일 수업에 사용할 new-toy-msa를 다운로드 받음
-- 자바 21로 컴파일하도록 설정되어있어서 17로 수정
-- 각 서비스의 엔드포인트에 접속되는 것을 확인했음
+POST localhost:8000/user-service/users 후 GET localhost:8000/user-service/users, GET localhost:8000/user-service/users/{userId} 응답을 postman으로 확인

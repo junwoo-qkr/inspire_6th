@@ -1,0 +1,357 @@
+<h1 data-ke-size="size30">[LG CNS AM INSPIRE CAMP 6기] 10/07 TIL - MSA: 사용자·상품·주문 마이크로서비스와 H2 DB 분리</h1>
+<h2 data-ke-size="size26">오늘의 한 줄 요약</h2>
+<ul style="list-style-type: disc;" data-ke-list-type="disc">
+<li>사용자·상품·주문 서비스를 나누고, 요청 객체 → DTO → Entity → 응답 객체의 역할을 구분했다.</li>
+<li>Eureka에 등록한 서비스 이름과 Gateway의 경로 조건을 연결하고, 실제 <code>Controller</code> 경로까지 맞춰야 한다는 것을 배웠다.</li>
+<li>회원 가입에서는 BCrypt로 비밀번호를 저장하고, Basic 인증 계정과 H2 접속 계정은 별도로 설정한다.</li>
+<li>H2 메모리 DB는 서비스 프로세스마다 분리되며, 상품 테이블 생성 후 초기 데이터를 넣도록 실행 순서를 설정한다.</li>
+<li>주문은 사용자 ID를 경로에서 받고, 주문 ID와 총액을 생성해 저장한 뒤 사용자별로 조회한다.</li>
+</ul>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">키워드 정리</h2>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 23.7209%;"><b>키워드</b></td>
+<td style="width: 76.2791%;"><b>설명 또는 예시</b></td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>Eureka</code></b></td>
+<td style="width: 76.2791%;">서비스 이름과 실행 중인 인스턴스의 주소·포트를 관리하는 서비스 레지스트리</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>server.port: 0</code></b></td>
+<td style="width: 76.2791%;">실행할 때 사용 가능한 포트를 배정받는 설정</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>Environment</code> / <code>@Value</code></b></td>
+<td style="width: 76.2791%;">실행 환경의 설정을 조회하거나 Spring Bean의 필드에 주입하는 방법</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>lb://서비스명</code></b></td>
+<td style="width: 76.2791%;">Gateway가 서비스 레지스트리에서 찾은 인스턴스로 요청을 전달하는 URI</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>Request</code> / <code>DTO</code> / <code>Response</code></b></td>
+<td style="width: 76.2791%;">외부 입력, 내부 처리 데이터, 외부 응답을 각각 담는 객체</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>ModelMapper</code></b></td>
+<td style="width: 76.2791%;">프로퍼티 이름과 타입 등을 바탕으로 객체 사이의 값을 매핑하는 라이브러리</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>@Entity</code> / <code>@Table</code></b></td>
+<td style="width: 76.2791%;">JPA가 관리하는 객체와 연결할 DB 테이블을 지정하는 애너테이션</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>CrudRepository</code></b></td>
+<td style="width: 76.2791%;"><code>save()</code>, <code>findAll()</code> 등 기본 데이터 저장·조회 기능을 제공하는 인터페이스</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>@Valid</code></b></td>
+<td style="width: 76.2791%;">요청 객체에 선언된 Bean Validation 제약을 적용하도록 하는 애너테이션</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>BCryptPasswordEncoder</code></b></td>
+<td style="width: 76.2791%;">비밀번호 해시를 만들고 원문과 저장된 해시의 일치 여부를 확인하는 도구</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>SecurityFilterChain</code></b></td>
+<td style="width: 76.2791%;">요청 경로별 인증 조건과 Basic 인증 등 보안 동작을 설정하는 Bean</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>jdbc:h2:mem:testdb</code></b></td>
+<td style="width: 76.2791%;">현재 프로세스 안에서 사용하는 이름이 <code>testdb</code>인 H2 메모리 DB</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>ddl-auto</code></b></td>
+<td style="width: 76.2791%;">Entity를 기준으로 DB 스키마를 생성하거나 변경하는 Hibernate 설정</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>data.sql</code></b></td>
+<td style="width: 76.2791%;">애플리케이션 초기화 시 사용할 SQL 데이터를 정의하는 파일</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>@JsonInclude(NON_NULL)</code></b></td>
+<td style="width: 76.2791%;">응답 JSON에서 값이 <code>null</code>인 필드를 생략하는 설정</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>UUID</code></b></td>
+<td style="width: 76.2791%;">사용자·주문을 구분하는 식별자를 생성하는 데 사용한 값</td>
+</tr>
+</tbody>
+</table>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">오늘 배운 것</h2>
+<h4 data-ke-size="size20">사용자·상품·주문 서비스의 책임과 데이터 객체</h4>
+<p data-ke-size="size16">사용자 서비스는 회원 등록과 조회, 상품 서비스는 상품 목록 조회, 주문 서비스는 주문 생성과 사용자별 주문 조회를 담당한다. 각 서비스의 <code>Controller</code>가 HTTP 요청을 받고, <code>Service</code>가 처리 흐름을 구성하며, <code>Repository</code>가 DB 저장과 조회를 맡는다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 33.3333%;"><b>객체</b></td>
+<td style="width: 33.3333%;"><b>역할</b></td>
+<td style="width: 33.3333%;"><b>실습 예시</b></td>
+</tr>
+<tr>
+<td style="width: 33.3333%;">요청 객체</td>
+<td style="width: 33.3333%;">클라이언트가 보낸 JSON을 받는다.</td>
+<td style="width: 33.3333%;"><code>RequestUser</code>, <code>RequestOrder</code></td>
+</tr>
+<tr>
+<td style="width: 33.3333%;">DTO</td>
+<td style="width: 33.3333%;">서비스 내부에서 처리할 값을 전달한다.</td>
+<td style="width: 33.3333%;"><code>UserDto</code>, <code>OrderDto</code></td>
+</tr>
+<tr>
+<td style="width: 33.3333%;">Entity</td>
+<td style="width: 33.3333%;">DB 테이블과 컬럼에 연결되는 데이터를 표현한다.</td>
+<td style="width: 33.3333%;"><code>UserEntity</code>, <code>CatalogEntity</code>, <code>OrderEntity</code></td>
+</tr>
+<tr>
+<td style="width: 33.3333%;">응답 객체</td>
+<td style="width: 33.3333%;">클라이언트에게 공개할 필드를 선택한다.</td>
+<td style="width: 33.3333%;"><code>ResponseUser</code>, <code>ResponseCatalog</code>, <code>ResponseOrder</code></td>
+</tr>
+</tbody>
+</table>
+<p data-ke-size="size16"><code>ModelMapper</code>는 객체 사이의 변환을 돕지만 DB 저장이나 비밀번호 해싱까지 수행하지는 않는다. 비밀번호와 내부 DB 기본 키가 응답에 노출되지 않도록 응답 객체를 별도로 둔다. 현재 상품 목록 조회는 <code>CatalogEntity</code>를 <code>ResponseCatalog</code>로 변환하며, <code>CatalogDto</code>를 거치는 흐름은 사용하지 않는다.</p>
+<pre class="reasonml"><code class="language-java">// 요청과 DB 객체를 직접 연결하지 않고 처리용 DTO로 먼저 변환한다.
+UserDto dto = mapper.map(request, UserDto.class);
+UserEntity entity = mapper.map(dto, UserEntity.class);
+// 저장·해싱 등은 별도 처리이며, 응답은 공개할 필드만 가진 객체로 만든다.
+ResponseUser response = mapper.map(dto, ResponseUser.class);</code></pre>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">서비스 등록, 포트와 설정값 읽기</h4>
+<p data-ke-size="size16">Spring Boot 애플리케이션은 <code>main</code> 메서드에서 시작되고, 사용자 서비스에는 서비스 발견을 위한 <code>@EnableDiscoveryClient</code>가 선언되어 있다. <code>application.yml</code>의 <code>spring.application.name</code>은 서비스 이름이고, <code>eureka.client.service-url.defaultZone</code>은 등록할 Eureka 서버의 주소다. <code>register-with-eureka</code>는 등록 여부, <code>fetch-registry</code>는 등록 정보 조회 여부를 정한다.</p>
+<p data-ke-size="size16">현재 사용자 서비스는 실습 편의를 위해 <code>60000</code>번 포트로 고정되어 있고, 상품·주문 서비스는 <code>server.port</code>가 0이다. <code>server.port</code>는 설정값이고 <code>local.server.port</code>는 웹 서버가 시작된 뒤 결정된 실제 포트이므로, 임의 포트 방식에서는 두 값을 구분해야 한다. 인스턴스 ID에 임의 값을 넣으면 같은 이름으로 실행한 여러 인스턴스를 구분할 수 있다.</p>
+<pre class="reasonml"><code class="language-java">// port가 0이면 설정값은 &quot;0&quot;, 실제 포트는 실행할 때 배정된 번호다.
+String configuredPort = env.getProperty(&quot;server.port&quot;);
+String actualPort = env.getProperty(&quot;local.server.port&quot;);
+
+// Spring이 관리하는 객체에는 설정값을 직접 주입할 수도 있다.
+@Value(&quot;${greeting.message}&quot;)
+private String message;</code></pre>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">Gateway 경로와 Controller 경로 연결</h4>
+<p data-ke-size="size16">Gateway는 Path 조건으로 요청을 받을 서비스를 고르고, <code>lb://</code> URI의 서비스 이름으로 Eureka에 등록된 인스턴스를 찾는다. 현재 사용자·상품·주문 경로에는 접두사를 제거하는 필터가 없으므로 <code>/user-service</code> 같은 접두사를 포함한 경로가 해당 서비스로 전달된다. <code>Controller</code>의 클래스 경로와 메서드 경로를 합친 값이 전달된 경로와 같아야 한다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 33.3333%;"><b>기능</b></td>
+<td style="width: 33.3333%;"><b>HTTP 메서드</b></td>
+<td style="width: 33.3333%;"><b>현재 프로젝트의 전체 경로</b></td>
+</tr>
+<tr>
+<td style="width: 33.3333%;">회원 등록</td>
+<td style="width: 33.3333%;"><code>POST</code></td>
+<td style="width: 33.3333%;"><code>/user-service/users</code></td>
+</tr>
+<tr>
+<td style="width: 33.3333%;">전체 회원 조회</td>
+<td style="width: 33.3333%;"><code>GET</code></td>
+<td style="width: 33.3333%;"><code>/user-service/users</code></td>
+</tr>
+<tr>
+<td style="width: 33.3333%;">회원 상세 조회</td>
+<td style="width: 33.3333%;"><code>GET</code></td>
+<td style="width: 33.3333%;"><code>/user-service/users/{userId}</code></td>
+</tr>
+<tr>
+<td style="width: 33.3333%;">상품 목록 조회</td>
+<td style="width: 33.3333%;"><code>GET</code></td>
+<td style="width: 33.3333%;"><code>/catalog-service/catalogs</code></td>
+</tr>
+<tr>
+<td style="width: 33.3333%;">주문 생성</td>
+<td style="width: 33.3333%;"><code>POST</code></td>
+<td style="width: 33.3333%;"><code>/order-service/{userId}/orders</code></td>
+</tr>
+<tr>
+<td style="width: 33.3333%;">사용자별 주문 조회</td>
+<td style="width: 33.3333%;"><code>GET</code></td>
+<td style="width: 33.3333%;"><code>/order-service/{userId}/orders</code></td>
+</tr>
+</tbody>
+</table>
+<p data-ke-size="size16">Gateway를 이용하는 요청은 현재 설정의 <code>8000</code>번 포트로 보내고, 직접 호출할 때는 각 서비스의 실제 포트를 사용한다. PDF의 상태 확인 예시에는 <code>/health_check</code>가 등장하지만, 현재 프로젝트는 <code>/health-check</code>를 사용하므로 실제 매핑에 맞춰 호출해야 한다.</p>
+<pre class="reasonml"><code class="language-java">@RequestMapping(&quot;/user-service&quot;)
+class ExampleController {
+    // 클래스와 메서드 경로를 합쳐 /user-service/users가 된다.
+    @GetMapping(&quot;/users&quot;)
+    public String users() { return &quot;users&quot;; }
+}</code></pre>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">요청 검증과 JPA의 DB 제약 구분</h4>
+<p data-ke-size="size16">요청 검증은 입력값이 처리 조건을 만족하는지 확인하는 단계다. <code>@NotNull</code>은 <code>null</code>을 막고, <code>@Size(min = 2)</code>는 길이의 최소 조건을 지정하며, <code>@Email</code>은 이메일 형식을 검사한다. <code>@NotNull</code>만으로 빈 문자열이나 공백 문자열까지 금지되는 것은 아니다.</p>
+<p data-ke-size="size16">JPA의 <code>@Column(nullable = false, unique = true)</code>는 DB 컬럼의 제약이고 요청 검증과 적용 위치가 다르다. 실습의 <code>UserEntity</code>는 숫자형 <code>id</code>를 DB 기본 키로 사용하고, <code>userId</code>에는 서비스가 생성한 <code>UUID</code>를 저장한다. <code>Repository</code>의 <code>findByUserId</code>는 DB 기본 키가 아닌 이 <code>userId</code> 프로퍼티를 조건으로 조회한다.</p>
+<pre class="reasonml"><code class="language-java">// 개념 예시: @Valid로 요청 객체의 검증 제약을 적용한다.
+@PostMapping(&quot;/users&quot;)
+public void register(@Valid @RequestBody ExampleRequest request) { }
+
+class ExampleRequest {
+    @NotNull
+    @Size(min = 8) // 비밀번호 길이는 최소 8자라는 뜻이다.
+    public String pwd;
+}</code></pre>
+<p data-ke-size="size16">현재 <code>RequestUser</code>에는 검증 제약이 선언되어 있지만 <code>createUser</code>의 요청 매개변수에는 <code>@Valid</code>가 없다. 따라서 제약을 적어 두었다는 이유만으로 이 API에서 자동 검증이 실행된다고 기록할 수 없다. PDF의 비밀번호 안내 문구에 최대 길이가 언급되어도 <code>@Size</code>에 <code>max</code>가 없다면 최대 길이 조건이 설정된 것은 아니다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">회원 등록과 BCrypt 비밀번호 처리</h4>
+<p data-ke-size="size16">회원 등록은 <code>RequestUser</code>를 <code>UserDto</code>로 변환한 뒤 <code>UUID</code>로 <code>userId</code>를 생성하고, <code>UserEntity</code>로 변환해 저장하는 흐름이다. DB에 저장하기 전에 <code>BCryptPasswordEncoder</code>로 원문 비밀번호를 해싱하여 <code>encryptedPwd</code>에 넣는다. 정상 처리 시 <code>Controller</code>는 <code>ResponseUser</code>와 <code>201 Created</code>를 반환하도록 작성되어 있다.</p>
+<p data-ke-size="size16">BCrypt 해시는 복호화해서 원문을 꺼내는 값이 아니다. 솔트가 포함되므로 같은 비밀번호를 다시 <code>encode</code>해도 해시 문자열은 달라질 수 있고, 일치 여부는 <code>matches(원문, 저장된 해시)</code>로 확인한다. 암호화된 비밀번호라는 필드 이름과 달리 실습의 <code>encryptedPwd</code>에는 BCrypt 해시가 들어간다.</p>
+<pre class="reasonml"><code class="language-java">BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+String storedHash = encoder.encode(&quot;sample-password&quot;);
+// 새로 생성한 해시 문자열끼리 비교하지 않고 원문과 저장된 해시를 검사한다.
+boolean matched = encoder.matches(&quot;sample-password&quot;, storedHash);
+// 이 예시의 matched는 true다. 해시에서 원문을 복원하는 과정은 없다.</code></pre>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">H2 계정, Basic 인증 계정과 가입 회원 구분</h4>
+<p data-ke-size="size16">H2 콘솔의 로그인은 DB 접속이고, Basic 인증은 HTTP 요청의 사용자 인증이다. 현재 <code>WebSecurity</code>는 <code>/h2-console/**</code>를 허용하고 나머지 사용자 서비스 요청에 인증을 요구한다. 회원 가입 API도 이 나머지 경로에 포함되므로 현재 설정에서는 Basic 인증을 함께 보내야 한다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 33.3333%;"><b>구분</b></td>
+<td style="width: 33.3333%;"><b>설정 또는 저장 위치</b></td>
+<td style="width: 33.3333%;"><b>현재 코드에서 확인한 값·역할</b></td>
+</tr>
+<tr>
+<td style="width: 33.3333%;">H2 접속 계정</td>
+<td style="width: 33.3333%;"><code>spring.datasource</code></td>
+<td style="width: 33.3333%;"><code>username</code>은 <code>sa</code>, <code>password</code>는 빈 값이다.</td>
+</tr>
+<tr>
+<td style="width: 33.3333%;">Basic 인증 계정</td>
+<td style="width: 33.3333%;"><code>spring.security.user</code></td>
+<td style="width: 33.3333%;"><code>name</code>은 <code>user</code>이고 <code>password</code>에는 BCrypt 해시가 설정되어 있다.</td>
+</tr>
+<tr>
+<td style="width: 33.3333%;">가입 회원</td>
+<td style="width: 33.3333%;"><code>users</code> 테이블</td>
+<td style="width: 33.3333%;">회원 정보와 해싱한 비밀번호를 저장한다. 현재 Basic 인증과 연결하는 조회 구현은 없다.</td>
+</tr>
+</tbody>
+</table>
+<p data-ke-size="size16">Basic 인증 요청에는 해시를 만들기 전의 비밀번호를 입력한다. <code>application.yml</code>의 해시 문자열 자체를 비밀번호로 보내는 방식이 아니다. <code>Utils.java</code>는 예시 원문 <code>password</code>의 해시를 출력하지만, 현재 설정된 해시와 이 원문의 일치 여부는 확인하지 않았으므로 실제 인증 비밀번호라고 단정하지 않는다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">회원 조회와 null·빈 주문 목록의 차이</h4>
+<p data-ke-size="size16">전체 회원 조회는 <code>Repository</code>의 <code>findAll</code>로 읽은 Entity를 <code>ResponseUser</code> 목록으로 변환한다. 상세 조회는 <code>findByUserId</code>로 회원을 찾고 <code>UserDto</code>에 주문 목록을 넣은 뒤 <code>ResponseUser</code>로 변환한다. 회원이 없으면 서비스 코드에서 <code>UsernameNotFoundException</code>을 던지지만, 이 예외만으로 HTTP <code>404</code> 응답이 보장되는 것은 아니다.</p>
+<p data-ke-size="size16"><code>@JsonInclude(NON_NULL)</code>은 <code>null</code> 필드를 JSON에서 생략한다. 빈 리스트는 <code>null</code>이 아니므로 응답에 빈 배열로 남는다. 현재 회원 상세 조회는 새 빈 리스트를 직접 설정하므로 <code>orders</code>가 빈 배열이며, 주문 서비스에 저장된 주문을 가져오는 연동은 구현되어 있지 않다.</p>
+<pre class="reasonml"><code class="language-java">// NON_NULL을 적용한 응답 객체의 개념 예시
+response.setOrders(null);              // JSON에서 orders 필드를 생략한다.
+response.setOrders(new ArrayList&lt;&gt;()); // JSON에 &quot;orders&quot;: []를 포함한다.</code></pre>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">서비스별 H2 DB와 상품 초기화 순서</h4>
+<p data-ke-size="size16"><code>jdbc:h2:mem:testdb</code>는 이름이 <code>testdb</code>인 메모리 DB를 뜻하지만, 이름이 같다고 별도 서비스 프로세스들이 하나의 DB를 공유하지는 않는다. 현재 사용자·상품·주문 서비스는 각각 실행되는 애플리케이션이므로 사용자 DB에는 <code>users</code>, 상품 DB에는 <code>catalog</code>, 주문 DB에는 <code>orders</code>를 각자의 Entity 기준으로 만든다. <code>DB_CLOSE_DELAY=-1</code>은 마지막 연결이 닫혀도 해당 프로세스 안의 메모리 DB를 유지하는 설정이며, 프로세스가 종료된 후까지 데이터를 보존하는 설정은 아니다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 33.3333%;"><b>설정</b></td>
+<td style="width: 33.3333%;"><b>역할</b></td>
+<td style="width: 33.3333%;"><b>현재 적용 서비스</b></td>
+</tr>
+<tr>
+<td style="width: 33.3333%;"><code>ddl-auto: update</code></td>
+<td style="width: 33.3333%;">기존 스키마를 기준으로 필요한 변경을 반영한다.</td>
+<td style="width: 33.3333%;">사용자·주문 서비스</td>
+</tr>
+<tr>
+<td style="width: 33.3333%;"><code>ddl-auto: create-drop</code></td>
+<td style="width: 33.3333%;">시작 시 스키마를 다시 만들고 정상 종료 시 삭제한다.</td>
+<td style="width: 33.3333%;">상품 서비스</td>
+</tr>
+<tr>
+<td style="width: 33.3333%;"><code>defer-datasource-initialization: true</code></td>
+<td style="width: 33.3333%;">SQL 초기화를 JPA 초기화 이후로 미룬다.</td>
+<td style="width: 33.3333%;">상품 서비스의 <code>data.sql</code> 실행 순서</td>
+</tr>
+</tbody>
+</table>
+<p data-ke-size="size16">상품 서비스는 <code>CatalogEntity</code>로 <code>catalog</code> 테이블을 만든 후 <code>data.sql</code>의 세 상품을 넣도록 설정되어 있다. <code>createdAt</code> 컬럼은 <code>CURRENT_TIMESTAMP</code> 기본값을 갖고, <code>insertable = false</code>와 <code>updatable = false</code>로 JPA의 INSERT·UPDATE 대상에서 제외되어 DB가 생성 시각을 채운다. 이 설명은 확인한 설정과 코드의 동작이며, 이번 작성 과정에서 SQL 조회를 실행해 테이블이나 데이터 존재를 확인한 것은 아니다.</p>
+<pre class="reasonml"><code class="language-sql">-- 개념 예시: 초기 데이터는 대상 테이블 생성 이후에 넣어야 한다.
+insert into catalog(product_id, product_name, stock, unit_price)
+values(&#x27;EXAMPLE-001&#x27;, &#x27;Example&#x27;, 10, 1000);
+-- created_at을 생략하면 DB에 선언된 기본값이 적용된다.</code></pre>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">상품 목록 조회와 사용자별 주문 처리</h4>
+<p data-ke-size="size16">상품 목록은 <code>CatalogRepository</code>의 <code>findAll</code>로 읽고 <code>ResponseCatalog</code>에 상품 ID·이름·단가·재고·생성 시각을 담아 반환한다. 주문 생성은 URL의 <code>userId</code>와 <code>RequestOrder</code>의 <code>productId</code>·<code>qty</code>·<code>unitPrice</code>를 <code>OrderDto</code>에 모아 처리한다. 주문 서비스가 <code>UUID</code>로 <code>orderId</code>를 만들고 <code>qty</code> × <code>unitPrice</code>로 <code>totalPrice</code>를 계산해 <code>orders</code>에 저장한다.</p>
+<pre class="reasonml"><code class="language-java">// 주문의 사용자 ID는 경로에서, 수량과 단가는 요청 본문에서 받는다.
+orderDto.setUserId(userId);
+orderDto.setOrderId(UUID.randomUUID().toString());
+orderDto.setTotalPrice(orderDto.getQty() * orderDto.getUnitPrice());
+// 예시: qty가 2, unitPrice가 1500이면 totalPrice는 3000이다.</code></pre>
+<p data-ke-size="size16">사용자별 주문 조회는 <code>findByUserId</code>로 해당 사용자 ID가 저장된 주문을 찾아 응답 목록으로 변환한다. 현재 주문 생성 코드는 요청 본문의 단가를 사용하며, 상품 서비스의 가격 조회·재고 감소나 사용자 존재 확인을 수행하지 않는다. 또한 주문 생성 응답의 중간 객체인 <code>OrderDto</code>에는 <code>createdAt</code>이 없으므로 Entity를 바로 변환하는 주문 목록 응답과 생성 시각 필드가 다를 수 있다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">오늘의 코드 1 - Gateway: 서비스 이름으로 요청 분기</h2>
+<h4 data-ke-size="size20">application.yml</h4>
+<pre class="reasonml"><code class="language-yaml">- id: user-service
+  uri: lb://USER-SERVICE
+  predicates:
+    - Path=/user-service/**
+- id: catalog-service
+  uri: lb://CATALOG-SERVICE
+  predicates:
+    - Path=/catalog-service/**
+- id: order-service
+  uri: lb://ORDER-SERVICE
+  predicates:
+    - Path=/order-service/**</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">Gateway의 routes 설정에 사용자·상품·주문 서비스의 경로 조건을 추가했다. <code>Path</code>로 요청을 구분하고 <code>lb://서비스명</code>으로 Eureka에 등록된 인스턴스를 찾아 전달하도록 구성했다. 세 경로는 접두사를 유지하므로 각 서비스의 Controller 경로도 이에 맞췄다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 2 - 사용자 서비스: Eureka에 서비스 등록</h2>
+<h4 data-ke-size="size20">application.yml</h4>
+<pre class="reasonml"><code class="language-yaml">server:
+#  port: 0
+  port: 60000 # 실습 편의상 60000번으로 고정
+
+spring:
+  application:
+    name: user-service</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">서비스 이름을 <code>user-service</code>로 지정하고 실습 편의를 위해 포트를 <code>60000</code>으로 고정했다. 이 서비스 이름이 Gateway의 <code>lb://USER-SERVICE</code>에서 대상을 찾는 기준이 된다.</p>
+<h4 data-ke-size="size20">application.yml</h4>
+<pre class="reasonml"><code class="language-yaml">eureka:
+  instance:
+    instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}
+    prefer-ip-address: true # 호스트명 대신 IP로 등록
+  client:
+    service-url:
+      defaultZone: http://127.0.0.1:8761/eureka
+    fetch-registry: true
+    register-with-eureka: true</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">8761번 Eureka 서버에 자신을 등록하고 등록 정보를 조회하도록 설정했다. 인스턴스 ID로 같은 서비스의 실행 인스턴스를 구분하고 IP 주소로 등록하도록 구성했다. 상품·주문 서비스에도 동일한 Eureka 설정을 적용했으므로 공통 설정은 여기에서 한 번만 발췌했다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 3 - 상품 서비스: 임의 포트와 Gateway 경로 연결</h2>
+<h4 data-ke-size="size20">application.yml</h4>
+<pre class="reasonml"><code class="language-yaml">server:
+  port: 0
+
+spring:
+  application:
+    name: catalog-service</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">상품 서비스는 <code>catalog-service</code>라는 이름으로 등록하도록 설정하고, <code>port: 0</code>으로 실행 시 포트를 배정받게 했다. Gateway의 <code>/catalog-service/**</code> 요청은 <code>lb://CATALOG-SERVICE</code>로 연결되므로 라우팅 대상에 상품 서비스의 포트를 직접 적지 않는다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 4 - 주문 서비스: 같은 연동 구조 확장</h2>
+<h4 data-ke-size="size20">application.yml</h4>
+<pre class="reasonml"><code class="language-yaml">server:
+  port: 0
+
+spring:
+  application:
+    name: order-service</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">주문 서비스도 <code>order-service</code>라는 이름과 임의 포트를 사용해 같은 Eureka 등록 구조를 적용했다. Gateway는 <code>/order-service/**</code> 요청을 <code>lb://ORDER-SERVICE</code>로 전달하도록 설정했다. 여러 서비스에 같은 등록·라우팅 방식을 적용하여 하나의 Gateway로 각 서비스에 접근하는 구조를 구성했다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">어려웠던 점 / 각종 오류</h2>
+<p data-ke-size="size16"><code>60000</code>번 포트의 H2 콘솔에 접속하면서 DB 계정과 Basic 인증 계정을 혼동했다. H2 로그인에는 사용자 서비스의 <code>spring.datasource</code> 설정을 사용하여 JDBC URL에 <code>jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;</code>, User Name에 <code>sa</code>를 넣고 Password를 비워 둔다. HTTP 요청용 <code>user</code> 계정은 <code>spring.security.user</code>에 설정되어 있어 H2 로그인 계정과 다르다.</p>
+<p data-ke-size="size16"><code>application.yml</code>에 들어 있는 BCrypt 해시를 요청 비밀번호로 보내야 하는지도 헷갈렸다. Basic 인증 요청에는 해당 해시를 생성할 때 사용한 원문 비밀번호를 입력하고, 서버가 원문과 저장된 해시의 일치 여부를 확인한다. <code>Utils.java</code>의 예시 원문은 <code>password</code>이지만, 현재 설정된 해시와의 일치는 별도로 확인해야 실제 요청 비밀번호를 확정할 수 있다.</p>
+<p data-ke-size="size16"><code>catalog-service</code>를 실행했는데 H2에서 <code>catalog</code> 테이블을 찾을 수 없는 이유를 살펴봤다. <code>60000</code>번 콘솔로 접속하면 사용자 서비스의 DB에 연결되므로 같은 <code>testdb</code>라는 이름을 사용해도 별도 프로세스인 상품 서비스의 테이블을 조회할 수 없다. 상품 서비스의 실제 포트를 시작 로그나 Eureka 등록 정보에서 확인한 뒤 그 포트의 <code>/h2-console</code>에 접속해야 하며, 임의 포트는 재실행할 때 바뀔 수 있다.</p>
+<pre class="reasonml"><code class="language-sql">-- 상품 서비스의 H2 콘솔에 연결한 뒤 확인할 SQL이다.
+-- 이 SQL은 접속 대상을 확인하기 위한 예시이며 이번 작성 중 실행하지 않았다.
+SELECT * FROM CATALOG;</code></pre>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 style="color: #000000; text-align: start;" data-ke-size="size26">하루를 정리하며</h2>
+<p style="color: #222222; text-align: start;" data-ke-size="size16">LG CNS 6기</p>
+<p style="color: #222222; text-align: start;" data-ke-size="size16">LGCNSINSIRECAMP</p>
+<p style="color: #222222; text-align: start;" data-ke-size="size16">개발자</p>

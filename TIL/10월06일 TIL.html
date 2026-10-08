@@ -1,0 +1,320 @@
+<h1 data-ke-size="size30">[LG CNS AM INSPIRE CAMP 6기] 10/06 TIL - MSA: API Gateway 라우팅과 필터, Eureka 기반 부하 분산</h1>
+<h2 data-ke-size="size26">오늘의 한 줄 요약</h2>
+<ul data-ke-list-type="disc" style="list-style-type: disc;"><li>API Gateway를 서비스의 공통 진입점으로 두고, 요청 경로에 따라 대상 서비스로 라우팅하는 구조를 배웠다.</li><li>Web MVC와 WebFlux 기반 게이트웨이를 비교하고, YAML과 Java 코드로 라우팅 및 헤더 필터를 구성했다.</li><li>사용자 지정 필터의 PRE·POST 처리와 설정값 전달을 익히고, 우선순위에 따른 실행 순서를 정리했다.</li><li>Eureka의 서비스 정보와 <code>lb://</code> URI를 연결하고, 임의 포트로 여러 인스턴스를 실행하는 부하 분산 구성을 배웠다.</li></ul>
+<hr contenteditable="false" data-ke-style="style2" data-ke-type="horizontalRule"/>
+<h2 data-ke-size="size26">키워드 정리</h2>
+<table border="1" data-ke-align="alignLeft" data-ke-style="style8" style="border-collapse: collapse; width: 100%;">
+<tbody><tr>
+<td style="width: 23.7209%;"><b>키워드</b></td>
+<td style="width: 76.2791%;"><b>설명 또는 예시</b></td>
+</tr><tr>
+<td style="width: 23.7209%;"><b><code>API Gateway</code></b></td>
+<td style="width: 76.2791%;">클라이언트 요청을 받아 서비스로 전달하고 공통 기능을 적용하는 진입점.</td>
+</tr><tr>
+<td style="width: 23.7209%;"><b><code>Proxy</code></b></td>
+<td style="width: 76.2791%;">클라이언트를 대신해 대상 서비스에 요청하고 응답을 전달하는 역할.</td>
+</tr><tr>
+<td style="width: 23.7209%;"><b><code>Web MVC / WebFlux</code></b></td>
+<td style="width: 76.2791%;">Servlet 기반 요청 처리와 리액티브 기반 요청 처리. 오늘은 두 방식의 게이트웨이를 비교했다.</td>
+</tr><tr>
+<td style="width: 23.7209%;"><b><code>Route / Predicate</code></b></td>
+<td style="width: 76.2791%;">대상 서비스로 연결하는 규칙과 요청의 매칭 조건. 예: <code>Path=/first-service/**</code>.</td>
+</tr><tr>
+<td style="width: 23.7209%;"><b><code>GatewayFilter</code></b></td>
+<td style="width: 76.2791%;">선택된 라우트의 요청 처리 전후에 실행하는 필터.</td>
+</tr><tr>
+<td style="width: 23.7209%;"><b><code>AbstractGatewayFilterFactory</code></b></td>
+<td style="width: 76.2791%;">설정 객체를 받아 <code>GatewayFilter</code>를 만드는 기반 클래스.</td>
+</tr><tr>
+<td style="width: 23.7209%;"><b><code>Mono</code></b></td>
+<td style="width: 76.2791%;">최대 하나의 값 또는 완료·오류 신호를 나타내는 리액티브 타입. <code>Mono&lt;Void&gt;</code>는 값 없이 완료를 나타낸다.</td>
+</tr><tr>
+<td style="width: 23.7209%;"><b><code>default-filters / args</code></b></td>
+<td style="width: 76.2791%;">전체 라우트에 적용하는 기본 필터 설정과 필터의 설정 객체에 전달할 값.</td>
+</tr><tr>
+<td style="width: 23.7209%;"><b><code>OrderedGatewayFilter</code></b></td>
+<td style="width: 76.2791%;">실행 순서를 지정한 필터. 우선순위 값이 작을수록 PRE 처리가 먼저 실행된다.</td>
+</tr><tr>
+<td style="width: 23.7209%;"><b><code>Eureka / lb://</code></b></td>
+<td style="width: 76.2791%;">서비스 인스턴스 정보를 조회하고 <code>lb://MY-FIRST-SERVICE</code> 같은 서비스명으로 요청을 연결한다.</td>
+</tr><tr>
+<td style="width: 23.7209%;"><b><code>Round Robin</code></b></td>
+<td style="width: 76.2791%;">여러 서비스 인스턴스를 순환하며 선택하는 부하 분산 방식.</td>
+</tr><tr>
+<td style="width: 23.7209%;"><b><code>server.port: 0</code></b></td>
+<td style="width: 76.2791%;">실행 시 사용 가능한 포트를 배정받도록 하는 설정.</td>
+</tr></tbody>
+</table>
+<hr contenteditable="false" data-ke-style="style2" data-ke-type="horizontalRule"/>
+<h2 data-ke-size="size26">오늘 배운 것</h2>
+<h4 data-ke-size="size20">API Gateway의 역할과 요청 흐름</h4>
+<p data-ke-size="size16">API Gateway는 클라이언트와 여러 서비스 사이에서 공통 진입점 역할을 한다. 클라이언트는 게이트웨이에 요청하고, 게이트웨이는 라우팅 규칙에 맞는 서비스에 요청을 전달한 뒤 응답을 돌려준다. 이때 대상 서비스를 대신 호출하는 역할을 프록시라고 한다.</p>
+<p data-ke-size="size16">오늘 설정한 게이트웨이의 포트는 <code>8000</code>이다. 따라서 게이트웨이를 거치는 요청은 <code>http://localhost:8000/first-service/message</code>처럼 게이트웨이 주소를 사용하고, 대상 서비스의 주소는 게이트웨이 설정에서 결정한다.</p>
+<table border="1" data-ke-align="alignLeft" data-ke-style="style8" style="border-collapse: collapse; width: 100%;">
+<tbody><tr>
+<td style="width: 23.7209%;"><b>공통 기능</b></td>
+<td style="width: 76.2791%;"><b>역할</b></td>
+</tr><tr>
+<td style="width: 23.7209%;">인증·권한·접근 제한</td>
+<td style="width: 76.2791%;">인증과 권한 검사, IP 허용 목록, 요청 속도 제한 등을 진입점에서 적용한다.</td>
+</tr><tr>
+<td style="width: 23.7209%;">서비스 연결·안정성</td>
+<td style="width: 76.2791%;">서비스 검색과 부하 분산을 연결하고, 필요에 따라 재시도·회로 차단·QoS 정책을 적용한다.</td>
+</tr><tr>
+<td style="width: 23.7209%;">요청·응답 처리</td>
+<td style="width: 76.2791%;">헤더와 쿼리 문자열을 변환하고, 응답 캐싱 등을 적용한다.</td>
+</tr><tr>
+<td style="width: 23.7209%;">관찰</td>
+<td style="width: 76.2791%;">로깅과 추적, 요청 간 상관관계 확인을 통해 처리 흐름을 살핀다.</td>
+</tr></tbody>
+</table>
+<p data-ke-size="size16">이 기능들은 게이트웨이에 구성할 수 있는 기능이다. 오늘 실습 코드에서 중심적으로 다룬 것은 라우팅, 헤더 처리, 로깅 필터와 서비스 검색 기반 부하 분산이다.</p>
+<hr contenteditable="false" data-ke-style="style6" data-ke-type="horizontalRule"/>
+<h4 data-ke-size="size20">Web MVC와 WebFlux 기반 게이트웨이</h4>
+<p data-ke-size="size16">Spring Cloud Gateway는 Web MVC와 WebFlux 기반 구현을 제공한다. 두 프로젝트가 같은 게이트웨이 역할을 하더라도 요청을 처리하는 기반과 사용하는 의존성이 다르다.</p>
+<table border="1" data-ke-align="alignLeft" data-ke-style="style8" style="border-collapse: collapse; width: 100%;">
+<tbody><tr>
+<td style="width: 23.7209%;"><b>구현</b></td>
+<td style="width: 76.2791%;"><b>처리 방식과 오늘의 프로젝트</b></td>
+</tr><tr>
+<td style="width: 23.7209%;">Web MVC</td>
+<td style="width: 76.2791%;">Servlet 기반으로 요청을 처리한다. 일반적인 동기·블로킹 I/O 구성을 사용하며, 오늘의 <code>apigateway-service</code>는 <code>spring-cloud-starter-gateway-server-webmvc</code>를 사용한다.</td>
+</tr><tr>
+<td style="width: 23.7209%;">WebFlux</td>
+<td style="width: 76.2791%;">리액티브·논블로킹 I/O를 기반으로 요청을 처리한다. 오늘의 <code>reactivegateway-service</code>는 <code>spring-cloud-starter-gateway-server-webflux</code>를 사용한다.</td>
+</tr></tbody>
+</table>
+<p data-ke-size="size16">논블로킹 방식은 외부 I/O가 끝날 때까지 스레드를 계속 점유하며 기다리지 않는 방식이다. 동시 접속이 많고 I/O 대기가 잦은 환경에 활용할 수 있지만, 직접 작성한 필터 안의 블로킹 작업까지 자동으로 바뀌는 것은 아니다.</p>
+<hr contenteditable="false" data-ke-style="style6" data-ke-type="horizontalRule"/>
+<h4 data-ke-size="size20">라우팅 조건과 요청·응답 헤더 필터</h4>
+<p data-ke-size="size16">라우트는 <code>id</code>, <code>uri</code>, <code>predicates</code>, <code>filters</code>로 구성할 수 있다. <code>predicates</code>는 어떤 요청을 선택할지, <code>uri</code>는 어디로 보낼지, <code>filters</code>는 선택된 요청과 응답에 어떤 처리를 추가할지 정한다.</p>
+<pre class="reasonml"><code class="language-yaml"># 경로가 일치하는 요청만 대상 서버로 전달하는 일반화 예시
+- id: catalog-route
+  uri: http://localhost:9090
+  predicates:
+    - Path=/catalog/**
+  filters:
+    # 대상 서버로 전달할 요청에 헤더를 추가한다.
+    - AddRequestHeader=X-Client, study
+    # 클라이언트에게 전달할 응답에 헤더를 추가한다.
+    - AddResponseHeader=X-Gateway, study</code></pre>
+<p data-ke-size="size16"><code>AddRequestHeader</code>는 대상 서비스가 받는 요청에 헤더를 추가하고, <code>AddResponseHeader</code>는 클라이언트가 받는 응답에 헤더를 추가한다. 경로를 선택하는 <code>Path</code> 조건만으로 경로 접두사가 제거되는 것은 아니다.</p>
+<p data-ke-size="size16">YAML의 속성 설정뿐 아니라 <code>RouteLocatorBuilder</code>를 사용하는 Java 코드로도 라우트와 필터를 구성할 수 있다. Java 설정은 Spring 빈으로 등록되어야 적용된다.</p>
+<pre class="reasonml"><code class="language-java">//@Configuration
+public class FilterConfig {
+
+//    @Bean
+    public RouteLocator gatewayRoutes(RouteLocatorBuilder builder) {
+        return builder.routes()
+                .route(r -&gt; r.path("/first-service/**")
+                        .filters(f -&gt; f.addRequestHeader("f-request", "1st-request-header-by-java")
+                                .addResponseHeader("f-response", "1st-response-header-from-java")
+                        )
+                        .uri("http://localhost:8081"))
+                .route(r -&gt; r.path("/second-service/**")
+                        .filters(f -&gt; f.addRequestHeader("s-request", "2nd-request-header-by-java")
+                                .addResponseHeader("s-response", "2nd-response-header-from-java")
+                        )
+                        .uri("http://localhost:8082"))
+                .build();
+    }
+}</code></pre>
+<p data-ke-size="size16">실습 파일 <code>FilterConfig.java</code>에서 라우팅과 필터 구성에 해당하는 부분을 발췌했다. <code>path(...)</code>로 요청 경로를 선택하고, <code>filters(...)</code>로 요청·응답 헤더를 추가하며, <code>uri(...)</code>로 전달할 서버를 지정한다.</p>
+<p data-ke-size="size16"><code>@Configuration</code>과 <code>@Bean</code>은 원본과 동일하게 주석 처리된 상태다. 따라서 이 코드는 Java로 라우트를 구성하는 실습 내용이며, 현재 라우트 빈으로 등록되어 적용되는 설정은 아니다.</p>
+<hr contenteditable="false" data-ke-style="style6" data-ke-type="horizontalRule"/>
+<h4 data-ke-size="size20">사용자 지정 필터와 PRE·POST 처리</h4>
+<p data-ke-size="size16"><code>AbstractGatewayFilterFactory&lt;Config&gt;</code>를 상속한 클래스는 설정 객체를 받아 실제 필터를 만드는 팩토리다. 생성자의 <code>super(Config.class)</code>는 설정 타입을 전달하고, <code>apply(config)</code>는 요청마다 실행할 <code>GatewayFilter</code>를 반환한다.</p>
+<table border="1" data-ke-align="alignLeft" data-ke-style="style8" style="border-collapse: collapse; width: 100%;">
+<tbody><tr>
+<td style="width: 23.7209%;"><b>구성 요소</b></td>
+<td style="width: 76.2791%;"><b>역할</b></td>
+</tr><tr>
+<td style="width: 23.7209%;"><code>exchange</code></td>
+<td style="width: 76.2791%;">현재 요청과 응답 정보를 함께 제공한다.</td>
+</tr><tr>
+<td style="width: 23.7209%;"><code>chain.filter(exchange)</code></td>
+<td style="width: 76.2791%;">같은 요청·응답 정보를 다음 필터에 전달하고, 이어지는 처리의 완료를 나타낸다.</td>
+</tr><tr>
+<td style="width: 23.7209%;">PRE</td>
+<td style="width: 76.2791%;">다음 필터로 요청을 넘기기 전에 실행하는 로직이다.</td>
+</tr><tr>
+<td style="width: 23.7209%;">POST</td>
+<td style="width: 76.2791%;">다음 처리의 완료 뒤 실행하도록 연결한 로직이다.</td>
+</tr></tbody>
+</table>
+<p data-ke-size="size16"><code>Mono</code>는 실행할 작업과 완료 신호를 연결하는 리액티브 타입이다. <code>then(...)</code>은 앞의 작업이 정상 완료되면 뒤의 작업을 실행하도록 연결하고, <code>Mono.fromRunnable(...)</code>은 반환값이 없는 작업을 감싼다.</p>
+<pre class="reasonml"><code class="language-java">// 구독될 때 실행할 두 작업의 순서를 구성한다.
+Mono&lt;Void&gt; sequence = Mono.fromRunnable(() -&gt; System.out.println("먼저"))
+        .then(Mono.fromRunnable(() -&gt; System.out.println("나중")));
+// 구독되면 먼저 -&gt; 나중 순서로 출력된다.
+// 앞의 작업이 오류 신호로 종료되면 뒤의 작업은 실행되지 않는다.</code></pre>
+<p data-ke-size="size16">게이트웨이 필터는 연결한 <code>Mono</code>를 반환하고, 프레임워크가 구독해 실행한다. 따라서 POST 로직을 <code>then(...)</code>에 연결하는 것은 스레드를 막고 기다리는 것과 다르다.</p>
+<hr contenteditable="false" data-ke-style="style6" data-ke-type="horizontalRule"/>
+<h4 data-ke-size="size20">공통 필터 설정, args와 실행 우선순위</h4>
+<p data-ke-size="size16">특정 라우트의 <code>filters</code>에 지정한 필터는 해당 라우트에 적용되고, <code>default-filters</code>에 지정한 필터는 전체 라우트에 공통으로 적용된다. <code>args</code>의 값은 필터의 <code>Config</code> 객체에 바인딩해 사용할 수 있다.</p>
+<p data-ke-size="size16">오늘의 <code>GlobalFilter</code> 클래스는 이름과 달리 Spring Cloud Gateway의 <code>GlobalFilter</code> 인터페이스 구현체가 아니라 필터 팩토리다. <code>default-filters</code>에 등록했기 때문에 두 라우트에 공통으로 적용된다.</p>
+<p data-ke-size="size16">필터의 실제 실행 순서는 우선순위 값으로 정해진다. <code>Ordered.HIGHEST_PRECEDENCE</code>는 가장 작은 정수 값인 <code>-2147483648</code>이며, 오늘의 <code>LoggingFilter</code>는 <code>OrderedGatewayFilter</code>로 이 값을 지정한다.</p>
+<table border="1" data-ke-align="alignLeft" data-ke-style="style8" style="border-collapse: collapse; width: 100%;">
+<tbody><tr>
+<td style="width: 23.7209%;"><b>처리 단계</b></td>
+<td style="width: 76.2791%;"><b>우선순위가 f1 → f2 → f3 순인 경우</b></td>
+</tr><tr>
+<td style="width: 23.7209%;">PRE</td>
+<td style="width: 76.2791%;"><code>f1 → f2 → f3</code> 순으로 다음 필터를 호출한다.</td>
+</tr><tr>
+<td style="width: 23.7209%;">POST</td>
+<td style="width: 76.2791%;">다음 처리가 정상 완료되면 <code>f3 → f2 → f1</code> 순으로 되돌아오며 실행한다.</td>
+</tr></tbody>
+</table>
+<p data-ke-size="size16">공통 적용 여부와 실행 우선순위는 별개다. 현재 사용자 지정 필터에서는 <code>LoggingFilter</code>의 PRE가 먼저 실행되도록 구성되어 있으며, <code>postLogger: false</code>이므로 해당 필터의 POST 로그 출력은 생략된다.</p>
+<hr contenteditable="false" data-ke-style="style6" data-ke-type="horizontalRule"/>
+<h4 data-ke-size="size20">Eureka 서비스 검색과 여러 인스턴스의 부하 분산</h4>
+<p data-ke-size="size16">서비스는 자신의 이름과 접속 정보를 Eureka에 등록하고, 게이트웨이는 등록된 서비스 정보를 조회한다. <code>fetch-registry: true</code>는 Eureka의 서비스 등록 정보를 가져오는 설정이며, 게이트웨이는 이를 바탕으로 대상 인스턴스를 찾을 수 있다.</p>
+<table border="1" data-ke-align="alignLeft" data-ke-style="style8" style="border-collapse: collapse; width: 100%;">
+<tbody><tr>
+<td style="width: 23.7209%;"><b>라우트 대상</b></td>
+<td style="width: 76.2791%;"><b>연결 방식</b></td>
+</tr><tr>
+<td style="width: 23.7209%;"><code>http://localhost:8081</code></td>
+<td style="width: 76.2791%;">설정한 호스트와 포트의 서버로 직접 전달한다.</td>
+</tr><tr>
+<td style="width: 23.7209%;"><code>lb://MY-FIRST-SERVICE</code></td>
+<td style="width: 76.2791%;">서비스명에 해당하는 인스턴스 목록에서 부하 분산 대상 하나를 선택해 실제 주소로 전달한다.</td>
+</tr></tbody>
+</table>
+<p data-ke-size="size16">Spring Cloud LoadBalancer의 기본 선택 방식은 Round Robin이다. 여러 인스턴스가 사용 가능한 목록에 있으면 순환하며 선택한다. Eureka는 서비스 정보를 제공하고, 실제 인스턴스 선택은 LoadBalancer가 담당한다.</p>
+<p data-ke-size="size16"><code>server.port: 0</code>을 사용하면 실행할 때 사용 가능한 포트를 배정받을 수 있다. 같은 서비스를 여러 프로세스로 실행할 때 포트 충돌을 피하고, 인스턴스별로 구분되는 Eureka <code>instance-id</code>를 함께 사용한다.</p>
+<p data-ke-size="size16">부하 분산을 확인하려면 같은 서비스를 여러 인스턴스로 실행한 뒤, 게이트웨이로 요청을 반복해 각 인스턴스의 로그나 응답을 비교한다. 포트와 인스턴스 ID는 다르더라도 같은 서비스명으로 등록되어 있어야 하나의 서비스에 대한 분산 대상이 된다.</p>
+<hr contenteditable="false" data-ke-style="style2" data-ke-type="horizontalRule"/>
+<h2 data-ke-size="size26">오늘의 코드 1 - Java 코드로 라우팅과 헤더 필터 구성</h2>
+<h4 data-ke-size="size20">FilterConfig.java</h4>
+<pre class="reasonml"><code class="language-java">public RouteLocator gatewayRoutes(RouteLocatorBuilder builder) {
+    return builder.routes()
+            .route(r -&gt; r.path("/first-service/**")
+                    .filters(f -&gt; f.addRequestHeader("f-request", "1st-request-header-by-java")
+                            .addResponseHeader("f-response", "1st-response-header-from-java")
+                    )
+                    .uri("http://localhost:8081"))
+            .route(r -&gt; r.path("/second-service/**")
+                    .filters(f -&gt; f.addRequestHeader("s-request", "2nd-request-header-by-java")
+                            .addResponseHeader("s-response", "2nd-response-header-from-java")
+                    )
+                    .uri("http://localhost:8082"))
+            .build();
+}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">두 경로를 각각의 서비스에 연결하고, 요청 헤더와 응답 헤더를 추가하는 Java 설정 메서드를 작성했다. 현재 <code>@Configuration</code>과 <code>@Bean</code>은 주석 처리되어 있으며, 이 메서드는 라우트 빈으로 등록되지 않은 상태다.</p>
+<hr contenteditable="false" data-ke-style="style6" data-ke-type="horizontalRule"/>
+<h2 data-ke-size="size26">오늘의 코드 2 - CustomFilter의 요청 전후 로깅</h2>
+<h4 data-ke-size="size20">CustomFilter.java</h4>
+<pre class="reasonml"><code class="language-java">@Override
+public GatewayFilter apply(Config config) {
+    return (exchange, chain) -&gt; {
+        ServerHttpRequest request = exchange.getRequest();
+        ServerHttpResponse response = exchange.getResponse();
+
+        log.info("Custom PRE filter: request id -&gt; {}", request.getId());
+
+        return chain.filter(exchange).then(Mono.fromRunnable(() -&gt; {
+            log.info("Custom POST filter: response code -&gt; {}", response.getStatusCode());
+        }));
+    };
+}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">요청 ID는 다음 필터를 호출하기 전에 기록하고, 응답 상태 코드는 이어지는 처리가 정상 완료된 뒤 기록하도록 연결했다. 코드에서 수행하는 작업은 로깅이며, 대상 서비스 호출은 뒤이어 실행되는 게이트웨이 처리 흐름에 맡긴다.</p>
+<hr contenteditable="false" data-ke-style="style6" data-ke-type="horizontalRule"/>
+<h2 data-ke-size="size26">오늘의 코드 3 - default-filters와 설정 객체 바인딩</h2>
+<h4 data-ke-size="size20">application.yaml</h4>
+<pre class="reasonml"><code class="language-yaml">default-filters:
+  - name: GlobalFilter
+    args:
+      baseMessage: Spring Cloud Gateway Webflux Global Filter
+      preLogger: true
+      postLogger: true</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16"><code>GlobalFilter</code>를 모든 라우트에 공통으로 적용하고, 메시지와 PRE·POST 로그 사용 여부를 <code>args</code>로 전달했다. 현재 두 로그 옵션은 모두 <code>true</code>로 설정되어 있다.</p>
+<h4 data-ke-size="size20">GlobalFilter.java</h4>
+<pre class="reasonml"><code class="language-java">@Data
+public static class Config {
+    private String baseMessage;
+    private boolean preLogger;
+    private boolean postLogger;
+}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16"><code>Config</code>의 필드 이름을 YAML 설정 이름과 맞춰 메시지와 로그 옵션을 받을 수 있게 했다. <code>@Data</code>가 접근 메서드를 만들며, 필터 본문은 <code>getBaseMessage()</code>, <code>isPreLogger()</code>, <code>isPostLogger()</code>로 값을 읽는다.</p>
+<hr contenteditable="false" data-ke-style="style6" data-ke-type="horizontalRule"/>
+<h2 data-ke-size="size26">오늘의 코드 4 - LoggingFilter의 실행 순서와 로그 옵션</h2>
+<h4 data-ke-size="size20">LoggingFilter.java</h4>
+<pre class="reasonml"><code class="language-java">/* 우선 순위를 갖는 Filter 적용 */
+@Override
+public GatewayFilter apply(Config config) {
+    return new OrderedGatewayFilter((exchange, chain) -&gt; {
+        ServerHttpRequest request = exchange.getRequest();
+        ServerHttpResponse response = exchange.getResponse();
+
+        log.info("Logging Filter baseMessage: {}", config.getBaseMessage());
+        if (config.isPreLogger()) {
+            log.info("Logging PRE Filter: request id -&gt; {}", request.getId());
+        }
+        return chain.filter(exchange).then(Mono.fromRunnable(() -&gt; {
+            if (config.isPostLogger()) {
+                log.info("Logging POST Filter: response code -&gt; {}", response.getStatusCode());
+            }
+        }));
+    }, Ordered.HIGHEST_PRECEDENCE);
+}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16"><code>OrderedGatewayFilter</code>로 사용자 지정 필터의 높은 실행 우선순위를 지정했다. PRE·POST 로그는 설정값을 검사한 뒤 출력하도록 작성해, 순서 지정과 로그 사용 여부를 각각 제어한다.</p>
+<h4 data-ke-size="size20">application.yaml</h4>
+<pre class="reasonml"><code class="language-yaml">- name: LoggingFilter
+  args:
+    baseMessage: Hi there!
+    preLogger: true
+    postLogger: false</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16"><code>LoggingFilter</code>는 second-service 라우트에 등록되어 있다. 현재 PRE 로그는 켜져 있고 POST 로그는 꺼져 있어, 응답 흐름이 돌아와도 이 필터의 POST 로그는 출력하지 않는다.</p>
+<hr contenteditable="false" data-ke-style="style6" data-ke-type="horizontalRule"/>
+<h2 data-ke-size="size26">오늘의 코드 5 - Eureka 연동과 서비스명 기반 라우팅</h2>
+<h4 data-ke-size="size20">application.yaml</h4>
+<pre class="reasonml"><code class="language-yaml">eureka:
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://localhost:8761/eureka</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">게이트웨이를 Eureka 클라이언트로 등록하고, 서비스 등록 정보를 조회하도록 설정했다. 서비스 검색 서버의 주소는 <code>http://localhost:8761/eureka</code>로 지정되어 있다.</p>
+<h4 data-ke-size="size20">application.yaml</h4>
+<pre class="reasonml"><code class="language-yaml">- id: first-service
+  uri: lb://MY-FIRST-SERVICE
+  predicates:
+    - Path=/first-service/**
+  filters:
+    - CustomFilter</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">first-service의 목적지를 고정 주소에서 <code>lb://MY-FIRST-SERVICE</code>로 연결하고, 경로 조건과 사용자 지정 필터를 함께 등록했다. 현재 요청·응답 헤더 추가 항목은 주석 처리되어 있어 이 설정으로는 헤더가 자동으로 추가되지 않는다.</p>
+<hr contenteditable="false" data-ke-style="style6" data-ke-type="horizontalRule"/>
+<h2 data-ke-size="size26">오늘의 코드 6 - 임의 포트와 여러 서비스 인스턴스 구분</h2>
+<h4 data-ke-size="size20">application.yml</h4>
+<pre class="reasonml"><code class="language-yaml">server:
+  port: 0
+spring:
+  application:
+    name: my-first-service</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">first-service의 고정 포트를 <code>0</code>으로 변경해 실행 시 사용 가능한 포트를 배정받도록 했다. 여러 프로세스를 같은 서비스명으로 등록하고 게이트웨이에서 인스턴스를 선택하는 실습을 위한 구성이다.</p>
+<h4 data-ke-size="size20">application.yml</h4>
+<pre class="reasonml"><code class="language-yaml">instance:
+  instance-id: ${spring.cloud.client.ip-address}:${spring.application.instance_id:${random.value}}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">인스턴스 ID에는 IP 주소와 지정된 인스턴스 값 또는 임의 값을 조합하도록 설정되어 있다. 같은 서비스 이름으로 여러 인스턴스를 실행하더라도 Eureka에서 각각 구분할 수 있도록 하는 설정이다.</p>
+<hr contenteditable="false" data-ke-style="style2" data-ke-type="horizontalRule"/>
+<h2 data-ke-size="size26">어려웠던 점 / 각종 오류</h2>
+<p data-ke-size="size16"><code>first-service/message</code>는 필요한 <code>f-request</code> 헤더 없이 요청하면 <code>400</code> 오류가 발생한다는 점을 수업 메모에서 확인했다. Postman에서 해당 헤더를 직접 추가해 요청하고, 게이트웨이 필터로 헤더를 넣는 방법을 실습했다. 현재 YAML의 헤더 추가 설정은 주석 처리되어 있으므로 요청을 보낼 때 필요한 헤더가 어디서 추가되는지 확인해야 한다.</p>
+<p data-ke-size="size16"><code>CustomFilter</code>의 실행 흐름을 질문하고, 필터를 만드는 시점과 실제 요청을 처리하는 시점을 구분해 정리했다. <code>apply(config)</code>는 필터를 만들고, 반환한 람다는 요청마다 실행된다. 응답 객체를 미리 얻어 두는 것은 응답 처리가 끝났다는 뜻이 아니며, 상태 코드는 뒤에 연결한 POST 작업에서 읽는다.</p>
+<p data-ke-size="size16"><code>then(...)</code> 뒤의 작업은 앞의 흐름이 정상 완료되어야 실행된다. HTTP <code>404</code>나 <code>500</code> 상태의 응답을 처리하는 것과 리액티브 흐름이 오류 신호로 종료되는 것은 다르므로, 상태 코드와 작업의 완료·오류를 구분해 이해해야 한다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 style="color: #000000; text-align: start;" data-ke-size="size26">하루를 정리하며</h2>
+<p style="color: #222222; text-align: start;" data-ke-size="size16">LG CNS 6기</p>
+<p style="color: #222222; text-align: start;" data-ke-size="size16">LGCNSINSIRECAMP</p>
+<p style="color: #222222; text-align: start;" data-ke-size="size16">개발자</p>
