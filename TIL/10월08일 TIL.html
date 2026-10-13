@@ -1,0 +1,590 @@
+<h1 data-ke-size="size30">[LG CNS AM INSPIRE CAMP 6기] 10/08 TIL - MSA: Spring Security 로그인·JWT 인증과 Spring Cloud Config 설정 갱신</h1>
+<h2 data-ke-size="size26">오늘의 한 줄 요약</h2>
+<ul style="list-style-type: disc;" data-ke-list-type="disc">
+<li>로그인 정보는 Spring Security가 검증하고, 인증에 성공하면 User Service가 JWT를 발급한다.</li>
+<li>Gateway는 회원가입·로그인과 사용자 조회 경로를 나누고, 조회 요청의 JWT를 검사한다.</li>
+<li>비밀번호는 BCrypt 해시로 저장하고, 입력값을 저장된 salt와 비용 설정으로 검증한다.</li>
+<li>Spring Cloud Config로 설정을 외부 Git 저장소에서 관리하고, 실행 중인 서비스에는 재시작이나 refresh로 반영한다.</li>
+</ul>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">키워드 정리</h2>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 23.7209%;"><b>키워드</b></td>
+<td style="width: 76.2791%;"><b>설명 또는 예시</b></td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>BCrypt · salt</code></b></td>
+<td style="width: 76.2791%;">비밀번호를 단방향 해시로 저장하며, salt는 같은 비밀번호도 서로 다른 해시를 만들게 한다.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>SecurityFilterChain</code></b></td>
+<td style="width: 76.2791%;">HTTP 요청에 적용할 보안 필터와 접근 규칙을 구성한다.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>AuthenticationManager</code></b></td>
+<td style="width: 76.2791%;">아이디·비밀번호 인증을 등록된 인증 처리자에게 위임한다.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>UserDetailsService</code></b></td>
+<td style="width: 76.2791%;"><code>loadUserByUsername()</code>으로 인증에 필요한 사용자 정보를 제공한다.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>AuthenticationFilter</code></b></td>
+<td style="width: 76.2791%;">현재 User Service에서 JSON 로그인 요청을 읽고, 성공 후 JWT를 발급하는 필터이다.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>JWT · Bearer</code></b></td>
+<td style="width: 76.2791%;">서명된 토큰을 <code>Authorization: Bearer 토큰</code> 형식으로 전달한다.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>AuthorizationHeaderFilter</code></b></td>
+<td style="width: 76.2791%;">Gateway에서 JWT를 검사해 유효한 요청만 다음 처리로 전달한다.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>RewritePath</code></b></td>
+<td style="width: 76.2791%;">외부 경로를 내부 경로로 바꾼다. 예: <code>/user-service/login → /login</code>.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>세션 · stateless</code></b></td>
+<td style="width: 76.2791%;">세션 방식은 서버 측 로그인 상태를 조회하고, JWT 방식은 토큰 자체를 검증하는 구조로 구성할 수 있다.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>CSR · SSR</code></b></td>
+<td style="width: 76.2791%;">CSR은 클라이언트가 화면을 구성하고, SSR은 서버가 HTML을 구성한다.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>Spring Cloud Config</code></b></td>
+<td style="width: 76.2791%;">서비스가 사용할 설정을 외부 저장소에서 중앙 관리하고 전달한다.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>bootstrap.yml</code></b></td>
+<td style="width: 76.2791%;">현재 bootstrap 방식에서 Config Server 주소와 조회할 설정 이름을 지정한다.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>profile · UAT</code></b></td>
+<td style="width: 76.2791%;">환경별 설정 구분에 사용한다. UAT는 사용자 인수 테스트 환경을 뜻한다.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>Actuator · refresh</code></b></td>
+<td style="width: 76.2791%;">상태 확인과 관리 엔드포인트를 제공하며, <code>POST /actuator/refresh</code>로 설정을 다시 읽을 수 있다.</td>
+</tr>
+</tbody>
+</table>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">오늘 배운 것</h2>
+<h4 data-ke-size="size20">BCrypt로 비밀번호를 저장하고 비교하는 방법</h4>
+<p data-ke-size="size16">회원가입 시 원문 비밀번호를 그대로 저장하지 않고 BCrypt 해시로 바꿔 저장한다. BCrypt 해시 문자열에는 salt와 비용 설정이 포함되며, 로그인 시에는 이를 이용해 입력 비밀번호가 저장된 해시와 일치하는지 확인한다.</p>
+<pre class="reasonml"><code class="language-java">// encode()는 새로운 salt로 저장용 해시를 만든다.
+BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+String savedHash = encoder.encode(&quot;study-password&quot;);
+
+// 저장된 해시를 복호화하지 않고 입력값이 일치하는지 검증한다.
+boolean correct = encoder.matches(&quot;study-password&quot;, savedHash); // true
+boolean wrong = encoder.matches(&quot;different-password&quot;, savedHash); // false</code></pre>
+<p data-ke-size="size16">같은 비밀번호에 <code>encode()</code>를 다시 호출해 문자열끼리 비교하면 salt가 달라질 수 있다. 비밀번호 확인에는 <code>matches()</code>를 사용하며, 현재 로그인 흐름에서는 Spring Security가 등록된 인코더를 통해 이 비교를 수행한다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">보안 설정, 로그인 처리와 토큰 검사의 역할 구분</h4>
+<p data-ke-size="size16">세 클래스는 실행되는 위치와 시점이 다르다. 서버 시작 시 보안 설정을 연결하고, 로그인 시 계정을 확인하며, 로그인 이후 조회 요청에서는 토큰을 검사한다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 33.3333%;"><b>클래스</b></td>
+<td style="width: 33.3333%;"><b>위치·실행 시점</b></td>
+<td style="width: 33.3333%;"><b>담당하는 일</b></td>
+</tr>
+<tr>
+<td style="width: 33.3333%;"><code>WebSecurity</code></td>
+<td style="width: 33.3333%;">User Service의 보안 설정 구성 시</td>
+<td style="width: 33.3333%;">사용자 조회 서비스와 비밀번호 인코더를 연결하고 로그인 필터·접근 규칙을 등록한다.</td>
+</tr>
+<tr>
+<td style="width: 33.3333%;"><code>AuthenticationFilter</code></td>
+<td style="width: 33.3333%;">User Service의 <code>POST /login</code> 처리 시</td>
+<td style="width: 33.3333%;">JSON에서 이메일·비밀번호를 읽어 인증을 요청하고, 성공하면 JWT를 발급한다.</td>
+</tr>
+<tr>
+<td style="width: 33.3333%;"><code>AuthorizationHeaderFilter</code></td>
+<td style="width: 33.3333%;">Gateway의 보호된 조회 요청 처리 시</td>
+<td style="width: 33.3333%;">요청 헤더의 JWT를 검증하고 통과 또는 거절을 결정한다.</td>
+</tr>
+</tbody>
+</table>
+<p data-ke-size="size16"><code>AuthenticationFilter</code>는 <code>UsernamePasswordAuthenticationFilter</code>를 상속하므로 기본적으로 <code>POST /login</code>을 처리한다. 현재 코드는 폼 로그인 화면을 설정한 것이 아니라 JSON 로그인 필터를 등록한 구조이며, 별도의 로그인 Controller 매핑이 필요하지 않다.</p>
+<p data-ke-size="size16"><code>UserDetailsService.loadUserByUsername()</code>은 DB에서 인증에 필요한 정보를 가져오는 역할이다. 현재 username에는 이메일을 사용하고, 비밀번호 비교는 <code>AuthenticationManager</code>가 위임한 인증 처리자가 담당한다. <code>UsernamePasswordAuthenticationToken</code>은 이 과정에서 쓰는 내부 인증 객체이며 JWT와 다르다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">세션 인증과 JWT 인증의 차이</h4>
+<p data-ke-size="size16">로그인 이후 요청에서 사용자를 확인하는 방법은 로그인 상태를 어디에 두는지에 따라 달라진다. 토큰 기반 인증에는 여러 방식이 있으며, 오늘 실습은 JWT를 발급하고 검증하는 방식이다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 33.3333%;"><b>구분</b></td>
+<td style="width: 33.3333%;"><b>세션 기반 인증</b></td>
+<td style="width: 33.3333%;"><b>JWT 기반 인증</b></td>
+</tr>
+<tr>
+<td style="width: 33.3333%;">로그인 결과</td>
+<td style="width: 33.3333%;">서버의 세션을 식별할 세션 ID를 전달한다. 보통 쿠키를 사용한다.</td>
+<td style="width: 33.3333%;">사용자 정보와 만료 시각 등을 담아 서명한 JWT를 전달한다.</td>
+</tr>
+<tr>
+<td style="width: 33.3333%;">다음 요청</td>
+<td style="width: 33.3333%;">쿠키의 세션 ID로 서버 측 상태를 조회한다.</td>
+<td style="width: 33.3333%;">클라이언트가 <code>Authorization</code> 헤더에 토큰을 넣고 서버가 검증한다.</td>
+</tr>
+<tr>
+<td style="width: 33.3333%;">여러 서버에서 처리</td>
+<td style="width: 33.3333%;">동일한 세션을 찾도록 저장소 공유나 요청 배치 전략이 필요하다.</td>
+<td style="width: 33.3333%;">검증에 필요한 키를 가진 서버가 토큰을 검증할 수 있다.</td>
+</tr>
+<tr>
+<td style="width: 33.3333%;">모바일 사용</td>
+<td style="width: 33.3333%;">네이티브 앱에서도 쿠키·세션 ID를 직접 관리하면 사용할 수 있다.</td>
+<td style="width: 33.3333%;">앱이 토큰을 보관하고 요청 헤더에 넣어 사용할 수 있다.</td>
+</tr>
+</tbody>
+</table>
+<p data-ke-size="size16">JWT는 서버 측 세션 조회 없이 인증할 수 있는 stateless 구조에 사용할 수 있다. 다만 JWT 사용만으로 서비스 전체가 자동으로 stateless가 되거나, CDN 캐싱·영구 로그인·CSRF 방어가 보장되는 것은 아니다. 클라이언트가 토큰을 저장해도 만료 시각은 그대로 적용된다.</p>
+<pre class="reasonml"><code class="language-java">// 개념 예시: 사용자 식별자를 담고 키로 서명한 JWT를 만든다.
+// key는 미리 준비한 서명 키이며, 서명은 본문 암호화와 다르다.
+String jwt = Jwts.builder().subject(&quot;member-1&quot;).signWith(key).compact();</code></pre>
+<p data-ke-size="size16">실습 JWT의 <code>sub</code>에는 사용자 ID, <code>iat</code>에는 발급 시각, <code>exp</code>에는 만료 시각이 들어간다. User Service는 발급한 토큰을 응답의 <code>token</code> 헤더로 전달하고, 이후 클라이언트는 <code>Authorization: Bearer 토큰</code>으로 보낸다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">Gateway 경로 변환과 로그인 이후의 JWT 검증</h4>
+<p data-ke-size="size16">Gateway의 외부 경로와 User Service가 처리하는 내부 경로를 구분해야 한다. <code>RewritePath</code>는 <code>/user-service</code> 접두사를 제거해 Controller와 로그인 필터가 기대하는 경로로 전달한다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 33.3333%;"><b>Gateway 요청</b></td>
+<td style="width: 33.3333%;"><b>User Service 내부 경로</b></td>
+<td style="width: 33.3333%;"><b>Gateway JWT 검사</b></td>
+</tr>
+<tr>
+<td style="width: 33.3333%;"><code>POST /user-service/users</code></td>
+<td style="width: 33.3333%;"><code>POST /users</code></td>
+<td style="width: 33.3333%;">없음: 회원가입</td>
+</tr>
+<tr>
+<td style="width: 33.3333%;"><code>POST /user-service/login</code></td>
+<td style="width: 33.3333%;"><code>POST /login</code></td>
+<td style="width: 33.3333%;">없음: 로그인</td>
+</tr>
+<tr>
+<td style="width: 33.3333%;"><code>GET /user-service/users</code></td>
+<td style="width: 33.3333%;"><code>GET /users</code></td>
+<td style="width: 33.3333%;">있음: 사용자 목록 조회</td>
+</tr>
+<tr>
+<td style="width: 33.3333%;"><code>GET /user-service/users/{userId}</code></td>
+<td style="width: 33.3333%;"><code>GET /users/{userId}</code></td>
+<td style="width: 33.3333%;">있음: 사용자 상세 조회</td>
+</tr>
+<tr>
+<td style="width: 33.3333%;"><code>GET /user-service/health-check</code></td>
+<td style="width: 33.3333%;"><code>GET /health-check</code></td>
+<td style="width: 33.3333%;">있음: 현재 GET 라우트에 포함됨</td>
+</tr>
+</tbody>
+</table>
+<pre class="reasonml"><code class="language-http"># 로그인 이후 요청에서 발급받은 토큰을 Bearer 형식으로 전달한다.
+GET /user-service/users HTTP/1.1
+Authorization: Bearer 발급받은_JWT</code></pre>
+<p data-ke-size="size16">필터는 <code>Authorization</code> 헤더 존재 여부를 확인하고 토큰을 파싱해 서명·만료와 비어 있지 않은 <code>subject</code>를 검사한다. 실패하면 <code>401 Unauthorized</code>를 반환하고, 성공하면 <code>chain.filter(exchange)</code>로 다음 처리에 전달한다.</p>
+<p data-ke-size="size16">User Service의 일반 접근 규칙은 현재 지정 IP 허용이며, 앞의 <code>/**</code> 규칙이 모든 경로를 잡아 뒤의 <code>anyRequest().authenticated()</code>에 도달하지 않는다. 따라서 8083으로 직접 접근하는 요청과 Gateway를 거친 요청은 JWT 검사 경로가 다르다. 현재 토큰 검사에는 경로의 사용자 ID와 토큰의 사용자 ID를 비교하는 로직도 없다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">CSR과 SSR은 화면을 만드는 위치의 차이</h4>
+<p data-ke-size="size16">인증 방식과 화면 렌더링 방식은 구분해서 이해해야 한다. 세션 인증이 반드시 서버 렌더링 HTML을 반환해야 하는 것은 아니며, 세션·JWT 어느 방식에서도 JSON 응답을 사용할 수 있다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 23.7209%;"><b>구분</b></td>
+<td style="width: 76.2791%;"><b>화면을 만드는 위치와 흐름</b></td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>CSR</code></td>
+<td style="width: 76.2791%;">브라우저 등 클라이언트가 JavaScript와 전달받은 데이터를 이용해 화면을 구성한다.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>SSR</code></td>
+<td style="width: 76.2791%;">서버가 데이터를 반영한 HTML을 구성해 클라이언트에 전달한다.</td>
+</tr>
+</tbody>
+</table>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">Spring Cloud Config로 설정을 외부 Git 저장소에서 관리</h4>
+<p data-ke-size="size16">각 서비스에 흩어진 설정을 외부 저장소에서 관리하고, Config Server가 이를 읽어 서비스에 제공한다. User Service는 Config Client로 동작하며, 현재 <code>bootstrap.yml</code>에서 Config Server 주소와 설정 이름 <code>ecommerce</code>를 지정한다.</p>
+<p data-ke-size="size16">현재 Config Server는 8888 포트에서 실행하도록 설정되어 있으며 <code>F:/remoteSettings</code> Git 저장소의 <code>main</code> 브랜치를 읽는다. <code>/ecommerce/default</code>는 ecommerce 설정의 기본 프로필을 조회하는 경로이고, 응답의 <code>propertySources</code>에서 설정 출처, <code>version</code>에서 Git 버전을 확인할 수 있다.</p>
+<pre class="reasonml"><code class="language-powershell"># 외부 설정 저장소에서 실행: 변경한 설정을 Git 버전으로 기록한다.
+Set-Location F:\remoteSettings
+git add ecommerce.yml
+git commit -m &quot;Update configuration&quot;</code></pre>
+<p data-ke-size="size16">설정만 바꾸는 경우 각 서비스의 코드를 다시 빌드할 필요는 없다. 그러나 Config Server에서 변경된 값이 조회되는 것과 이미 실행 중인 User Service의 <code>Environment</code>가 갱신되는 것은 별도 단계이다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">환경별 프로필 설정과 설정 우선순위</h4>
+<p data-ke-size="size16">수업메모에서는 개발용 DEV, 사용자 인수 테스트용 UAT, 운영용 PROD처럼 환경에 맞는 설정을 구분했다. 프로필을 선택하면 해당 환경의 설정과 공통 설정을 함께 읽으며, 같은 키는 더 구체적인 설정이 우선한다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 23.7209%;"><b>설정 파일</b></td>
+<td style="width: 76.2791%;"><b>적용 범위와 우선순위</b></td>
+</tr>
+<tr>
+<td style="width: 23.7209%;">원격 <code>application.yml</code></td>
+<td style="width: 76.2791%;">여러 애플리케이션이 공유하는 공통 설정</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;">원격 <code>ecommerce.yml</code></td>
+<td style="width: 76.2791%;">ecommerce 설정에 공통으로 적용하며 원격 공통 설정보다 우선</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;">원격 <code>ecommerce-dev.yml</code></td>
+<td style="width: 76.2791%;">dev 프로필일 때 적용하며 같은 키의 ecommerce 기본 설정보다 우선</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;">서비스의 로컬 <code>application.yml</code></td>
+<td style="width: 76.2791%;">현재 bootstrap 방식에서는 원격 설정이 기본적으로 우선하며, override 정책에 따라 달라질 수 있음</td>
+</tr>
+</tbody>
+</table>
+<pre class="reasonml"><code class="language-yaml"># 개념 예시: dev 환경의 설정을 선택한다.
+# Config Server는 /ecommerce/dev에서 프로필별 설정과 공통 설정을 제공한다.
+spring:
+  profiles:
+    active: dev</code></pre>
+<p data-ke-size="size16">원격 저장소 안의 같은 키는 <code>ecommerce-dev.yml → ecommerce.yml → application.yml</code> 순으로 우선한다. <code>/ecommerce/default</code>를 조회하면서 dev 또는 prod 파일을 수정해도 그 프로필의 값은 적용되지 않는다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">Actuator로 상태를 확인하고 변경된 설정을 다시 읽기</h4>
+<p data-ke-size="size16">Spring Boot Actuator는 애플리케이션 상태 확인과 관리·모니터링용 HTTP 엔드포인트를 제공한다. 라이브러리 추가, HTTP 노출 설정, Spring Security 접근 규칙은 서로 다른 조건이며 모두 확인해야 한다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 23.7209%;"><b>요청</b></td>
+<td style="width: 76.2791%;"><b>역할</b></td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>GET /actuator/health</code></td>
+<td style="width: 76.2791%;">애플리케이션 상태 확인</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>POST /actuator/refresh</code></td>
+<td style="width: 76.2791%;">Config Client가 설정을 다시 읽고 refresh 대상에 변경을 반영</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>GET /actuator/beans</code></td>
+<td style="width: 76.2791%;">등록된 Bean 정보 확인</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>GET /actuator/info</code></td>
+<td style="width: 76.2791%;">구성된 애플리케이션 정보 확인</td>
+</tr>
+</tbody>
+</table>
+<pre class="reasonml"><code class="language-powershell"># 설정 저장·커밋 후 실행할 갱신 요청 예시이다.
+# 브라우저 주소창의 GET 요청과 달리 refresh에는 POST를 사용한다.
+Invoke-RestMethod -Method Post -Uri http://localhost:8083/actuator/refresh</code></pre>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 23.7209%;"><b>변경 반영 방법</b></td>
+<td style="width: 76.2791%;"><b>동작과 범위</b></td>
+</tr>
+<tr>
+<td style="width: 23.7209%;">서비스 재시작</td>
+<td style="width: 76.2791%;">시작 과정에서 설정을 다시 읽는다. 설정만 바꾼 경우 코드 재빌드는 필요하지 않다.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;">Actuator refresh</td>
+<td style="width: 76.2791%;">대상 서비스에 갱신을 요청한다. 변경값을 필드에 고정한 모든 객체가 자동으로 다시 만들어지는 것은 아니다.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;">Spring Cloud Bus</td>
+<td style="width: 76.2791%;">여러 인스턴스에 갱신을 전달하는 방법으로 소개되었으며, 오늘 자료 범위에서는 구성 실습까지 다루지 않았다.</td>
+</tr>
+</tbody>
+</table>
+<p data-ke-size="size16">관리 엔드포인트의 라이브러리는 <code>pom.xml</code>의 일반 <code>dependencies</code>에 넣어야 한다. <code>dependencyManagement</code>는 버전과 설정을 관리하며, 여기에만 선언하면 실제 실행 의존성으로 추가되지 않는다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">오늘의 코드 1 - BCrypt 저장과 이메일 기반 사용자 정보 조회</h2>
+<h4 data-ke-size="size20">UserServiceImpl.java</h4>
+<pre class="reasonml"><code class="language-java">        userEntity.setEncryptedPwd(passwordEncoder.encode(userDto.getPwd()));
+
+        userRepository.save(userEntity);</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">회원가입 시 비밀번호를 BCrypt 해시로 바꿔 Entity에 넣고 DB에 저장한다. 저장된 해시는 로그인 검증에 사용하며, 원문 비밀번호로 복호화하지 않는다.</p>
+<h4 data-ke-size="size20">UserRepository.java</h4>
+<pre class="reasonml"><code class="language-java">    UserEntity findByEmail(String email);</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16"><code>findByEmail()</code>은 이메일로 사용자 정보를 조회하는 Repository 메서드이다. 현재 로그인 식별자로 이메일을 사용하므로 로그인 정보 조회가 이 메서드로 연결된다.</p>
+<h4 data-ke-size="size20">UserServiceImpl.java</h4>
+<pre class="reasonml"><code class="language-java">    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        UserEntity userEntity = userRepository.findByEmail(username);
+
+        if (userEntity == null)
+            throw new UsernameNotFoundException(username + &quot;: not found&quot;);
+
+        return new User(userEntity.getEmail(), userEntity.getEncryptedPwd(),
+                true, true, true, true,
+                new ArrayList&lt;&gt;());
+    }</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">이메일로 조회한 계정과 저장된 비밀번호 해시를 Spring Security의 <code>User</code> 객체로 반환한다. 사용자가 없으면 예외를 발생시키며, 반환된 정보로 비밀번호를 비교하는 작업은 등록된 인증 처리자가 맡는다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 2 - 인증 관리자 구성과 로그인 필터 등록</h2>
+<h4 data-ke-size="size20">WebSecurity.java</h4>
+<pre class="reasonml"><code class="language-java">        AuthenticationManagerBuilder authenticationManagerBuilder =
+                http.getSharedObject(AuthenticationManagerBuilder.class);
+        authenticationManagerBuilder.userDetailsService(userService).passwordEncoder(bCryptPasswordEncoder);
+
+        AuthenticationManager authenticationManager = authenticationManagerBuilder.build();</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">사용자 조회 구현과 BCrypt 인코더를 연결해 인증 관리자를 만든다. 이 설정을 통해 로그인 필터가 전달한 이메일·비밀번호를 DB의 사용자 정보와 비교할 수 있다.</p>
+<h4 data-ke-size="size20">WebSecurity.java</h4>
+<pre class="reasonml"><code class="language-java">            .authenticationManager(authenticationManager)
+            .addFilter(getAuthenticationFilter(authenticationManager))</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">직접 만든 로그인 필터를 보안 필터 체인에 등록하고 같은 인증 관리자를 사용하게 한다. <code>WebSecurity</code>는 JWT를 직접 발급하는 클래스가 아니라 인증 처리에 필요한 구성과 접근 규칙을 연결하는 클래스이다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 3 - JSON 로그인 요청을 읽고 인증을 위임</h2>
+<h4 data-ke-size="size20">RequestLogin.java</h4>
+<pre class="reasonml"><code class="language-java">@Data
+public class RequestLogin {
+    @NotNull(message = &quot;Email cannot be null&quot;)
+    @Size(min = 2, message = &quot;Email not be less than two characters&quot;)
+    @Email
+    private String email;
+
+    @NotNull(message = &quot;Password cannot be null&quot;)
+    @Size(min = 8, message = &quot;Password must be equals or grater than 8 characters&quot;)
+    private String password;
+}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">로그인 요청의 이메일과 비밀번호를 담는 모델이다. 검증 애너테이션은 선언되어 있지만, 필터에서 <code>ObjectMapper</code>로 읽는 것만으로 제약 검증이 자동 실행되는 것은 아니다.</p>
+<h4 data-ke-size="size20">AuthenticationFilter.java</h4>
+<pre class="reasonml"><code class="language-java">    @Override
+    public Authentication attemptAuthentication(HttpServletRequest req,
+                                                HttpServletResponse res) throws AuthenticationException {
+        try {
+            // 로그인 요청의 본문(JSON)을 읽어서 RequestLogin 객체로 변환하는 코드
+            RequestLogin creds = new ObjectMapper().readValue(req.getInputStream(), RequestLogin.class);
+
+            // 사용자 이메일과 패스워드를 가지고 인증 처리를 요청
+            return getAuthenticationManager().authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            creds.getEmail(),
+                            creds.getPassword(),
+                            new ArrayList&lt;&gt;()
+                    )
+            );
+
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16"><code>POST /login</code>의 JSON 본문을 읽어 이메일과 비밀번호를 인증 관리자에게 전달한다. <code>UsernamePasswordAuthenticationToken</code>은 Spring Security 내부 인증 정보이며, 이후 발급할 JWT와는 별개이다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 4 - 인증 성공 후 JWT 발급과 응답 헤더 전달</h2>
+<h4 data-ke-size="size20">AuthenticationFilter.java</h4>
+<pre class="reasonml"><code class="language-java">    @Override
+    protected void successfulAuthentication(HttpServletRequest req, HttpServletResponse res,
+                                            FilterChain chain, Authentication authResult)
+            throws IOException, ServletException {
+        // JWT 발행을 위한 준비
+        String userName = ((User) authResult.getPrincipal()).getUsername(); // email
+        UserDto userDetails = userService.getUserDetailsByEmail(userName); // JWT에 담을 정보를 가져오기 위해
+
+        // JWT 발행
+        byte[] secretKeyBytes = environment.getProperty(&quot;token.secret&quot;).getBytes(StandardCharsets.UTF_8);
+
+        SecretKey secretKey = Keys.hmacShaKeyFor(secretKeyBytes);
+
+        Instant now = Instant.now();
+
+        String token = Jwts.builder()
+                .subject(userDetails.getUserId())
+                .expiration(Date.from(now.plusMillis(Long.parseLong(environment.getProperty(&quot;token.expiration-time&quot;)))))
+                .issuedAt(Date.from(now))
+                .signWith(secretKey)
+                .compact();
+
+        res.addHeader(&quot;token&quot;, token);
+        res.addHeader(&quot;userId&quot;, userDetails.getUserId());
+    }</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">인증된 이메일로 사용자 ID를 조회하고 발급·만료 시각을 담아 JWT에 서명한다. 토큰과 사용자 ID는 응답 헤더의 <code>token</code>, <code>userId</code>로 전달하며, 현재 메서드는 응답 본문에 토큰을 쓰지 않는다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 5 - Gateway 경로 변환과 조회 요청의 JWT 검증</h2>
+<h4 data-ke-size="size20">application.yml</h4>
+<pre class="reasonml"><code class="language-yaml">            - id: user-service-register
+              uri: lb://USER-SERVICE
+              predicates:
+                - Path=/user-service/users
+                - Method=POST
+              filters:
+                - RemoveRequestHeader=Cookie
+                - RewritePath=/user-service/(?&lt;segment&gt;.*), /$\{segment}
+            - id: user-service-login
+              uri: lb://USER-SERVICE
+              predicates:
+                - Path=/user-service/login
+                - Method=POST
+              filters:
+                - RemoveRequestHeader=Cookie
+                - RewritePath=/user-service/(?&lt;segment&gt;.*), /$\{segment}
+            - id: user-service
+              uri: lb://USER-SERVICE
+              predicates:
+                - Path=/user-service/**
+                - Method=GET
+              filters:
+                - RemoveRequestHeader=Cookie
+                - RewritePath=/user-service/(?&lt;segment&gt;.*), /$\{segment}
+                - AuthorizationHeaderFilter</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">회원가입·로그인 POST 라우트와 사용자 조회 GET 라우트를 분리했다. 세 라우트 모두 접두사를 제거하며, JWT 검증 필터는 GET 라우트에만 적용된다.</p>
+<h4 data-ke-size="size20">AuthorizationHeaderFilter.java</h4>
+<pre class="reasonml"><code class="language-java">            // 1. Authorization 헤더가 존재하는지 존재하지 않는지를 먼저 검증
+            if (!request.getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
+                return onError(exchange, &quot;No authorization header&quot;, HttpStatus.UNAUTHORIZED);
+            }
+
+            // 2. 헤더가 존재한다면, JWT 토큰이 실제로 존재하는지를 검증
+            String authorizationHeader = request.getHeaders().get(HttpHeaders.AUTHORIZATION).get(0);
+            String jwt = authorizationHeader.replace(&quot;Bearer &quot;, &quot;&quot;);
+
+            // 3. 토큰이 존재한다면, JWT라는 토큰이 우리가 발했했던 토큰이 맞는지, 유효시간 안에 사용할 수 있는 정상적인 토큰인지 검증
+            if (!isJwtValid(jwt)) {
+                return onError(exchange, &quot;JWT token is not valid&quot;, HttpStatus.UNAUTHORIZED);
+            }
+
+            return chain.filter(exchange);</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">헤더가 없거나 토큰 검증에 실패하면 <code>401</code> 응답으로 요청 처리를 끝낸다. 검증에 성공했을 때만 <code>chain.filter(exchange)</code>를 실행해 다음 필터와 대상 서비스로 전달한다.</p>
+<h4 data-ke-size="size20">AuthorizationHeaderFilter.java</h4>
+<pre class="reasonml"><code class="language-java">    private boolean isJwtValid(String jwt) {
+        byte[] secretKeyBytes = env.getProperty(&quot;token.secret&quot;).getBytes();
+        SecretKey signingKey = new SecretKeySpec(secretKeyBytes, SignatureAlgorithm.HS512.getJcaName());
+
+        boolean returnValue = true;
+        String subject = null;
+
+        try {
+            JwtParser jwtParser = Jwts.parser()
+                    .setSigningKey(signingKey)
+                    .build();
+
+            subject = jwtParser.parseClaimsJws(jwt).getBody().getSubject(); // userId
+        } catch (Exception ex) {
+            returnValue = false;
+        }
+
+        if (subject == null || subject.isEmpty()) {
+            returnValue = false;
+        }
+
+        return returnValue;
+    }</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">설정에서 읽은 키를 이용해 JWT를 파싱하고 사용자 식별자인 <code>subject</code>를 확인한다. 파싱 예외나 빈 subject는 검증 실패로 처리하며, 경로의 사용자 ID와 subject를 비교하는 로직은 현재 없다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 6 - Config Server 활성화와 로컬 Git 저장소 연결</h2>
+<h4 data-ke-size="size20">ConfigServiceApplication.java</h4>
+<pre class="reasonml"><code class="language-java">@SpringBootApplication
+@EnableConfigServer
+public class ConfigServiceApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(ConfigServiceApplication.class, args);
+    }
+
+}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16"><code>@EnableConfigServer</code>로 설정 제공 서버를 활성화한다. User Service의 설정을 대신 실행하는 것이 아니라, 외부 저장소의 설정을 HTTP로 조회할 수 있게 하는 역할이다.</p>
+<h4 data-ke-size="size20">application.yaml</h4>
+<pre class="reasonml"><code class="language-yaml">server:
+  port: 8888
+
+spring:
+  application:
+    name: config-service
+  cloud:
+    config:
+      server:
+        git:
+          uri: file:///F:/remoteSettings
+          default-label: main</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">8888 포트에서 설정을 제공하고 <code>F:/remoteSettings</code> Git 저장소의 <code>main</code> 브랜치를 읽도록 구성했다. 앞선 조회에서 <code>/ecommerce/default</code>의 설정 출처가 해당 저장소의 <code>ecommerce.yml</code>인 것을 확인했다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 7 - User Service의 Config Client 연결과 설정 읽기</h2>
+<h4 data-ke-size="size20">pom.xml</h4>
+<pre class="reasonml"><code class="language-xml">		&lt;dependency&gt;
+			&lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
+			&lt;artifactId&gt;spring-cloud-starter-config&lt;/artifactId&gt;
+		&lt;/dependency&gt;
+
+		&lt;dependency&gt;
+			&lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
+			&lt;artifactId&gt;spring-cloud-starter-bootstrap&lt;/artifactId&gt;
+		&lt;/dependency&gt;</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">Config Client 라이브러리와 bootstrap 지원을 실제 의존성으로 추가했다. 현재 프로젝트에서는 <code>bootstrap.yml</code>을 이용해 서비스 시작 시 원격 설정을 읽는 방식이다.</p>
+<h4 data-ke-size="size20">bootstrap.yml</h4>
+<pre class="reasonml"><code class="language-yaml">spring:
+  cloud:
+    config:
+      uri: http://127.0.0.1:8888
+      name: ecommerce</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">Config Server의 주소와 조회할 설정 이름을 지정했다. 설정 이름은 <code>ecommerce</code>이며, 별도로 프로필을 지정하지 않은 기본 조회 경로는 <code>/ecommerce/default</code>이다.</p>
+<h4 data-ke-size="size20">UserController.java</h4>
+<pre class="reasonml"><code class="language-java">    @GetMapping(&quot;/health-check&quot;)
+    public String status() {
+        return String.format(&quot;It&#x27;s Working in User Service&quot;
+                + &quot;, port(local.server.port)=&quot; + env.getProperty(&quot;local.server.port&quot;)
+                + &quot;, port(server.port)=&quot; + env.getProperty(&quot;server.port&quot;)
+                + &quot;, gateway ip(env)=&quot; + env.getProperty(&quot;gateway.ip&quot;)
+                + &quot;, token secret key=&quot; + env.getProperty(&quot;token.secret&quot;)
+                + &quot;, token expiration time=&quot; + env.getProperty(&quot;token.expiration-time&quot;));
+    }</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">실습용 상태 확인 메서드에서 <code>Environment</code>의 설정을 읽어 응답을 구성한다. Config Server가 제공하는 값과 서비스가 읽는 값을 비교하기 위한 코드이며, 이 직접 만든 <code>/health-check</code>는 Actuator의 <code>/actuator/health</code>와 다른 엔드포인트이다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 8 - Actuator 의존성·노출·보안 접근 설정</h2>
+<h4 data-ke-size="size20">pom.xml</h4>
+<pre class="reasonml"><code class="language-xml">		&lt;dependency&gt;
+			&lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;
+			&lt;artifactId&gt;spring-boot-starter-actuator&lt;/artifactId&gt;
+		&lt;/dependency&gt;</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">현재 Actuator 의존성은 일반 <code>dependencies</code> 안에 있다. 앞서 <code>dependencyManagement</code>에만 선언했을 때는 실행 중인 서비스에 Actuator가 포함되지 않아 health 요청이 <code>404</code>였다.</p>
+<h4 data-ke-size="size20">application.yml</h4>
+<pre class="reasonml"><code class="language-yaml">management:
+  endpoints:
+    web:
+      exposure:
+        include:
+          - refresh
+          - health
+          - beans
+          - info</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">refresh·health·beans·info 엔드포인트를 HTTP로 노출하도록 설정했다. 노출 목록을 적는 것만으로 라이브러리가 추가되는 것은 아니므로 의존성 구성도 함께 확인한다.</p>
+<h4 data-ke-size="size20">WebSecurity.java</h4>
+<pre class="reasonml"><code class="language-java">                    .requestMatchers(&quot;/actuator/**&quot;).permitAll()  // 특정 경로 허용
+                    .requestMatchers(&quot;/health-check/**&quot;).permitAll()  // 특정 경로 허용</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">현재 보안 설정은 Actuator와 직접 만든 health-check 경로의 접근을 허용한다. 접근 허용은 이미 존재하는 엔드포인트에 대한 규칙이므로, Actuator가 없는 상태에서 이 설정만 추가해도 엔드포인트가 생기지는 않는다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">어려웠던 점 / 각종 오류</h2>
+<p data-ke-size="size16">로그인 Controller가 없는데 <code>/login</code>이 동작하는 이유와 세 보안 클래스의 역할이 처음에는 혼동되었다. 기본 로그인 경로를 가진 필터를 <code>WebSecurity</code>가 등록하고, 계정 확인은 <code>AuthenticationFilter</code>, 이후 토큰 검사는 Gateway의 <code>AuthorizationHeaderFilter</code>가 담당한다는 흐름으로 구분했다. 메모에 기록된 로그인 404는 외부 경로와 내부 필터 경로를 맞추는 <code>RewritePath</code>로 해결하는 경로 문제이다.</p>
+<p data-ke-size="size16">8083 서비스에서 중단점이 동작하지 않는 것처럼 보였지만, 당시 실행 프로세스에는 디버그 옵션이 있는 것을 확인했다. <code>attemptAuthentication()</code>은 <code>POST /login</code> 요청에서 실행되므로 브라우저 주소창의 GET 요청이나 사용자 조회 요청과 구분해야 한다. 실제 요청 방식과 IntelliJ의 중단점 설정을 모두 확인하지 못했으므로 원인을 특정 설정으로 단정하지 않았다.</p>
+<p data-ke-size="size16">Config Server에서 비밀 키 변경이 보이지 않는 문제를 확인할 때는 수정한 파일, 조회 프로필, Git 버전을 먼저 구분해야 했다. 당시 <code>/ecommerce/default</code>의 응답은 저장소의 <code>ecommerce.yml</code>과 일치했고, dev·prod 파일의 값은 달랐다. Git 방식에서는 변경을 저장·커밋한 뒤 조회 출처를 확인하고, 실행 중인 서비스의 설정 갱신은 별도로 재시작 또는 refresh로 처리한다.</p>
+<p data-ke-size="size16"><code>/actuator/health</code>에서 <code>404</code>와 <code>No static resource actuator/health</code>가 반환되었다. 당시 Actuator가 실행 의존성에 없었고, 원인은 의존성을 일반 <code>dependencies</code>가 아닌 <code>dependencyManagement</code>에만 넣은 것이었다. 현재 파일에서는 위치가 수정되어 있으며, Maven 프로젝트 새로고침과 서비스 재시작이 필요하다. 수정 후 health 성공 응답이나 refresh 실행 결과는 아직 확인하지 않았다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 style="color: #000000; text-align: start;" data-ke-size="size26">하루를 정리하며</h2>
+<p style="color: #222222; text-align: start;" data-ke-size="size16">LG CNS 6기</p>
+<p style="color: #222222; text-align: start;" data-ke-size="size16">LGCNSINSIRECAMP</p>
+<p style="color: #222222; text-align: start;" data-ke-size="size16">개발자</p>
