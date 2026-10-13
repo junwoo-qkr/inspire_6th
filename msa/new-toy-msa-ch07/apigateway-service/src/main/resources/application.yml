@@ -80,6 +80,31 @@ spring:
                     baseMessage: Hi, there.
                     preLogger: true
                     postLogger: true
+            - id: user-service-actuator
+              uri: lb://USER-SERVICE
+              predicates:
+                - Path=/user-service/actuator/**
+                - Method=GET,POST
+              filters:
+                - RemoveRequestHeader=Cookie
+                - RewritePath=/user-service/(?<segment>.*), /$\{segment}
+  rabbitmq:
+    host: 127.0.0.1
+    port: 5672
+    username: guest
+    password: guest
 
-token:
-  secret: my-very-long-secret-key-1234567890123456
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+          - refresh
+          - health
+          - beans
+          - info
+          - httpexchanges
+          - busrefresh
+
+#token:
+#  secret: my-very-long-secret-key-1234567890123456

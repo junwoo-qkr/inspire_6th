@@ -1,0 +1,11 @@
+encrypt:
+#  key: p&so92kmv5ib%^sbciw#8n@5lrti@32joxih^alek#sd  # 대칭키 사용 시 설정
+  key-store:
+    location: file:///F:/keystore/apiEncryptionKey.jks
+    password: 1q2w3e4r  # storepass에 해당
+    alias: apiEncryptionKey
+
+spring:
+  cloud:
+    config:
+      uri: http://127.0.0.1:8888

@@ -8,5 +8,22 @@ spring:
     config:
       server:
         git:
-          uri: file:///F:/remoteSettings
+          uri: https://github.com/junwoo-qkr/remoteSettings
           default-label: main
+  rabbitmq:
+    host: 127.0.0.1
+    port: 5672
+    username: guest
+    password: guest
+
+  management:
+    endpoints:
+      web:
+        exposure:
+          include:
+            - refresh
+            - health
+            - beans
+            - info
+            - httpexchanges
+            - busrefresh
