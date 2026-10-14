@@ -1,46 +1,36 @@
-gateway를 config-service와 연동하기
-- 의존성 추가(config, bootstrap, actuator)
-- bootstrap.yml 추가
-- gateway의 application.yml에서 토큰 관련 내용은 주석 처리(config-service에서 받아올거기 때문)
-- actuator 엔드포인트 열어주기
-- HttpExchangeRepository 객체 만들기(httpexchanges 엔드포인트를 쓰기 위해 - 요청/응답 기록 저장용)
+통신의 종류
+1. 동기
+- http를 사용하는 rest api 호출
+- 요청을 보낸 후 응답이 올 때까지 다른 일을 할 수 없음
+- 강력한 데이터 일관성(클라이언트/서버가 사용중인 데이터가 동일)
+2. 비동기
+- 요청을 보낸 후 응답을 기다리지 않고 다른 작업을 함
+- 최종적 일관성(처리 중간엔 일관성이 깨질지도 모르지만 처리 완료 후에는 데이터가 일관적이게 됨)
+- amqp를 사용할 수 있음
 
-authenticationfilter, authenticationheaderfilter에 중단점을 찍어서 각 서비스의 token secret이 동일한지 확인
-설정 파일이 바뀔때마다 gateway(8000번)와 userservice(8083)에 refresh 요청을 다시 보내야해서 번거로움
+rest template(legacy) 실습
+- resttemplate 객체를 bean으로 등록해놔야함
+- restemplate.exchange의 파라미터
+  - url
+  - 요청 타입
+  - 보낼 객체
+  - 응답을 받을 타입
+- 사용자 조회 시 orderList에 빈 리스트를 넣던걸 수정 -> order-service에서 주문목록을 가져오도록 함
 
-multiple environments는 실습 X
+resttemplate에 @loadbalanced 추가하면 설정 파일에서 url을 service-discovery에 등록된 서비스 이름으로 변경할 수 있음
 
-config-service의 application.yml에서 uri를 원격 저장소로 변경
+feignclient
+- rest api를 호출하기 위한 방법 중 하나
+- rest call을 추상화한 spring cloud Netflix 라이브러리
+- 사용방법
+  - 호출하려는 엔드포인트에 대한 interface 생성(@FeignClient 선언)
+  - interface의 메서드를 사용해서 다른 서비스의 엔드포인트에 요청
+- 로그 추적 방법
+  - 설정 파일에 서비스의 로깅 레벨 변경
+  - 서비스 실행 파일에 Logger.Level 클래스 선언
 
-spring cloud bus
-- 각 마이크로 서비스들을 경량 메시지 브로커(RabbitMQ 등)와 연결
-- message queue를 통해 보내는 쪽에서는 보내는것만, 받는 쪽에서는 받는것만 하면 됨(mq가 없으면 잘 받았는지 확인하는 작업 등이 추가로 필요)
-- 상태 및 구성에 대한 변경사항을 마이크로 서비스에 전달(broadcast)
-- 어느 한 군데(서비스, 게이트웨이 등)에서든 /actuator/busrefresh를 요청(publish) -> 나머지 서비스에서 mq의 메시지를 받음(subscribe) -> 그 메시지를 받고 갱신 요청
-  - topic은?
+feignException
+- 일부러 잘못된 엔드포인트로 요청을 보내고, FeignException을 catch해서 예외를 처리해보기
 
-amqp(advanced message queuing protocol), kafka
-
-docker에 rabbitmq 설치
-docker run -it -d --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:4.1.0-management
-
-각 서비스에 cloud bus 의존성 추가
-application.yml 수정
-
-원격 저장소의 토큰 변경후 busrefresh -> user-service에서 busrefresh해도 config-service에서 자동으로 갱신해서 바뀐 설정값을 가져옴
-
-암호화 종류
-- 대칭키: 암호화/복호화 키가 같음
-- 비대칭키(예: RSA Keypair): private key/public key로 나뉨 -> 서로 다른 키로 암호화/복호화
-
-대칭키 실습
-- config service에 bootstrap 의존성 추가
-- bootstrap 파일에 키 추가
-- localhost:8888/encrypt에 POST로 body에 글자 넣어서 요청 -> 암호화된 값이 반환
-- decrypt에 POST로 암호화된 값을 넣어서 요청 -> 평문이 반환
-- user-service의 설정 파일에서 datasource 주석 처리 -> config server에서 암호화해서 관리(앞에{cipher}를 붙이기)
-- config server에서 확인할 수 있음 -> 암호화된 값을 아무나 볼 수 있는 위험이 있음
-
-비대칭키 실습
-명령어: keytool -genkeypair -alias apiEncryptionKey -keyalg RSA -dname "CN=JunWoo Park OU=Home, O=My Home, L=Seoul, C=KR" -keypass "1q2w3e4r" -keystore apiEncryptionKey.jks -storepass "1q2w3e4r"
-datasource의 비밀번호, token의 secret을 비대칭키로 암호화
+FeignErrorDecoder 구현
+- feign 관련 예외를 한 곳에서 모아서 처리
