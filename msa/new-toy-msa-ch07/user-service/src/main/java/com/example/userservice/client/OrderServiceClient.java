@@ -10,7 +10,7 @@ import java.util.List;
 @FeignClient(name="order-service")  // service-discovery에 등록된 서비스 이름
 public interface OrderServiceClient {
 
-//    @GetMapping("/order-service/{userId}/orders")
-    @GetMapping("/order-service/{userId}/orders_wrongEndpoint")
+    @GetMapping("/order-service/{userId}/orders")
+//    @GetMapping("/order-service/{userId}/orders_wrongEndpoint")
     List<ResponseOrder> getOrders(@PathVariable String userId);
 }

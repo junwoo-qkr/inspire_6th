@@ -1,0 +1,397 @@
+<h1 data-ke-size="size30">[LG CNS AM INSPIRE CAMP 6기] 10/15 TIL - MSA: Kafka를 통한 주문 이벤트 전달과 상품 재고 연동</h1>
+<h2 data-ke-size="size26">오늘의 한 줄 요약</h2>
+<ul style="list-style-type: disc;" data-ke-list-type="disc">
+<li>Kafka의 토픽과 Consumer Group을 통해 서비스 간 메시지 전달과 처리 분담 방식을 이해했다.</li>
+<li>Java 설정 클래스와 <code>application.yml</code>을 이용한 Spring Boot 자동 설정을 비교했다.</li>
+<li>주문 정보를 JSON 메시지로 발행하고 상품 서비스에서 수신해 재고를 차감하는 흐름을 구현하고 실행 확인했다.</li>
+<li>Kafka Connect의 데이터 연계 역할과 Saga의 보상 트랜잭션 개념을 정리했다.</li>
+</ul>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">키워드 정리</h2>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 23.7209%;"><b>키워드</b></td>
+<td style="width: 76.2791%;"><b>설명 또는 예시</b></td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b>Kafka</b></td>
+<td style="width: 76.2791%;">이벤트를 저장하고 생산자와 소비자가 독립적으로 주고받는 분산 이벤트 스트리밍 플랫폼</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b>Broker</b></td>
+<td style="width: 76.2791%;">Kafka에서 메시지를 저장하고 클라이언트의 읽기&middot;쓰기 요청을 처리하는 서버</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b>Topic / Partition</b></td>
+<td style="width: 76.2791%;">메시지를 구분하는 논리적 단위와 토픽을 나누어 저장하는 단위</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b>Producer / Consumer</b></td>
+<td style="width: 76.2791%;">메시지를 발행하는 클라이언트와 읽어 처리하는 클라이언트</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b>Consumer Group</b></td>
+<td style="width: 76.2791%;">파티션을 나누어 처리하는 소비자들의 묶음. <code>group-id</code>로 구분한다.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b>Offset</b></td>
+<td style="width: 76.2791%;">파티션 안에서 메시지의 위치를 나타내는 번호</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b>직렬화 / 역직렬화</b></td>
+<td style="width: 76.2791%;">전송할 값을 바이트로 바꾸는 과정과 받은 바이트를 사용할 타입으로 복원하는 과정</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>ConsumerFactory / ProducerFactory</code></b></td>
+<td style="width: 76.2791%;">Kafka 클라이언트를 설정에 맞게 생성하는 공장</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b>리스너 컨테이너</b></td>
+<td style="width: 76.2791%;">Consumer를 실행하고 받은 메시지를 리스너 메서드에 전달하는 실행 관리자</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>KafkaTemplate</code></b></td>
+<td style="width: 76.2791%;">Spring에서 Kafka 메시지 발행을 지원하는 도구</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>@KafkaListener</code></b></td>
+<td style="width: 76.2791%;">특정 토픽을 구독하고 수신 메시지를 처리할 메서드를 지정하는 어노테이션</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>ObjectMapper</code></b></td>
+<td style="width: 76.2791%;">Java 객체와 JSON 문자열 사이의 변환을 담당하는 Jackson 클래스</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b>Kafka Connect</b></td>
+<td style="width: 76.2791%;">커넥터를 설정해 외부 시스템과 Kafka 사이의 데이터를 이동시키는 프레임워크</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b>Saga / 보상 트랜잭션</b></td>
+<td style="width: 76.2791%;">서비스별 로컬 트랜잭션을 연결하고 실패한 흐름을 별도 보상 작업으로 수습하는 방식</td>
+</tr>
+</tbody>
+</table>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">오늘 배운 것</h2>
+<h4 data-ke-size="size20">여러 서비스 인스턴스의 데이터와 메시지 기반 연동</h4>
+<p data-ke-size="size16">동일한 서비스를 여러 인스턴스로 실행하면서 각 인스턴스가 별도의 메모리 DB를 사용하면, 요청을 처리한 인스턴스에 따라 저장된 데이터가 달라질 수 있다. 동일 서비스의 인스턴스들이 외부의 공통 DB를 사용하거나, 데이터 변경 이벤트를 전달해 필요한 데이터를 반영하는 방식을 생각할 수 있다.</p>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">서비스마다 상대 서비스에 직접 연결하는 방식은 연동 대상이 늘어날수록 연결과 데이터 흐름 관리가 복잡해진다. Kafka를 사용하면 생산자는 토픽에 이벤트를 남기고 소비자는 자신에게 필요한 이벤트를 읽으므로, 메시지를 보내는 서비스와 처리하는 서비스의 연결을 분리할 수 있다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 23.7209%;"><b>연동 방식</b></td>
+<td style="width: 76.2791%;"><b>데이터를 처리하는 흐름</b></td>
+</tr>
+<tr>
+<td style="width: 23.7209%;">동일 서비스의 외부 공통 DB</td>
+<td style="width: 76.2791%;">여러 인스턴스가 같은 DB에 접근해 해당 서비스의 데이터를 조회하고 변경한다.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;">애플리케이션의 Kafka 연동</td>
+<td style="width: 76.2791%;">서비스가 메시지를 발행하고 다른 서비스의 Consumer가 메시지를 읽어 자신의 DB에 반영한다.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;">Kafka Connect</td>
+<td style="width: 76.2791%;">Source&middot;Sink 커넥터의 설정과 플러그인으로 외부 시스템과 Kafka 사이의 데이터를 이동시킨다.</td>
+</tr>
+</tbody>
+</table>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">Broker, Controller와 토픽의 역할</h4>
+<p data-ke-size="size16">Broker는 토픽의 메시지를 저장하고 Producer와 Consumer의 요청을 처리한다. 토픽은 여러 파티션으로 나눌 수 있고, 메시지 순서는 같은 파티션 안에서 보장된다. 브로커 확장과 파티션 분산은 많은 메시지를 나누어 처리하는 기반이 된다.</p>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">KRaft에서는 서버에 Broker 역할, Controller 역할 또는 두 역할을 함께 지정할 수 있다. Controller는 클러스터 메타데이터와 리더 선출 등을 관리하며, 고가용성을 위해 여러 Controller를 구성한다. 실습용 단일 서버 구성과 운영 환경의 다중 서버 구성은 구분해야 한다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">Consumer Group과 메시지를 읽는 시작 위치</h4>
+<p data-ke-size="size16">같은 Consumer Group의 Consumer들은 파티션을 나누어 맡는다. 서로 다른 그룹은 각자의 offset을 기준으로 같은 토픽의 메시지를 독립적으로 읽을 수 있다. 따라서 여러 인스턴스에 Kafka를 연결했다고 해서 각 인스턴스의 독립 DB에 모든 메시지가 반영되는 것은 아니다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 23.7209%;"><b>설정 또는 상태</b></td>
+<td style="width: 76.2791%;"><b>메시지 읽기 기준</b></td>
+</tr>
+<tr>
+<td style="width: 23.7209%;">저장된 유효한 그룹 offset이 있음</td>
+<td style="width: 76.2791%;">기존에 커밋한 offset을 기준으로 이어서 읽는다.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>auto-offset-reset: earliest</code></td>
+<td style="width: 76.2791%;">저장된 offset이 없거나 유효하지 않으면 현재 보관된 가장 오래된 메시지부터 읽는다.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;">콘솔의 <code>--from-beginning</code></td>
+<td style="width: 76.2791%;">시작 offset이 없는 경우 처음부터 읽도록 한다.</td>
+</tr>
+</tbody>
+</table>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">Docker와 콘솔 도구로 Kafka 흐름 확인하기</h4>
+<p data-ke-size="size16">수업에서는 Docker로 <code>broker</code> 컨테이너를 만들고 <code>9092</code> 포트를 공개하는 흐름을 다뤘다. <code>docker exec -it broker bash</code>로 컨테이너에 들어간 뒤 Kafka 콘솔 도구를 사용해 토픽과 메시지를 확인한다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 27.9069%;"><b>사용 도구</b></td>
+<td style="width: 72.0931%;"><b>실습에서 확인하는 내용</b></td>
+</tr>
+<tr>
+<td style="width: 27.9069%;"><code>kafka-topics.sh</code></td>
+<td style="width: 72.0931%;"><code>--create</code>로 <code>quickstart-events</code> 토픽을 만들고, <code>--list</code>와 <code>--describe</code>로 목록과 상세 정보를 조회한다.</td>
+</tr>
+<tr>
+<td style="width: 27.9069%;"><code>kafka-console-producer.sh</code></td>
+<td style="width: 72.0931%;">대상 토픽에 입력한 내용을 이벤트로 발행한다.</td>
+</tr>
+<tr>
+<td style="width: 27.9069%;"><code>kafka-console-consumer.sh</code></td>
+<td style="width: 72.0931%;">대상 토픽의 이벤트를 읽고 실행 중 새로 들어오는 메시지도 계속 확인한다.</td>
+</tr>
+</tbody>
+</table>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">Java 설정과 Spring Boot 자동 설정의 관계</h4>
+<p data-ke-size="size16">Java 설정 방식은 연결 주소와 직렬화 정보를 직접 구성해 <code>ConsumerFactory</code>, <code>ProducerFactory</code> 등의 Bean을 등록한다. Consumer는 컨테이너가 실행하고, 애플리케이션은 <code>KafkaTemplate</code>으로 메시지 발행을 요청한다.</p>
+<pre id="code_1792053923505" class="java" data-ke-language="java" data-ke-type="codeblock"><code>@Bean
+public ConsumerFactory&lt;String, String&gt; consumerFactory() {
+    Map&lt;String, Object&gt; properties = new HashMap&lt;&gt;();
+    properties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+    properties.put(ConsumerConfig.GROUP_ID_CONFIG, "consumer-group-id");
+    properties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+    properties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+    properties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+    return new DefaultKafkaConsumerFactory&lt;&gt;(properties);
+}</code></pre>
+<pre id="code_1792053968276" class="java" data-ke-language="java" data-ke-type="codeblock"><code>@Bean
+public ProducerFactory&lt;String, String&gt; producerFactory() {
+    Map&lt;String, Object&gt; configProperties = new HashMap&lt;&gt;();
+    configProperties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+    configProperties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+    configProperties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+    return new DefaultKafkaProducerFactory&lt;&gt;(configProperties);
+}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">Spring Boot에서는 <code>spring-kafka</code> 의존성과 <code>spring.kafka.*</code> 설정을 사용해 필요한 기본 객체를 자동 구성할 수 있다. 직접 등록한 Bean이 없으면 기본 ConsumerFactory, ProducerFactory, KafkaTemplate과 <code>kafkaListenerContainerFactory</code>를 자동 구성하며, <code>@KafkaListener</code> 처리도 지원한다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">Kafka 설정을 Java 클래스에서 설정 파일로 옮기기</h4>
+<p data-ke-size="size16">Java 설정 방식은 연결 주소와 직렬화 정보를 직접 구성해 <code>ConsumerFactory</code>, <code>ProducerFactory</code> 등의 Bean을 등록한다. Consumer는 컨테이너가 실행하고, 애플리케이션은 <code>KafkaTemplate</code>으로 메시지 발행을 요청한다.</p>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">연결 주소, 그룹 ID, 직렬화&middot;역직렬화 클래스처럼 실행 환경에 속하는 값을 <code>application.yml</code>의 <code>spring.kafka</code> 아래로 옮겼다. 이렇게 하면 같은 설정을 Java 코드의 Map과 YAML에 중복해서 적지 않고 설정 파일에서 관리할 수 있다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 23.7209%;"><b>옮긴 설정</b></td>
+<td style="width: 76.2791%;"><b>설정 파일의 위치와 역할</b></td>
+</tr>
+<tr>
+<td style="width: 23.7209%;">공통 연결 주소</td>
+<td style="width: 76.2791%;"><code>spring.kafka.bootstrap-servers</code>에 <code>localhost:9092</code>를 지정해 Kafka에 처음 연결할 주소를 설정한다.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;">Consumer 그룹</td>
+<td style="width: 76.2791%;"><code>spring.kafka.consumer.group-id</code>에 <code>consumer-group-id</code>를 지정해 상품 서비스 Consumer가 속할 그룹을 설정한다.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;">Consumer 시작 위치 정책</td>
+<td style="width: 76.2791%;"><code>spring.kafka.consumer.auto-offset-reset</code>에 <code>earliest</code>를 지정한다. 저장된 유효한 offset이 없을 때 적용한다.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;">Consumer 역직렬화</td>
+<td style="width: 76.2791%;"><code>spring.kafka.consumer.key-deserializer</code>와 <code>spring.kafka.consumer.value-deserializer</code>에 <code>org.apache.kafka.common.serialization.StringDeserializer</code>를 지정해 수신한 키와 본문을 문자열로 복원한다.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;">Producer 직렬화</td>
+<td style="width: 76.2791%;"><code>spring.kafka.producer.key-serializer</code>와 <code>spring.kafka.producer.value-serializer</code>에 <code>org.apache.kafka.common.serialization.StringSerializer</code>를 지정해 전송할 키와 본문을 바이트로 변환한다.</td>
+</tr>
+</tbody>
+</table>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">주문 객체가 재고 변경으로 이어지는 데이터 변환</h4>
+<p data-ke-size="size16">주문 서비스는 주문 정보를 JSON 문자열로 만들고, 문자열 직렬화기를 통해 Kafka에 전달한다. 상품 서비스는 받은 바이트를 문자열로 복원한 뒤 JSON을 Map으로 읽어 <code>productId</code>와 <code>qty</code>를 사용한다.</p>
+<table style="border-collapse: collapse; width: 100%; height: 105px;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr style="height: 21px;">
+<td style="width: 23.7209%; height: 21px;"><b>처리 단계</b></td>
+<td style="width: 76.2791%; height: 21px;"><b>담당 기능</b></td>
+</tr>
+<tr style="height: 21px;">
+<td style="width: 23.7209%; height: 21px;">주문 객체 &rarr; JSON 문자열</td>
+<td style="width: 76.2791%; height: 21px;"><code>ObjectMapper.writeValueAsString()</code></td>
+</tr>
+<tr style="height: 21px;">
+<td style="width: 23.7209%; height: 21px;">문자열 &rarr; 전송할 바이트</td>
+<td style="width: 76.2791%; height: 21px;"><code>StringSerializer</code></td>
+</tr>
+<tr style="height: 21px;">
+<td style="width: 23.7209%; height: 21px;">수신한 바이트 &rarr; 문자열</td>
+<td style="width: 76.2791%; height: 21px;"><code>StringDeserializer</code></td>
+</tr>
+<tr style="height: 21px;">
+<td style="width: 23.7209%; height: 21px;">JSON 문자열 &rarr; Map</td>
+<td style="width: 76.2791%; height: 21px;"><code>ObjectMapper.readValue()</code></td>
+</tr>
+</tbody>
+</table>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">주문 생성 후 <code>quickstart-events</code>에 발행한 메시지를 상품 서비스가 수신하고, 해당 상품의 현재 재고에서 주문 수량을 뺀 값을 저장한다. 주문 요청 후 상품 목록을 조회해 재고 변경을 실행 확인했다. 다만 발행 요청 직후의 로그나 주문 HTTP 응답만으로 Consumer의 DB 처리 완료까지 보장되는 것은 아니므로, 상품 조회 결과까지 확인하는 것이 중요하다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">Kafka Connect를 통한 외부 데이터 연계</h4>
+<p data-ke-size="size16">Kafka Connect는 커넥터 설정으로 외부 시스템과 Kafka 사이의 데이터를 옮긴다. Source 커넥터는 외부 데이터를 Kafka로 가져오고, Sink 커넥터는 Kafka의 데이터를 외부 시스템으로 보낸다. REST API로 커넥터를 등록하고 관리할 수 있으며, 대상 시스템에 맞는 플러그인을 사용한다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">Saga와 보상 트랜잭션</h4>
+<p data-ke-size="size16">Saga는 여러 서비스의 로컬 트랜잭션을 순서대로 연결하고, 중간 단계가 실패하면 앞서 완료한 작업에 대응하는 보상 트랜잭션을 실행하는 패턴이다. 주문 취소나 재고 복구처럼 업무에 맞는 후속 작업을 정의해야 한다. 오늘의 코드에서 구현한 범위는 주문 이벤트 발행과 재고 차감이며, Kafka Connect와 보상 트랜잭션은 개념으로 정리했다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">오늘의 코드 1 - Spring Kafka 의존성 추가</h2>
+<h4 data-ke-size="size20">pom.xml (catalog-service)</h4>
+<pre class="java" data-ke-language="java"><code>&lt;dependency&gt;
+    &lt;groupId&gt;org.springframework.kafka&lt;/groupId&gt;
+    &lt;artifactId&gt;spring-kafka&lt;/artifactId&gt;
+&lt;/dependency&gt;</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">상품 서비스와 주문 서비스에 <code>spring-kafka</code> 의존성을 추가했으며, 같은 의존성 선언은 상품 서비스의 코드로 대표해 발췌했다. 이 의존성이 KafkaTemplate과 리스너 기능을 사용할 기반이 되고, 이후 Java 설정 또는 Spring Boot 자동 설정으로 클라이언트를 구성한다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 2 - Java 코드로 Consumer 생성 조건 구성</h2>
+<h4 data-ke-size="size20">KafkaConsumerConfig.java</h4>
+<pre class="java" data-ke-language="java"><code>// 메시지를 받을 consumer를 만드는 factory
+@Bean
+public ConsumerFactory&lt;String, String&gt; consumerFactory() {
+    Map&lt;String, Object&gt; properties = new HashMap&lt;&gt;();
+    properties.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+    properties.put(ConsumerConfig.GROUP_ID_CONFIG, "consumer-group-id");
+    properties.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+    properties.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+    properties.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+    return new DefaultKafkaConsumerFactory&lt;&gt;(properties);
+}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">연결 주소, 그룹 ID, 시작 offset 정책과 역직렬화 클래스를 묶어 문자열 키와 본문을 사용하는 ConsumerFactory를 만드는 코드다. <code>earliest</code>는 저장된 유효한 offset이 없는 경우의 시작 위치를 정하며, 현재는 클래스와 메서드의 등록 어노테이션을 주석 처리하고 YAML 자동 설정으로 전환했다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 3 - Consumer를 실행할 리스너 컨테이너 연결</h2>
+<h4 data-ke-size="size20">KafkaConsumerConfig.java</h4>
+<pre class="java" data-ke-language="java"><code>// consumer를 실행할 container를 만드는 factory
+// container: Kafka에서 메시지를 반복해서 가져오고 받은 메시지를 @KafkaListener 메서드에 전달
+@Bean
+public ConcurrentKafkaListenerContainerFactory&lt;String, String&gt; kafkaListenerContainerFactory() {
+    ConcurrentKafkaListenerContainerFactory&lt;String, String&gt; kafkaListenerContainerFactory = new ConcurrentKafkaListenerContainerFactory&lt;&gt;();
+    kafkaListenerContainerFactory.setConsumerFactory(consumerFactory());
+    return kafkaListenerContainerFactory;
+}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">ConsumerFactory를 컨테이너 팩토리에 연결해, 수신한 메시지를 리스너 메서드로 전달하는 실행 환경을 구성한다. 현재 메서드의 <code>@Bean</code>은 주석 처리되어 있으며, Spring Boot의 기본 <code>kafkaListenerContainerFactory</code>를 사용하도록 설정을 옮겼다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 4 - Java 코드로 Producer와 KafkaTemplate 구성</h2>
+<h4 data-ke-size="size20">KafkaProducerConfig.java</h4>
+<pre class="java" data-ke-language="java"><code>@Configuration
+public class KafkaProducerConfig {
+
+    @Bean
+    public ProducerFactory&lt;String, String&gt; producerFactory() {
+        Map&lt;String, Object&gt; configProperties = new HashMap&lt;&gt;();
+        configProperties.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        configProperties.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        configProperties.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        return new DefaultKafkaProducerFactory&lt;&gt;(configProperties);
+    }
+
+    @Bean
+    public KafkaTemplate&lt;String, String&gt; kafkaTemplate() {
+        return new KafkaTemplate&lt;&gt;(producerFactory());
+    }
+}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">문자열 직렬화기를 사용하는 ProducerFactory를 만들고 이를 KafkaTemplate에 연결하는 Java 설정 코드다. ProducerFactory는 실제 Kafka Producer 생성에 필요한 설정을 제공하고, KafkaTemplate은 애플리케이션에서 메시지를 보내는 창구가 된다. 현재 등록 어노테이션은 주석 상태로 유지되어 있다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 5 - YAML을 이용한 Consumer와 Producer 자동 설정</h2>
+<h4 data-ke-size="size20">application.yml (catalog-service)</h4>
+<pre class="reasonml"><code>spring:
+  application:
+    name: catalog-service
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: consumer-group-id
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      auto-offset-reset: earliest</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">상품 서비스는 <code>consumer-group-id</code> 그룹과 문자열 역직렬화기를 사용하도록 설정했다. Java 코드에서 지정했던 Consumer 설정을 <code>spring.kafka.consumer</code> 아래로 옮겼으며, 현재 파일에는 올바른 <code>bootstrap-servers</code> 키와 역직렬화 클래스 경로가 반영되어 있다.</p>
+<h4 data-ke-size="size20">application.yml (order-service)</h4>
+<pre class="reasonml"><code>spring:
+  application:
+    name: order-service
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      group-id: consumer-group-id
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">주문 서비스는 같은 Broker 주소와 문자열 직렬화기를 사용해 메시지를 발행한다. 원문에 남아 있는 <code>spring.kafka.producer.group-id</code>는 Spring Boot의 Producer 설정 항목이 아니며, Consumer의 그룹을 지정하거나 발행 대상을 선택하는 데 사용되지 않는다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 6 - 주문 객체를 JSON 메시지로 발행</h2>
+<h4 data-ke-size="size20">KafkaProducer.java</h4>
+<pre class="java" data-ke-language="java"><code>public void send(String kafkaTopic, OrderDto orderDto) {
+    ObjectMapper mapper = new ObjectMapper();
+    String jsonInString = "";
+    try {
+        jsonInString = mapper.writeValueAsString(orderDto);
+    } catch (JsonProcessingException e) {
+        e.printStackTrace();
+    }
+
+    kafkaTemplate.send(kafkaTopic, jsonInString);
+    log.info("Kafka Producer send data from Order microservice: " + orderDto);
+}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">주입받은 KafkaTemplate을 사용하기 전에 <code>OrderDto</code>를 JSON 문자열로 변환하고, 전달받은 토픽 이름으로 메시지 발행을 요청한다. 현재 <code>send()</code>의 반환형은 <code>void</code>이며 비동기 전송 완료 결과는 확인하지 않는다. JSON 변환 예외가 나도 이후 로직을 계속 실행하는 구조이므로, 정상 JSON이 만들어진 경로와 예외 경로를 구분해서 이해해야 한다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 7 - 주문 생성 흐름에 이벤트 발행 연결</h2>
+<h4 data-ke-size="size20">OrderController.java</h4>
+<pre class="java" data-ke-language="java"><code>@PostMapping("/{userId}/orders")
+public ResponseEntity&lt;ResponseOrder&gt; createOrder(@PathVariable("userId") String userId,
+                                                 @RequestBody RequestOrder orderDetails) {
+    log.info("Before add orders data");
+    ModelMapper mapper = new ModelMapper();
+    mapper.getConfiguration().setMatchingStrategy(MatchingStrategies.STRICT);
+
+    OrderDto orderDto = mapper.map(orderDetails, OrderDto.class);
+    orderDto.setUserId(userId);
+    /* jpa */
+    OrderDto createdOrder = orderService.createOrder(orderDto);
+    ResponseOrder responseOrder = mapper.map(createdOrder, ResponseOrder.class);
+
+    kafkaProducer.send("quickstart-events", createdOrder);
+
+    log.info("After added orders data");
+    return ResponseEntity.status(HttpStatus.CREATED).body(responseOrder);
+}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">요청의 주문 정보와 사용자 ID로 주문을 생성한 뒤, 생성 결과를 <code>quickstart-events</code>에 전달하도록 연결했다. 주문 요청 후 상품 목록을 조회해 메시지 전달과 재고 변경이 이어지는 것을 실행 확인했다. 주문 저장과 메시지 발행&middot;소비는 하나의 DB 트랜잭션으로 묶여 있지 않으므로 각각의 완료 시점을 구분한다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 8 - 주문 이벤트 수신과 상품 재고 차감</h2>
+<h4 data-ke-size="size20">CatalogConsumer.java</h4>
+<pre class="java" data-ke-language="java"><code>@KafkaListener(topics="quickstart-events")
+public void processMessage(String kafkaMessage) {
+    log.info("Received kafka message: {}", kafkaMessage);
+
+    Map&lt;Object, Object&gt; map = new HashMap&lt;&gt;();
+    ObjectMapper mapper = new ObjectMapper();
+    try {
+        map = mapper.readValue(kafkaMessage, new TypeReference&lt;Map&lt;Object, Object&gt;&gt;() {});
+    } catch (JsonProcessingException e) {
+        e.printStackTrace();
+    }
+
+    CatalogEntity catalogEntity = catalogRepository.findByProductId((String) map.get("productId"));
+    if (catalogEntity != null) {
+        catalogEntity.setStock(catalogEntity.getStock() - (Integer) map.get("qty"));
+        catalogRepository.save(catalogEntity);
+    }
+}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16"><code>@KafkaListener</code>가 같은 토픽의 JSON 메시지를 받아 Map으로 변환하고, 상품 ID로 조회한 상품이 있을 때 주문 수량만큼 재고를 차감해 저장한다. 이 흐름을 통해 주문 서비스가 상품 DB를 직접 수정하지 않고 메시지로 재고 변경을 전달했다. 현재 상품 존재 여부는 검사하지만 수량 검증과 중복 메시지에 따른 재차감 방지는 별도로 구현되어 있지 않다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">어려웠던 점 / 각종 오류</h2>
+<p data-ke-size="size16">Kafka 설정을 YAML로 옮긴 뒤에도 <code>kafkaListenerContainerFactory()</code>를 직접 등록해야 하는지 헷갈렸다. Consumer 생성 조건과 Consumer를 실행하는 컨테이너의 역할은 서로 다르지만, Spring Boot가 기본 팩토리를 자동 구성할 수 있으므로 현재처럼 별도 기능이 없는 Java 설정은 등록하지 않아도 된다는 점을 이해했다.</p>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">설정을 옮기는 과정에서 <code>bootstrap-servers</code>을 잘못 작성해&nbsp;<code>bootstrap-server</code>라고 쓰거나, 직렬화/역직렬화 클래스 경로에 <code>kafka</code> 패키지를 빼먹는 등 오타로 인한 오류가 있었다.</p>
