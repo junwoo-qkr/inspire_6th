@@ -34,6 +34,9 @@ spring:
     port: 5672
     username: guest
     password: guest
+  zipkin:
+    base-url: http://localhost:9411
+    enabled: true
 
 logging:
   level:
@@ -69,3 +72,30 @@ management:
           - info
           - httpexchanges
           - busrefresh
+  tracing:
+    sampling:
+      probability: 1.0  # spring cloud의 모든 log를 전달
+    propagation:  # 모든 서비스의 형식이 동일해야 추적이 끊기지 않음
+      consume: B3
+      produce: B3
+  zipkin:
+    tracing:  # zipkin 서버에 log를 전달 및 저장할 때 쓰일 endpoint
+      endpoint: http://localhost:9411/api/v2/spans
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        failureRateThreshold: 4
+        waitDurationInOpenState: 1000ms
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 2
+  timelimiter:
+    configs:
+      default:
+        timeoutDuration: 4s
+  retry:
+    configs:
+      default:
+        limitForPeriod: 10
+        limitRefreshPeriod: 10s

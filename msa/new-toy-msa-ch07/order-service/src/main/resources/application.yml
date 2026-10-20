@@ -24,6 +24,9 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
+  zipkin:
+    base-url: http://localhost:9411
+    enabled: true
 
 eureka:
   instance:
@@ -38,3 +41,14 @@ eureka:
 logging:
   level:
     org.springframework.security: DEBUG
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0  # spring cloud의 모든 log를 전달
+    propagation: # 모든 서비스의 형식이 동일해야 추적이 끊기지 않음
+      consume: B3
+      produce: B3
+  zipkin:
+    tracing: # zipkin 서버에 log를 전달 및 저장할 때 쓰일 endpoint
+      endpoint: http://localhost:9411/api/v2/spans

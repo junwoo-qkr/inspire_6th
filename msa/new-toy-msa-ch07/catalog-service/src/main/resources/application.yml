@@ -31,6 +31,9 @@ spring:
     defer-datasource-initialization: true # data.sql / schema.sql 실행을 Hibernate가 테이블을 만든 뒤로 미루는 설정
     # Spring Boot 2.5에서 초기화 순서가 바뀐 게 발단 (data.sql 실행 → Hibernate가 테이블 생성)
     # 이 설정을 안쓰려면 DDL을 schema.sql에 넣으면 되는데 현재는 강의 및 실습 편의를 위해 그대로 둘 것임
+  zipkin:
+    base-url: http:localhost:9411
+    enabled: true
 
 eureka:
   instance:
@@ -45,3 +48,8 @@ eureka:
 logging:
   level:
     org.springframework.security: DEBUG
+
+management:
+  zipkin:
+    tracing:
+      endpoint: http://localhost:9411/api/v2/spans

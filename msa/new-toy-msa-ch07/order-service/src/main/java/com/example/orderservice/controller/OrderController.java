@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 @RestController
 @RequestMapping("/order-service")
@@ -50,13 +51,18 @@ public class OrderController {
         OrderDto orderDto = mapper.map(orderDetails, OrderDto.class);
         orderDto.setUserId(userId);
         /* jpa */
-        OrderDto createdOrder = orderService.createOrder(orderDto);
-        ResponseOrder responseOrder = mapper.map(createdOrder, ResponseOrder.class);
+        try {
+            OrderDto createdOrder = orderService.createOrder(orderDto);
+            ResponseOrder responseOrder = mapper.map(createdOrder, ResponseOrder.class);
 
-        kafkaProducer.send("quickstart-events", createdOrder);
+            kafkaProducer.send("quickstart-events", createdOrder);
+            log.info("After added orders data");
 
-        log.info("After added orders data");
-        return ResponseEntity.status(HttpStatus.CREATED).body(responseOrder);
+            return ResponseEntity.status(HttpStatus.CREATED).body(responseOrder);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
     }
 
     @GetMapping("/{userId}/orders")
@@ -68,6 +74,17 @@ public class OrderController {
         orderList.forEach(v -> {
             result.add(new ModelMapper().map(v, ResponseOrder.class));
         });
+
+//        try {
+//            Random rnd = new Random();
+//            int value = rnd.nextInt(5);
+//            if (value % 2 == 0) {
+//                Thread.sleep(10000);
+//                throw new Exception("Timeout 발생");
+//            }
+//        } catch (InterruptedException e) {
+//            log.warn(e.getMessage());
+//        }
 
         log.info("Add retrieved orders data");
 

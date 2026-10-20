@@ -1,0 +1,354 @@
+<h1 data-ke-size="size30">[LG CNS AM INSPIRE CAMP 6기] 10/16 TIL - MSA: Resilience4j 장애 격리와 Micrometer·Zipkin 분산 추적</h1>
+<h2 data-ke-size="size26">오늘의 한 줄 요약</h2>
+<ul style="list-style-type: disc;" data-ke-list-type="disc">
+<li>주문 조회를 <code>CircuitBreaker</code>와 <code>TimeLimiter</code>로 감싸 장애 전파와 긴 대기의 영향을 줄이는 흐름을 정리했다.</li>
+<li>Java <code>Customizer</code>와 YAML 기본 설정을 비교하고 실패율, 집계 범위, 차단 시간과 타임아웃의 역할을 구분했다.</li>
+<li><code>RateLimiter</code>, <code>Bulkhead</code>, <code>Retry</code>가 제어하는 대상과 주문 같은 쓰기 요청에서의 주의점을 이해했다.</li>
+<li><code>Micrometer Tracing</code>과 <code>Zipkin</code>을 연결하는 의존성과 설정을 살펴보고 <code>Trace ID</code>로 서비스 간 호출을 연결하는 방법을 학습했다.</li>
+</ul>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">키워드 정리</h2>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 23.7209%;"><b>키워드</b></td>
+<td style="width: 76.2791%;"><b>설명 또는 예시</b></td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>CircuitBreaker</code></td>
+<td style="width: 76.2791%;">호출 결과를 집계해 장애가 누적된 대상의 새 호출을 잠시 차단하는 장치</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>Fallback</code></td>
+<td style="width: 76.2791%;">원래 작업이 실패하거나 차단됐을 때 수행할 대체 처리</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>TimeLimiter</code></td>
+<td style="width: 76.2791%;">작업 결과를 기다리는 시간을 제한하는 장치</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>Sliding Window</code></td>
+<td style="width: 76.2791%;">실패율 등을 계산하기 위해 최근 호출 결과를 모으는 집계 범위</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>HALF_OPEN</code></td>
+<td style="width: 76.2791%;">차단 대기 후 제한된 호출로 복구 여부를 시험하는 상태</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>Customizer</code></td>
+<td style="width: 76.2791%;">Spring이 제공하는 팩토리의 기본 설정 등을 조정하는 함수</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>RateLimiter</code></td>
+<td style="width: 76.2791%;">정해진 갱신 주기에 제공하는 호출 허가 수를 제한</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>Bulkhead</code></td>
+<td style="width: 76.2791%;">동시 실행 수 또는 전용 스레드 풀을 제한해 자원 고갈의 영향을 줄임</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>Retry</code></td>
+<td style="width: 76.2791%;">지정한 실패 조건에 맞는 작업을 제한된 횟수만큼 다시 시도</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>Micrometer Tracing</code></td>
+<td style="width: 76.2791%;">애플리케이션 관측을 분산 추적 구현과 연결하는 추적 API</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>Span / Trace</code></td>
+<td style="width: 76.2791%;">개별 작업 단위와 관련 작업들이 이루는 전체 호출 흐름</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>B3 Propagation</code></td>
+<td style="width: 76.2791%;">서비스 간 요청 헤더로 추적 식별자와 관련 정보를 전달하는 형식</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>Zipkin</code></td>
+<td style="width: 76.2791%;">분산 추적 정보를 수집·저장하고 검색·시각화하는 시스템</td>
+</tr>
+</tbody>
+</table>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">오늘 배운 것</h2>
+<h4 data-ke-size="size20">서비스 간 연쇄 호출과 장애 격리</h4>
+<ul style="list-style-type: disc;" data-ke-list-type="disc">
+<li>사용자 조회가 주문 조회를 기다리는 것처럼 동기 호출이 이어지면, 하위 서비스의 지연과 예외가 상위 응답에도 영향을 줄 수 있다. 실제 HTTP 상태는 예외 처리와 대체 응답 정책에 따라 달라진다.</li>
+<li><code>CircuitBreaker</code>는 장애를 감지해 후속 호출을 차단하고, <code>Fallback</code>은 호출 실패나 차단 이후의 대체 결과를 결정한다. 회로가 열리지 않았어도 개별 호출 실패에 대한 대체 처리는 실행될 수 있다.</li>
+<li>사용자 정보는 유지하면서 주문 조회만 빈 목록으로 대체할 수 있다. 다만 실제 서비스에서는 주문 없음과 조회 실패를 구분해야 사용자에게 잘못된 의미를 전달하지 않는다.</li>
+</ul>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">CircuitBreaker의 상태와 복구 판단</h4>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 23.7209%;"><b>상태</b></td>
+<td style="width: 76.2791%;"><b>호출 처리와 전환 조건</b></td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>CLOSED</code></td>
+<td style="width: 76.2791%;">호출을 허용하고 결과를 집계한다. 최소 집계 수를 충족한 뒤 실패율이나 느린 호출 비율이 기준 이상이면 <code>OPEN</code>으로 전환한다.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>OPEN</code></td>
+<td style="width: 76.2791%;">새 호출을 차단한다. 설정한 대기 시간이 지난 뒤 복구 시험을 시작할 수 있다.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>HALF_OPEN</code></td>
+<td style="width: 76.2791%;">제한된 수의 시험 호출을 허용한다. 시험 결과가 기준을 만족하면 <code>CLOSED</code>, 실패율 등이 기준 이상이면 다시 <code>OPEN</code>으로 전환한다.</td>
+</tr>
+</tbody>
+</table>
+<p data-ke-size="size16">기본 요청 기반 전환에서는 대기 시간이 지난 뒤 다음 호출이 들어올 때 <code>HALF_OPEN</code>으로 바뀐다. 자동 전환을 설정하면 새 요청 없이도 대기 시간이 지난 후 전환할 수 있으며, 어느 방식이든 진입 자체가 복구 완료를 의미하지는 않는다.</p>
+<p data-ke-size="size16"><code>COUNT_BASED</code>는 최근 호출 횟수, <code>TIME_BASED</code>는 최근 시간 구간으로 집계한다. 윈도우 크기는 동시 실행 수나 재시도 횟수를 제한하는 값이 아니다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">Java 설정과 YAML 설정의 대응</h4>
+<p data-ke-size="size16">Java 방식은 <code>Customizer&lt;Resilience4JCircuitBreakerFactory&gt;</code>로 팩토리를 조정하고 <code>configureDefault</code>에 기본 설정을 등록한다. 람다의 <code>factory</code>는 Spring이 제공하는 팩토리이고 <code>id</code>는 생성할 서킷 브레이커의 이름이며, 빌더는 해당 이름에 사용할 설정을 조립한다.</p>
+<p data-ke-size="size16">YAML에서는 <code>resilience4j.circuitbreaker.configs.default</code>와 <code>resilience4j.timelimiter.configs.default</code>로 기본 설정을 구분한다. 특정 이름에만 적용할 때는 <code>instances</code> 아래에 해당 이름의 설정을 둘 수 있다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 23.7209%;"><b>설정</b></td>
+<td style="width: 76.2791%;"><b>역할</b></td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>failureRateThreshold</code></td>
+<td style="width: 76.2791%;">회로를 열 실패율의 백분율 기준. 현재 값 <code>4</code>는 4회가 아니라 4%이다.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>waitDurationInOpenState</code></td>
+<td style="width: 76.2791%;">차단 상태에서 복구 시험을 허용하기 전의 대기 시간. 현재 <code>1000ms</code>이다.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>slidingWindowType</code></td>
+<td style="width: 76.2791%;">집계 방식. 현재 <code>COUNT_BASED</code>이다.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>slidingWindowSize</code></td>
+<td style="width: 76.2791%;">집계 범위. 현재 횟수 기반이므로 최근 2회의 완료 결과를 모은다.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>minimumNumberOfCalls</code></td>
+<td style="width: 76.2791%;">실패율 등을 판단하기 위해 필요한 최소 호출 수. 횟수 기반에서는 윈도우 크기를 초과할 수 없으며, 현재 Java 설정의 윈도우는 2이다.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>permittedNumberOfCallsInHalfOpenState</code></td>
+<td style="width: 76.2791%;">복구 시험에서 허용할 호출 수. <code>CLOSED</code> 상태의 집계 크기와 별개이다.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>timeoutDuration</code></td>
+<td style="width: 76.2791%;">개별 작업 결과를 기다릴 최대 시간. 현재 TimeLimiter 값은 <code>4s</code>이다.</td>
+</tr>
+</tbody>
+</table>
+<p data-ke-size="size16">집계 조건을 충족한 뒤 최근 2회가 성공·성공이면 실패율은 0%, 성공·실패이면 50%이다. 현재 실패율 기준 4%는 한 번의 실패에도 민감하게 반응하며, 실패 한 번마다 무조건 재시도하는 설정은 아니다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">TimeLimiter와 실패 기록, 주문 요청에서의 주의점</h4>
+<p data-ke-size="size16">실습처럼 Spring Cloud CircuitBreaker가 TimeLimiter로 제한한 실행을 감싸면, 제한 시간 초과는 기본 예외 기록 정책에서 실패로 집계된다. 이후 fallback이 빈 목록을 반환해도 원래 실행의 실패 기록이 성공으로 바뀌지는 않는다.</p>
+<p data-ke-size="size16">타임아웃은 기다리기를 끝내는 것이며 원격 작업의 취소나 롤백을 보장하지 않는다. 주문 저장 뒤 응답만 늦어진 상황에서도 타임아웃이 발생할 수 있으므로, 쓰기 요청은 처리 상태 확인과 중복 방지를 함께 설계해야 한다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">Resilience4j 패턴별 제어 대상</h4>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 23.7209%;"><b>패턴</b></td>
+<td style="width: 76.2791%;"><b>제어 대상과 주요 설정</b></td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>CircuitBreaker</code></td>
+<td style="width: 76.2791%;">실패가 누적된 대상의 후속 호출을 차단한다. 실패율, 집계 범위, 복구 대기 시간을 사용한다.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>TimeLimiter</code></td>
+<td style="width: 76.2791%;">실행 결과를 기다리는 시간을 제한한다. <code>timeoutDuration</code>을 사용한다.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>RateLimiter</code></td>
+<td style="width: 76.2791%;">주기별 호출 허가 수를 제한한다. <code>limitForPeriod</code>, <code>limitRefreshPeriod</code>, 허가 대기용 <code>timeoutDuration</code>을 사용한다.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>Bulkhead</code></td>
+<td style="width: 76.2791%;">동시 실행과 자원을 제한한다. 세마포어 방식은 <code>maxConcurrentCalls</code>, <code>maxWaitDuration</code>, 스레드 풀 방식은 풀 크기와 대기열 용량을 사용한다.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>Retry</code></td>
+<td style="width: 76.2791%;">일시적인 실패를 다시 시도한다. <code>maxAttempts</code>는 최초 실행을 포함한 횟수이고 <code>waitDuration</code>은 시도 사이 대기 시간이다.</td>
+</tr>
+</tbody>
+</table>
+<p data-ke-size="size16">조회처럼 재실행이 안전한 요청은 일시적인 통신 장애에 재시도를 적용하기 쉽다. 주문 생성·결제는 응답을 받지 못했어도 이미 처리됐을 수 있어, 동일 요청을 한 번만 처리하는 장치 없이 재시도하면 중복 처리가 발생할 수 있다.</p>
+<p data-ke-size="size16">패턴별 설정을 선언하는 것과 실제 호출에 적용하는 것은 별개이다. 각 패턴의 실행 래퍼나 지원 애너테이션 등으로 대상 작업을 연결해야 하며, 이번 코드에서 실행 흐름까지 확인한 대상은 주문 조회를 감싼 CircuitBreaker와 TimeLimiter이다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">Micrometer Tracing과 Zipkin의 역할</h4>
+<p data-ke-size="size16">분산 추적은 한 요청이 여러 서비스를 거치는 동안 어떤 작업이 실행됐고 어디에서 시간이 걸렸는지 연결해 보는 방법이다. <code>Span</code>은 작업 단위이고, <code>Trace</code>는 관련 span들의 집합이며, 서비스 간 추적 문맥이 이어지면 같은 <code>Trace ID</code>로 찾을 수 있다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 23.7209%;"><b>구성 요소</b></td>
+<td style="width: 76.2791%;"><b>역할</b></td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>Micrometer Observation / Tracing</code></td>
+<td style="width: 76.2791%;">HTTP 요청과 클라이언트 호출 등의 관측을 추적 정보와 연결한다.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>Brave Bridge</code></td>
+<td style="width: 76.2791%;">Micrometer 추적 API를 Brave 구현에 연결한다.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>feign-micrometer</code></td>
+<td style="width: 76.2791%;">관측 레지스트리 등 조건이 갖춰졌을 때 Feign 호출을 Micrometer 관측에 연결한다.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>Zipkin Collector / Storage</code></td>
+<td style="width: 76.2791%;">서비스가 보낸 span을 수신하고 저장한다.</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><code>Zipkin Query / Web UI</code></td>
+<td style="width: 76.2791%;">저장된 trace를 검색하고 호출 관계·소요 시간을 보여준다.</td>
+</tr>
+</tbody>
+</table>
+<p data-ke-size="size16">Spring Boot 3 실습에서는 Micrometer Tracing을 사용한다. 수업 메모의 Docker 실행 방식은 Zipkin 컨테이너의 9411번 포트를 호스트 9411번 포트에 연결하고, 브라우저에서 <code>localhost:9411</code>로 접근하는 구성이다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">추적 전파, 샘플링과 확인 순서</h4>
+<ul style="list-style-type: disc;" data-ke-list-type="disc">
+<li><code>management.tracing.propagation.produce</code>는 전송할 추적 형식, <code>consume</code>은 수신할 형식이다. User·Order 실습 설정은 둘 다 <code>B3</code>를 사용한다.</li>
+<li><code>management.tracing.sampling.probability: 1.0</code>은 로컬 샘플링 결정을 100%로 두는 설정이다. 일반 애플리케이션 로그 전체를 Zipkin으로 보내는 기능은 아니다.</li>
+<li><code>management.zipkin.tracing.endpoint</code>는 span을 보낼 수집 API이며 <code>/api/v2/spans</code>를 가리킨다. 브라우저로 여는 대시보드 주소와 목적이 다르다.</li>
+<li>Postman으로 요청을 보낸 뒤 해당 요청의 로그에서 <code>Trace ID</code>를 찾고, Zipkin에서 같은 ID를 검색해 서비스 span이 연결됐는지 확인한다. 로그 앞뒤 문장만 출력됐다는 사실로 추적 전파까지 성공했다고 판단하지 않는다.</li>
+<li>관측 대상의 의존성, 클라이언트 계측과 문맥 전파가 함께 맞아야 한다. 이 TIL 작성 중에는 실제 요청·로그·Zipkin 결과를 다시 검증하지 않았다.</li>
+</ul>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">오늘의 코드 1 - Resilience4j 의존성</h2>
+<h4 data-ke-size="size20">pom.xml (user-service)</h4>
+<pre class="xml"><code>		&lt;dependency&gt;
+			&lt;groupId&gt;org.springframework.cloud&lt;/groupId&gt;
+			&lt;artifactId&gt;spring-cloud-starter-circuitbreaker-resilience4j&lt;/artifactId&gt;
+		&lt;/dependency&gt;</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">Spring Cloud CircuitBreaker의 Resilience4j 구현을 사용하기 위한 starter를 추가했다. 이 의존성이 팩토리 자동 설정을 제공하며, 보호할 호출은 별도로 연결한다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 2 - 주문 조회와 fallback 연결</h2>
+<h4 data-ke-size="size20">UserServiceImpl.java</h4>
+<pre class="java"><code>        log.info("Before call orders microservice");
+        CircuitBreaker circuitBreaker = circuitBreakerFactory.create("circuitbreaker");
+        List&lt;ResponseOrder&gt; orderList = circuitBreaker.run(() -&gt; orderServiceClient.getOrders(userId),
+                throwable -&gt; {
+                    log.warn("fallback 실행: {}", throwable.getClass().getSimpleName());
+                    return new ArrayList&lt;&gt;();
+        });
+        log.info("After call orders microservice");
+
+        userDto.setOrders(orderList);</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16"><code>circuitBreakerFactory.create("circuitbreaker")</code>로 가져온 실행기에 주문 조회와 대체 함수를 전달했다. 실패·타임아웃·호출 차단으로 대체 처리가 실행되면 빈 목록을 주문 정보에 넣으며, 실제 실패를 재현한 결과는 이번 작성에서 확인하지 않았다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 3 - Java Customizer로 기본 설정 구성</h2>
+<h4 data-ke-size="size20">Resilience4Jconfig.java</h4>
+<pre class="java"><code>//@Configuration
+public class Resilience4Jconfig {
+
+//    @Bean
+    public Customizer&lt;Resilience4JCircuitBreakerFactory&gt; globalCustomConfiguration() {
+        CircuitBreakerConfig circuitBreakerConfig = CircuitBreakerConfig.custom()
+                .failureRateThreshold(4)
+                .waitDurationInOpenState(Duration.ofMillis(1000))
+                .slidingWindowType(CircuitBreakerConfig.SlidingWindowType.COUNT_BASED)
+                .slidingWindowSize(2)
+                .build();
+
+        TimeLimiterConfig timeLimiterConfig = TimeLimiterConfig.custom()
+                .timeoutDuration(Duration.ofSeconds(4))
+                .build();
+
+        return factory -&gt; factory.configureDefault(id -&gt; new Resilience4JConfigBuilder(id)
+                .timeLimiterConfig(timeLimiterConfig)
+                .circuitBreakerConfig(circuitBreakerConfig)
+                .build());
+    }
+}</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16"><code>CircuitBreakerConfig</code>와 <code>TimeLimiterConfig</code>를 빌더로 구성해 팩토리 기본 설정에 연결한 코드이다. 현재 <code>@Configuration</code>과 <code>@Bean</code>은 주석 처리되어 있어 이 클래스의 설정 메서드는 Spring 빈으로 등록되지 않는다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 4 - CircuitBreaker와 TimeLimiter의 YAML 설정</h2>
+<h4 data-ke-size="size20">application.yml (user-service)</h4>
+<pre class="yaml"><code>resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        failureRateThreshold: 4
+        waitDurationInOpenState: 1000ms
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 2
+  timelimiter:
+    configs:
+      default:
+        timeoutDuration: 4s</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">기본 설정을 YAML의 <code>configs.default</code> 계층으로 옮긴 부분이다. 실패율 4%, 횟수 기반 집계 2회, 차단 대기 1초와 개별 실행 제한 4초가 각각 다른 역할을 맡으며, 원격 설정 등의 덮어쓰기가 없는 현재 선언을 기준으로 읽었다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 5 - 지연과 예외를 재현하기 위한 주문 조회 코드</h2>
+<h4 data-ke-size="size20">OrderController.java</h4>
+<pre class="java"><code>//        try {
+//            Random rnd = new Random();
+//            int value = rnd.nextInt(5);
+//            if (value % 2 == 0) {
+//                Thread.sleep(10000);
+//                throw new Exception("Timeout 발생");
+//            }
+//        } catch (InterruptedException e) {
+//            log.warn(e.getMessage());
+//        }</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">일부 요청에 10초 대기와 예외를 주어 호출자가 기다리는 시간을 관찰하려던 코드이다. 현재는 전체가 주석 처리되어 실행되지 않으며, 활성화하더라도 단순한 처리 지연 뒤의 예외 발생이지 원격 작업의 자동 취소를 구현한 것은 아니다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 6 - Micrometer·Brave·Zipkin과 Feign 관측 의존성</h2>
+<h4 data-ke-size="size20">pom.xml (user-service)</h4>
+<pre class="xml"><code>		&lt;dependency&gt;
+			&lt;groupId&gt;io.micrometer&lt;/groupId&gt;
+			&lt;artifactId&gt;micrometer-observation&lt;/artifactId&gt;
+		&lt;/dependency&gt;
+		&lt;dependency&gt;
+			&lt;groupId&gt;io.micrometer&lt;/groupId&gt;
+			&lt;artifactId&gt;micrometer-tracing-bridge-brave&lt;/artifactId&gt;
+		&lt;/dependency&gt;
+		&lt;dependency&gt;
+			&lt;groupId&gt;io.zipkin.brave&lt;/groupId&gt;
+			&lt;artifactId&gt;brave-instrumentation-spring-web&lt;/artifactId&gt;
+		&lt;/dependency&gt;
+		&lt;dependency&gt;
+			&lt;groupId&gt;io.zipkin.reporter2&lt;/groupId&gt;
+			&lt;artifactId&gt;zipkin-reporter-brave&lt;/artifactId&gt;
+		&lt;/dependency&gt;
+
+		&lt;dependency&gt;
+			&lt;groupId&gt;io.github.openfeign&lt;/groupId&gt;
+			&lt;artifactId&gt;feign-micrometer&lt;/artifactId&gt;
+		&lt;/dependency&gt;</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">관측 API, Brave 추적 브리지와 Zipkin reporter를 연결하고 <code>feign-micrometer</code>를 추가한 부분이다. 기존 Actuator와 관측 레지스트리 등 자동 설정 조건이 충족되면 서버 요청과 Feign 호출의 관측을 추적에 연결할 수 있다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 7 - 추적 정보 전파와 Zipkin 수집 주소</h2>
+<h4 data-ke-size="size20">application.yml (user-service)</h4>
+<pre class="yaml"><code>  tracing:
+    sampling:
+      probability: 1.0  # spring cloud의 모든 log를 전달
+    propagation:  # 모든 서비스의 형식이 동일해야 추적이 끊기지 않음
+      consume: B3
+      produce: B3
+  zipkin:
+    tracing:  # zipkin 서버에 log를 전달 및 저장할 때 쓰일 endpoint
+      endpoint: http://localhost:9411/api/v2/spans</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">아래 발췌는 <code>management</code> 아래의 추적 설정이며, User·Order가 사용하는 형식은 <code>B3</code>이다. 샘플링 비율은 추적 선택을 제어하고 수집 주소는 span 전송 대상을 정하며, 선언된 설정만으로 Zipkin 수집 성공을 확인한 것은 아니다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">어려웠던 점 / 각종 오류</h2>
+<p data-ke-size="size16">실패율 기준과 호출 횟수의 의미를 구분하는 것이 중요했다. <code>failureRateThreshold</code>는 실패 횟수가 아니라 백분율이고, <code>slidingWindowSize</code>는 집계 범위이며, <code>minimumNumberOfCalls</code>는 판단을 시작할 최소 결과 수를 정한다. 이 값들을 함께 읽어야 언제 회로가 열리는지 설명할 수 있다.</p>
+<p data-ke-size="size16"><code>OPEN</code> 대기 시간이 끝나면 곧바로 정상 복구되는 것으로 이해하기 쉬웠다. 실제로는 <code>HALF_OPEN</code>에서 시험 호출 결과를 평가하며, 기본 요청 기반 전환은 대기 이후 새 호출이 들어와야 시작된다. 복구 시험 수는 정상 상태의 윈도우 크기와 구분한다.</p>
+<p data-ke-size="size16">YAML로 옮길 때 최상위 키를 <code>resilience4j</code>로 정확히 쓰고, 각 패턴 아래에 <code>configs.default</code> 계층을 둬야 한다. 들여쓰기 문법이 맞아도 잘못된 속성 이름이나 계층은 의도한 설정으로 연결되지 않을 수 있다.</p>
+<p data-ke-size="size16">타임아웃 뒤 fallback이 값을 반환해도 원래 호출은 기본 정책에서 실패로 기록된다. 동시에 원격 작업은 이미 끝났거나 계속 처리 중일 수 있으므로, 주문 같은 쓰기 요청은 타임아웃을 실패 확정이나 취소 완료로 해석하지 않아야 한다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 style="color: #000000; text-align: start;" data-ke-size="size26">하루를 정리하며</h2>
+<p style="color: #222222; text-align: start;" data-ke-size="size16">LG CNS 6기</p>
+<p style="color: #222222; text-align: start;" data-ke-size="size16">LGCNSINSIRECAMP</p>
+<p style="color: #222222; text-align: start;" data-ke-size="size16">개발자</p>

@@ -4,4 +4,5 @@ import com.example.catalogservice.jpa.CatalogEntity;
 
 public interface CatalogService {
     Iterable<CatalogEntity> getAllCatalogs();
+    CatalogEntity getCatalogById(String id);
 }
