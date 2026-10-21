@@ -1,43 +1,61 @@
-hysterix dashboard + turbine server는 deprecated -> micrometer + prometheus를 사용
-- micrometer로 각 마이크로서비스의 정보 수집, prometheus로 정보 저장, grafana로 시각화
+가상 ubuntu 설치
+- sudo -i: 관리자 계정으로 변경
+- apt-get update
+- apt-get install -y openssh-server curl vim tree
 
-micrometer
-- jvm 기반으로 앱의 metrics 제공
-- Prometheus 등의 다양한 모니터링 시스템 지원
-- actuator가 필요
+리눅스 명령어
+- pwd
+- ls
+- ls -al
+- cd <디렉토리>/../~/-
+- mkdir <새 디렉토리>
+- touch <새 파일 이름>
+- rm <파일 이름>
+- cp <파일 이름> <새 파일 이름>
+- mv <파일 이름> <디렉토리>
 
-timer
-- 짧은 지연 시간, 이벤트의 사용 빈도 측정
-- 시계열로 이벤트의 시간, 호출 빈도 등을 제공
+vi 에디터 명령어
+- vi <파일 이름>
+- 입력모드 진입: i, a, o
+- 명령모드 복귀: esc
+  - :w
+  - :q
+  - :wq or :x
+  - :q!
+  - set (no)nu
+  - (숫자)dd, (숫자)yy, p, u, %d
+  - /<검색키워드>
 
-user-service, order-service, apigateway-service에 실습
-- 의존성 추가, yml 파일에 엔드포인트과 observations.annotations.... 추가
-- controller의 메서드에 @Timed 추가
-  - @Timed의 value 값으로 정보가 저장됨(넣지 않아도 상관 없음, 사용자화하고 싶거나 service의 메서드에서 정보를 수집하고 싶거든 쓰기)
-  - longTask=true: 실행중인 작업에 대해서 정보 수집(너무 짧은 작업에 적용하면 정보 수집이 안됨)
-- /actuator/metrics: 조회 가능한 지표 목록(한번이라도 호출한 api만 뜸)
-- /actuator/prometheus: 수집한 정보
+docker 설치
+- sudo apt-get install -y apt-transport-https ca-certificates software-properties-common\
+- curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+- apt-key fingerprint
+- add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+- apt-get update
+- apt-get install -y docker-re
+- systemctl status docker
+- docker version
 
-Prometheus
-- metrics를 수집하고 모니터링, 알람에 사용되는 오픈소스 애플리케이션
-- pull 방식의 구조와 다양한 metric exporter 제공
-- 시계열 DB에 metrics 저장 후 조회 가능
+docker 로그인
+- docker login -u junwooqkr5302, 비밀번호에는 토큰 입력
 
-Grafana
-- 데이터 시각화, 모니터링 및 분석을 위한 오픈소스 애플리케이션
-- 시계열 데이터 시각화를 위한 대시보드 제공
+docker 명령어
+- docker ps (-a) (-q)
+- docker rm <컨테이너이름 or 컨테이너ID>
+- docker rmi <이미지이름 or 이미지ID>
+- docker run -> pull + create + start
+- docker images (-q)
+- docker inspect <컨테이너이름 or 이미지이름>
+- docker search <이미지이름>
+- $(docker ps -a -q) -> rm 시 모든 컨테이너를 지우고 싶을 때
 
-실습
-- Prometheus 설치
-- prometheus.yml 수정(target 지정)
-- Prometheus 실행(./Prometheus --config.file=prometheus.yml)
-- 대시보드 접속: localhost:9090
-- http_server_requests_seconds_count, http_server_request_seconds_max, http_server_requests_seconds_sum 등으로 정보 검색
-  - uri: 요청했던 uri
-  - uri=UNKNOWN인 것: gateway의 역할을 했던 요청이라 전달만 해줬기 때문
-- graph 확인
-- docker로 Grafana 설치
-- grafana에 Prometheus 연동
-- 대시보드 생성(JVM(micrometer), Prometheus, spring cloud gateway)
-  - Prometheus 대시보드: ${DS_THEMIS}를 datasource.name으로 변경
-  - spring cloud gateway 대시보드: gateway_requests_seconds_count 앞에 spring_cloud_ 붙이기, job의 이름을 apigateway-service로 변경, field를 numeric fields로 변경, ...
+nginx 설치 및 확인
+- docker run -d --name webserver -p 80:80 nginx
+
+가상 머신: 호스트 os 위에 hypervisor 위에 게스트 os -> 이미지 안에 os도 포함되어 있어서 용량이 너무 큼
+컨테이너: 호스트 os 위에 docker 엔진 위에 컨테이너
+
+이미지: 서비스 운영에 필요한 코드, 파일 등을 묶은 형태
+컨테이너: 이미지를 실행한 인스턴스(한 이미지로 여러 컨테이너 실행 가능)
+docker host: docker가 컨테이너를 실행할 수 있는 플랫폼을 구성한 것
+컨테이너 이미지: 여러 레이어로 구성된 이미지들의 조합
