@@ -62,6 +62,9 @@ greeting:
 #  secret: my-very-long-secret-key-1234567890123456
 
 management:
+  observations:
+    annotations:
+      enabled: true
   endpoints:
     web:
       exposure:
@@ -72,6 +75,8 @@ management:
           - info
           - httpexchanges
           - busrefresh
+          - prometheus
+          - metrics
   tracing:
     sampling:
       probability: 1.0  # spring cloud의 모든 log를 전달

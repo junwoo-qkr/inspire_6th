@@ -34,6 +34,7 @@ spring:
               filters:
                 - RemoveRequestHeader=Cookie
                 - RewritePath=/user-service/(?<segment>.*), /$\{segment}
+
             - id: user-service-login
               uri: lb://USER-SERVICE
               predicates:
@@ -42,6 +43,16 @@ spring:
               filters:
                 - RemoveRequestHeader=Cookie
                 - RewritePath=/user-service/(?<segment>.*), /$\{segment}
+
+            - id: user-service-actuator
+              uri: lb://USER-SERVICE
+              predicates:
+                - Path=/user-service/actuator/**
+                - Method=GET,POST
+              filters:
+                - RemoveRequestHeader=Cookie
+                - RewritePath=/user-service/(?<segment>.*), /$\{segment}
+
             - id: user-service
               uri: lb://USER-SERVICE
               predicates:
@@ -51,14 +62,25 @@ spring:
                 - RemoveRequestHeader=Cookie
                 - RewritePath=/user-service/(?<segment>.*), /$\{segment}
                 - AuthorizationHeaderFilter
+
             - id: catalog-service
               uri: lb://CATALOG-SERVICE
               predicates:
                 - Path=/catalog-service/**
+
+            - id: order-service-actuator
+              uri: lb://ORDER-SERVICE
+              predicates:
+                - Path=/order-service/actuator/**
+                - Method=GET,POST
+              filters:
+                - RewritePath=/order-service/(?<segment>.*), /$\{segment}
+
             - id: order-service
               uri: lb://ORDER-SERVICE
               predicates:
                 - Path=/order-service/**
+
             - id: first-service
               uri: lb://MY-FIRST-SERVICE
               predicates:
@@ -67,6 +89,7 @@ spring:
 #                - AddRequestHeader=f-request, 1st-request-header-by-yaml
 #                - AddResponseHeader=f-response, 1st-response-header-from-yaml
                 - CustomFilter
+
             - id: second-service
               uri: lb://MY-SECOND-SERVICE
               predicates:
@@ -80,14 +103,7 @@ spring:
                     baseMessage: Hi, there.
                     preLogger: true
                     postLogger: true
-            - id: user-service-actuator
-              uri: lb://USER-SERVICE
-              predicates:
-                - Path=/user-service/actuator/**
-                - Method=GET,POST
-              filters:
-                - RemoveRequestHeader=Cookie
-                - RewritePath=/user-service/(?<segment>.*), /$\{segment}
+
   rabbitmq:
     host: 127.0.0.1
     port: 5672
@@ -105,6 +121,8 @@ management:
           - info
           - httpexchanges
           - busrefresh
+          - prometheus
+          - metrics
 
 #token:
 #  secret: my-very-long-secret-key-1234567890123456
