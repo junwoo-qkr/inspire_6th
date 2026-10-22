@@ -1,0 +1,275 @@
+<h1 data-ke-size="size30">[LG CNS AM INSPIRE CAMP 6기] 10/22 TIL - Docker: 컨테이너 실행과 이미지 빌드·배포, 포트 연결</h1>
+<h2 data-ke-size="size26">오늘의 한 줄 요약</h2>
+<ul style="list-style-type: disc;" data-ke-list-type="disc">
+<li>EC2에서 Docker를 실습하기 위한 Ubuntu 환경과 네트워크 설정을 살펴봤다.</li>
+<li>이미지와 컨테이너 레이어를 구분하고, 메인 프로세스와 실행 옵션이 컨테이너 상태에 미치는 영향을 이해했다.</li>
+<li>Dockerfile로 이미지를 구성하고 빌드, 태그 지정, 레지스트리 업로드로 이어지는 흐름을 정리했다.</li>
+<li><code>COPY</code>의 빌드 컨텍스트와 포트 연결을 살펴봤으며, <code>tomcat2</code> 이미지는 <code>httpweb</code> 이미지를 재활용한 것임을 확인했다.</li>
+</ul>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">키워드 정리</h2>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 23.7209%;"><b>키워드</b></td>
+<td style="width: 76.2791%;"><b>설명 또는 예시</b></td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b>EC2</b></td>
+<td style="width: 76.2791%;">AWS에서 가상 서버 인스턴스를 실행하는 서비스</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b>Registry</b></td>
+<td style="width: 76.2791%;">컨테이너 이미지를 저장하고 공유하는 저장소</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b>이미지 레이어</b></td>
+<td style="width: 76.2791%;">이미지의 파일 시스템을 구성하는 읽기 전용 변경 단위</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b>컨테이너 레이어</b></td>
+<td style="width: 76.2791%;">컨테이너의 파일 변경을 기록하는 쓰기 가능 계층</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b>메인 프로세스</b></td>
+<td style="width: 76.2791%;">컨테이너의 실행 수명을 결정하는 주된 프로세스</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b>Dockerfile</b></td>
+<td style="width: 76.2791%;">기반 이미지와 설치·복사·실행 설정을 기록한 이미지 빌드 명세</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b>빌드 컨텍스트</b></td>
+<td style="width: 76.2791%;">이미지를 빌드할 때 접근할 수 있는 파일의 범위</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>RUN</code> / <code>CMD</code></b></td>
+<td style="width: 76.2791%;">빌드 중 실행하는 명령 / 컨테이너 시작 시 사용할 기본 명령</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>COPY</code></b></td>
+<td style="width: 76.2791%;">빌드 컨텍스트의 파일을 이미지 안에 복사하는 명령</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>EXPOSE</code> / <code>-p</code></b></td>
+<td style="width: 76.2791%;">사용 예정 포트에 대한 정보 / 호스트와 컨테이너 포트의 실제 연결</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b>Tag</b></td>
+<td style="width: 76.2791%;">이미지를 구분하거나 레지스트리 저장소를 가리키는 이름표</td>
+</tr>
+</tbody>
+</table>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">오늘 배운 것</h2>
+<h4 data-ke-size="size20">EC2와 Docker 실습 환경 준비</h4>
+<p data-ke-size="size16">EC2에서 <code>aws-docker-ec2</code>라는 이름으로 Ubuntu 24.04 인스턴스를 준비하는 과정을 살펴봤다. 서브넷은 CIDR이 <code>172.31.16.0/20</code>인 항목을 선택하고, 인바운드 규칙을 편집한 뒤 Xshell에서 SSH 연결을 확인하는 순서로 진행한다.</p>
+<p data-ke-size="size16">수업에서 다룬 인바운드 규칙은 SSH, HTTP, HTTPS, ICMP IPv4, 사용자 지정 TCP였다. 보안 그룹은 인스턴스로 들어오는 통신의 허용 범위를 정하며, 컨테이너 포트 연결은 Docker 실행 단계에서 따로 설정한다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">Docker의 구성 요소와 이미지·컨테이너 레이어</h4>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td><b>구성 요소</b></td>
+<td><b>역할</b></td>
+</tr>
+<tr>
+<td>Client</td>
+<td><code>build</code>, <code>pull</code>, <code>run</code> 등의 명령으로 작업을 요청한다.</td>
+</tr>
+<tr>
+<td>Docker host</td>
+<td>이미지를 관리하고 이를 바탕으로 컨테이너를 생성·실행한다.</td>
+</tr>
+<tr>
+<td>Registry</td>
+<td>호스트가 내려받거나 업로드할 이미지를 보관한다.</td>
+</tr>
+</tbody>
+</table>
+<p data-ke-size="size16">이미지는 여러 읽기 전용 레이어로 구성된다. 컨테이너를 생성하면 그 위에 쓰기 가능한 컨테이너 레이어가 추가되어 파일 생성·수정·삭제가 반영된다. 같은 이미지로 만든 컨테이너도 각자의 변경 내용을 따로 관리한다.</p>
+<p data-ke-size="size16">새 이미지를 가져올 때는 이미 가지고 있는 레이어를 재사용하고 필요한 레이어를 추가로 내려받는다. 컨테이너 안에서 수정한 파일은 해당 컨테이너에 반영되며 기반 이미지 자체를 바꾸지는 않는다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">메인 프로세스와 컨테이너 실행·접속 분리</h4>
+<p data-ke-size="size16">컨테이너는 메인 프로세스가 실행되는 동안 유지된다. <code>docker run</code>은 이미지로 새 컨테이너를 생성하고 실행하며, 이미지가 로컬에 없으면 내려받는다. 기존 컨테이너를 다시 실행할 때는 <code>docker start</code>를 사용한다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td><b>옵션</b></td>
+<td><b>동작</b></td>
+</tr>
+<tr>
+<td><code>-d</code></td>
+<td>터미널에서 분리해 백그라운드로 실행한다.</td>
+</tr>
+<tr>
+<td><code>-i</code></td>
+<td>연결되어 있지 않아도 표준 입력을 열린 상태로 유지한다.</td>
+</tr>
+<tr>
+<td><code>-t</code></td>
+<td>가상 터미널을 할당한다.</td>
+</tr>
+<tr>
+<td><code>--name</code></td>
+<td>컨테이너 이름을 지정한다.</td>
+</tr>
+<tr>
+<td><code>--rm</code></td>
+<td>컨테이너가 종료되면 자동으로 삭제한다.</td>
+</tr>
+</tbody>
+</table>
+<p data-ke-size="size16"><code>docker run -d --name app1 ubuntu:focal</code>에서는 기본 명령인 Bash가 입력을 기다릴 조건이 없어 종료되고 컨테이너도 함께 종료된다. 백그라운드 실행 옵션 자체가 프로세스를 계속 실행시키는 것은 아니다.</p>
+<p data-ke-size="size16"><code>docker run -it --name app2 ubuntu:focal /bin/bash</code>는 셸에 연결된 상태로 실행된다. <code>Ctrl + P</code> 다음에 <code>Ctrl + Q</code>를 누르면 컨테이너를 유지하면서 접속만 분리할 수 있다. 메인 셸에서 <code>exit</code>를 실행하면 해당 셸과 컨테이너가 종료된다.</p>
+<p data-ke-size="size16"><code>docker run -d -it --name app3 ubuntu:focal</code>처럼 <code>-d</code>와 <code>-it</code>를 함께 사용하면 Bash를 유지하면서 처음부터 백그라운드로 실행할 수 있다. 웹 서버처럼 계속 실행되는 프로세스가 있는 컨테이너는 그 서버 프로세스로 실행 상태를 유지한다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">MySQL 실행과 컨테이너 내부 명령 실행</h4>
+<p data-ke-size="size16">MySQL 이미지를 실행할 때 <code>-e</code>로 <code>MYSQL_ROOT_PASSWORD</code> 환경 변수를 전달해 초기 관리자 비밀번호를 설정하는 방법을 다뤘다. <code>docker exec</code>는 실행 중인 컨테이너 안에서 별도의 명령을 실행한다.</p>
+<p data-ke-size="size16"><code>mysql -u root</code>와 비밀번호 옵션을 사용하면 MySQL 클라이언트로 데이터베이스에 연결하고, <code>/bin/bash</code>를 실행하면 컨테이너의 셸로 들어간다. 수업에서는 <code>/etc/hosts</code>와 MySQL 데이터 디렉터리인 <code>/var/lib/mysql</code>도 확인 대상으로 다뤘다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">컨테이너와 이미지 관리 명령</h4>
+<p data-ke-size="size16">컨테이너 상태와 이미지 정보를 확인하고, 실행 중인 컨테이너 안에서 명령을 실행하거나 파일을 관리하는 명령을 정리했다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td><b>명령</b></td>
+<td><b>용도</b></td>
+</tr>
+<tr>
+<td><code>docker -v</code></td>
+<td>Docker CLI 버전을 확인한다.</td>
+</tr>
+<tr>
+<td><code>docker ps -a</code> / <code>docker images</code></td>
+<td>전체 컨테이너 상태 / 로컬 이미지 목록을 확인한다.</td>
+</tr>
+<tr>
+<td><code>docker inspect</code></td>
+<td>이미지나 컨테이너의 설정과 네트워크 등 상세 정보를 확인한다.</td>
+</tr>
+<tr>
+<td><code>docker exec -it &lt;컨테이너ID&gt; /bin/bash</code></td>
+<td>실행 중인 컨테이너 안에서 Bash 셸을 새로 실행해 명령을 입력한다.</td>
+</tr>
+<tr>
+<td><code>docker rename</code></td>
+<td>기존 컨테이너의 이름을 변경한다.</td>
+</tr>
+<tr>
+<td><code>docker cp</code></td>
+<td>호스트와 컨테이너 사이에 파일을 복사한다. 컨테이너 쪽 경로에는 이름 또는 ID와 콜론을 사용한다.</td>
+</tr>
+<tr>
+<td><code>docker stats</code></td>
+<td>실행 중인 컨테이너의 자원 사용량을 확인한다.</td>
+</tr>
+<tr>
+<td><code>docker system df</code> / <code>docker ps --size</code></td>
+<td>Docker 디스크 사용 현황 / 컨테이너별 파일 시스템 크기를 확인한다.</td>
+</tr>
+<tr>
+<td><code>docker rm</code> / <code>docker rmi</code></td>
+<td>컨테이너 / 이미지를 삭제한다.</td>
+</tr>
+<tr>
+<td><code>docker container prune</code></td>
+<td>중지된 컨테이너를 일괄 삭제한다.</td>
+</tr>
+</tbody>
+</table>
+<p data-ke-size="size16"><code>docker exec -it &lt;컨테이너ID&gt; /bin/bash</code>에서 <code>-i</code>는 표준 입력을 유지하고 <code>-t</code>는 가상 터미널을 할당한다. 컨테이너 ID 대신 이름도 사용할 수 있다. 이 명령으로 새로 실행한 셸에서 <code>exit</code>를 입력하면 해당 셸이 종료되고, 기존 메인 프로세스가 실행 중이면 컨테이너는 유지된다.</p>
+<p data-ke-size="size16">컨테이너를 삭제하면 해당 컨테이너의 쓰기 가능 레이어에만 저장한 변경도 함께 사라진다. 파일을 남겨야 한다면 삭제 전에 <code>docker cp</code> 등으로 필요한 파일을 복사한다.</p>
+<p data-ke-size="size16">Nginx 실습에서는 컨테이너에 접속해 <code>cat &gt; /usr/share/nginx/html/index.html</code>로 웹 파일 내용을 입력하고 <code>Ctrl + D</code>로 입력을 마치는 방법을 다뤘다. 이 수정은 실행 중인 컨테이너의 파일에 적용된다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">Dockerfile의 빌드 명령과 실행 설정</h4>
+<p data-ke-size="size16">Dockerfile은 기반 이미지에 필요한 파일과 프로그램을 더해 이미지를 만드는 명세다. 파일에 적힌 순서대로 빌드가 진행되며, 빌드 단계에서 실행하는 명령과 컨테이너가 시작할 때 사용하는 명령을 구분해야 한다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td><b>명령</b></td>
+<td><b>실습에서의 역할</b></td>
+</tr>
+<tr>
+<td><code>FROM</code></td>
+<td><code>ubuntu:18.04</code>를 기반 이미지로 지정한다.</td>
+</tr>
+<tr>
+<td><code>LABEL</code></td>
+<td>이미지에 작성자 등의 메타데이터를 붙인다.</td>
+</tr>
+<tr>
+<td><code>ENV</code></td>
+<td>Tomcat 버전과 Java·Tomcat 경로 등의 환경 변수를 설정한다.</td>
+</tr>
+<tr>
+<td><code>RUN</code></td>
+<td>빌드 중 패키지를 설치하거나 웹 파일을 생성한다.</td>
+</tr>
+<tr>
+<td><code>COPY</code></td>
+<td>빌드 컨텍스트의 <code>index.html</code>을 이미지 내부에 포함한다.</td>
+</tr>
+<tr>
+<td><code>EXPOSE</code></td>
+<td>이미지에서 사용하려는 컨테이너 포트를 기록한다.</td>
+</tr>
+<tr>
+<td><code>CMD</code></td>
+<td>컨테이너 시작 시 실행할 기본 명령을 지정한다.</td>
+</tr>
+</tbody>
+</table>
+<p data-ke-size="size16">Tomcat 실습 설정은 버전 <code>9.0.100</code>과 Java 17 경로를 지정하고 <code>catalina.sh run</code>으로 실행하도록 작성되어 있다. 웹 이미지 실습은 패키지를 설치한 뒤 웹 파일을 직접 생성하거나 외부 파일에서 복사하고, <code>FOREGROUND</code> 옵션으로 서버 프로세스를 유지하도록 구성했다.</p>
+<p data-ke-size="size16"><code>RUN echo</code>는 빌드 중 문자열로 파일을 만들고, <code>COPY</code>는 미리 작성한 파일을 가져온다. 두 방식의 차이는 웹 파일을 이미지에 포함하는 방법이며, 서버의 수신 포트는 별도 설정으로 결정된다.</p>
+<p data-ke-size="size16">Apache HTTP Server는 브라우저의 HTTP 요청을 받아 HTML 같은 웹 파일을 제공하는 웹 서버다. 이번 실습에서는 <code>apt-get update</code>로 패키지 목록을 갱신하고 <code>apt-get install -y apache2</code>로 이미지 안에 Apache를 설치했다. <code>/var/www/html/index.html</code>은 이번 구성에서 기본 페이지로 제공할 파일이며, 빌드 중 직접 생성하거나 <code>COPY</code>로 포함한다.</p>
+<p data-ke-size="size16"><code>CMD</code>의 <code>/usr/sbin/apache2ctl</code>은 Apache를 실행·제어하는 명령이다. <code>-D FOREGROUND</code>로 서버를 포그라운드에서 실행해 컨테이너의 주된 실행 작업으로 유지한다. Bash만 실행하는 Ubuntu 컨테이너와 달리, 이 구성은 Apache가 HTTP 요청을 기다리며 실행되는 동안 컨테이너가 유지된다.</p>
+<p data-ke-size="size16">이번 Apache 기본 구성은 컨테이너 내부 80번 포트를 사용한다. <code>EXPOSE 80</code>으로 사용 예정 포트를 기록하고, 호스트의 8080번에서 접속하려면 컨테이너 생성 시 <code>-p 8080:80</code>으로 연결한다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">빌드 컨텍스트와 이미지 태그·업로드</h4>
+<p data-ke-size="size16"><code>docker build -t tomcat:v1.0 .</code>에서 <code>-t</code>는 이미지 이름과 태그를 지정하고 마지막의 <code>.</code>은 현재 디렉터리를 빌드 컨텍스트로 지정한다. <code>COPY ./index.html</code>의 원본은 이 컨텍스트를 기준으로 찾으므로, Dockerfile이 있는 위치만 보고 판단하면 안 된다.</p>
+<p data-ke-size="size16">수업에서는 <code>docker images</code>로 이미지를 확인하고, <code>docker tag tomcat:v1.0 junwooqkr5302/tomcat:v1.0</code>으로 저장소 이름을 포함한 태그를 붙인 뒤 <code>docker push junwooqkr5302/tomcat:v1.0</code>으로 업로드하는 흐름을 다뤘다. 태그 추가는 이미지의 프로그램이나 파일을 새로 만드는 작업과 구분된다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">호스트 포트와 컨테이너 포트, 재활용한 이미지 구분</h4>
+<p data-ke-size="size16"><code>-p 8080:80</code>은 Docker 호스트의 8080번 포트로 들어온 요청을 컨테이너의 80번 포트로 전달한다. <code>EXPOSE 80</code>은 포트에 대한 정보이며, 호스트 포트를 연결하거나 서버의 수신 포트를 변경하지 않는다.</p>
+<p data-ke-size="size16">브라우저에서 사용하는 <code>localhost</code>는 그 브라우저가 실행되는 컴퓨터를 가리킨다. 이번 화면은 Ubuntu 가상 머신 안의 Firefox였으므로, 그 Ubuntu에서 공개한 호스트 포트에 접속하는 상황이었다.</p>
+<p data-ke-size="size16">컨테이너 이름, 이미지 태그, 이미지 안에서 실행되는 프로그램은 구분해서 확인해야 한다. <code>tomcat2</code> 이미지는 <code>httpweb</code> 이미지를 재활용한 것이 확인되었으므로 실제 웹 서버 구성과 수신 포트를 기준으로 연결한다. Dockerfile을 수정하거나 이미지 태그를 바꿔도 이미 생성한 컨테이너의 실행 설정이 자동으로 바뀌지는 않는다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">오늘의 코드 1 - Tomcat 환경 변수와 실행 명령</h2>
+<h4 data-ke-size="size20">dockerfile (Tomcat 실습)</h4>
+<pre class="dockerfile"><code>ENV TOMCAT_VERSION 9.0.100
+ENV CATALINA_HOME /usr/local/tomcat
+ENV JAVA_HOME /usr/lib/jvm/java-17-openjdk-amd64
+ENV PATH $CATALINA_HOME/bin:$PATH</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16"><code>TOMCAT_VERSION</code>은 설치할 버전을, <code>CATALINA_HOME</code>과 <code>JAVA_HOME</code>은 프로그램 경로를 지정한다. <code>PATH</code>에 Tomcat의 실행 파일 디렉터리를 추가한 설정이며, 실제로 작성된 Java 경로는 17을 가리킨다.</p>
+<h4 data-ke-size="size20">dockerfile (Tomcat 실습)</h4>
+<pre class="dockerfile"><code>CMD ["/usr/local/tomcat/bin/catalina.sh", "run"]</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">컨테이너가 시작할 때 Tomcat의 <code>catalina.sh</code>를 <code>run</code>으로 실행하도록 지정한다. 서버 프로세스가 계속 실행되는 동안 컨테이너도 유지되는 실행 구조를 확인할 수 있다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 2 - RUN으로 웹 페이지 파일 생성</h2>
+<h4 data-ke-size="size20">dockerfile (웹 파일 직접 생성 실습)</h4>
+<pre class="dockerfile"><code>RUN apt-get update \
+    &amp;&amp; apt-get install -y apache2
+RUN echo "TEST WEB" &gt; /var/www/html/index.html   </code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">빌드 중 패키지 목록을 갱신하고 웹 서버를 설치한 뒤, <code>echo</code>의 출력을 웹 루트의 <code>index.html</code>에 기록한다. 이 방식은 외부 HTML 파일을 복사하지 않고 이미지 안에 <code>TEST WEB</code>이라는 내용을 만드는 실습이다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 3 - COPY로 웹 파일 포함 및 서버 실행</h2>
+<h4 data-ke-size="size20">dockerfile (외부 웹 파일 복사 실습)</h4>
+<pre class="dockerfile"><code>COPY ./index.html /var/www/html/index.html
+EXPOSE 80
+CMD ["/usr/sbin/apache2ctl","-D","FOREGROUND"]</code></pre>
+<p data-ke-size="size16">&nbsp;</p>
+<p data-ke-size="size16">빌드 컨텍스트의 <code>index.html</code>을 이미지의 웹 루트로 복사하고 80번 포트 정보를 기록한다. 컨테이너 시작 시 <code>FOREGROUND</code>로 서버를 실행하며, 호스트에서 접근할 포트는 실행 단계의 <code>-p</code>로 연결해야 한다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">어려웠던 점 / 각종 오류</h2>
+<p data-ke-size="size16"><code>COPY ./index.html /var/www/html/index.html</code>에서 <code>failed to calculate checksum</code>과 <code>"/index.html": not found</code>가 발생했다. 이는 빌드 컨텍스트에서 복사할 파일을 찾지 못한 오류다. 빌드 명령 마지막에 지정한 디렉터리에 <code>index.html</code>이 있는지, 파일명과 대소문자가 맞는지, <code>.dockerignore</code>에서 제외되는지 확인해야 하며 실제 파일 위치에 맞춰 컨텍스트나 복사 원본 경로를 정해야 한다.</p>
+<p data-ke-size="size16"><code>tomcat</code>을 실행하면 접속되던 <code>localhost:8080</code>이 <code>tomcat2</code> 실행 시에는 접속되지 않았다. 확인 결과 <code>tomcat2</code> 이미지는 <code>httpweb</code> 이미지를 재활용한 것이었고, 제공한 웹 서버 구성은 컨테이너 내부 80번을 사용하는데 화면에는 <code>8080-&gt;8080/tcp</code>로 연결되어 있었다. 이 구성에서는 호스트 8080번이 컨테이너 80번을 가리키도록 <code>-p 8080:80</code>으로 컨테이너를 생성해야 한다. 포트를 변경한 뒤의 접속 성공 결과는 이번 기록에서 확인되지 않았다.</p>
+<p data-ke-size="size16">로그의 <code>AH00558</code>은 서버의 정규 도메인 이름을 정하지 못했다는 경고였다. 이어 실행한 수신 포트 확인 명령은 컨테이너에 <code>ss</code>와 <code>netstat</code>이 없어 각각 <code>not found</code>로 끝났으므로, 해당 명령으로 내부 수신 포트를 확인하지는 못했다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 style="color: #000000; text-align: start;" data-ke-size="size26">하루를 정리하며</h2>
+<p style="color: #222222; text-align: start;" data-ke-size="size16">LG CNS 6기</p>
+<p style="color: #222222; text-align: start;" data-ke-size="size16">LGCNSINSIRECAMP</p>
+<p style="color: #222222; text-align: start;" data-ke-size="size16">개발자</p>

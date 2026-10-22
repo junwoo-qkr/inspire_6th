@@ -1,61 +1,129 @@
-가상 ubuntu 설치
-- sudo -i: 관리자 계정으로 변경
-- apt-get update
-- apt-get install -y openssh-server curl vim tree
+aws에서 새 ec2 인스턴스 시작
+- 이름: aws-docker-ec2
+- ubuntu 24.04 선택
+- 서브넷: CIDR이 172.31.16.0/20인 옵션 선택
+- 인바운드 규칙 편집
+  - ssh, anywhere-ipv4
+  - http, anywhere-ipv4
+  - https, anywhere-ipv4
+  - 모든 icmp -ipv4, anywhere-ipv4
+  - 사용자 지정 tcp, anywhere-ipv4
+- xshell에서 연결 확인
 
-리눅스 명령어
-- pwd
-- ls
-- ls -al
-- cd <디렉토리>/../~/-
-- mkdir <새 디렉토리>
-- touch <새 파일 이름>
-- rm <파일 이름>
-- cp <파일 이름> <새 파일 이름>
-- mv <파일 이름> <디렉토리>
+docker 구성 요소
+- registry: 이미지를 가져오는 곳
+- docker host: 가져온 이미지로 컨테이너를 만듦
+- client: build, pull, run 등의 명령어 실행
 
-vi 에디터 명령어
-- vi <파일 이름>
-- 입력모드 진입: i, a, o
-- 명령모드 복귀: esc
-  - :w
-  - :q
-  - :wq or :x
-  - :q!
-  - set (no)nu
-  - (숫자)dd, (숫자)yy, p, u, %d
-  - /<검색키워드>
+build: 프로젝트 파일로 이미지 생성
+run: 이미지로 컨테이너 생성
 
-docker 설치
-- sudo apt-get install -y apt-transport-https ca-certificates software-properties-common\
-- curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
-- apt-key fingerprint
-- add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
-- apt-get update
-- apt-get install -y docker-re
-- systemctl status docker
-- docker version
+하나의 이미지는 여러 layer로 구성
+컨테이너를 만들면 이미지 레이어(read only)에 컨테이너 레이어(read+write)가 추가됨
 
-docker 로그인
-- docker login -u junwooqkr5302, 비밀번호에는 토큰 입력
+docker run -d --name app1 ubuntu:focal
+- ubuntu 이미지가 만들어지고 나면 컨테이너가 끝남
+docker run -it --name app2 ubuntu:focal /bin/bash
+- ctrl + p, ctrl + q를 누르면 컨테이너를 중지하지 않고 접속만 분리
+docker run -it --name app3 ubuntu:focal
+- 처음부터 접속이 분리되어 있으니 빠져나올 필요가 없음
 
-docker 명령어
-- docker ps (-a) (-q)
-- docker rm <컨테이너이름 or 컨테이너ID>
-- docker rmi <이미지이름 or 이미지ID>
-- docker run -> pull + create + start
-- docker images (-q)
-- docker inspect <컨테이너이름 or 이미지이름>
-- docker search <이미지이름>
-- $(docker ps -a -q) -> rm 시 모든 컨테이너를 지우고 싶을 때
+docker로 MySQL 실행해보기
+- docker run -d --name ms -e MYSQL_ROOT_PASSWORD=<비밀번호> mysql -> 컨테이너 생성 및 실행
+- docker exec -it ms mysql -u root -p<비밀번호> -> 컨테이너에 접속
+- docker exec -it <컨테이너ID> /bin/bash
+- cat /etc/hosts
+- ls var/lib/mysql
 
-nginx 설치 및 확인
-- docker run -d --name webserver -p 80:80 nginx
+docker build -t <이미지이름>:<태그> <dockerfile 경로>
+docker tag <이미지이름>:<태그> <저장소이름>/<이미지이름>:<태그>
+docker push <저장소이름>/<이미지이름>:<태그>
+docker -v: 버전 확인
+docker run (-d/--name/-p/--rm/-i/-t): pull + create + start
+docker inspect <이미지 이름 or 컨테이너 이름>: 상세 정보
+docker rm (-f) <컨테이너 이름>
+docker rmi (-f) <이미지 이름>
+docker exec -it <컨테이너 이름> /bin/bash: 컨테이너에 접속
+- nginx의 index.html 수정하기: 컨테이너에 접속 후 cat > /usr/share/nginx/html/index.html -> 내용 입력하고 ctrl + d 눌러서 저장
+docker rename <현재 컨테이너 이름> <변경할 컨테이너 이름>
+docker cp <복사할 파일> <붙여넣을 경로>
+- 컨테이너 경로 = <컨테이너ID>:<내부 경로>
+alias cip='docker inspect --format "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}"'
+docker stats
+docker system df
+docker container prune: 미사용 컨테이너 삭제
+docker ps --size
 
-가상 머신: 호스트 os 위에 hypervisor 위에 게스트 os -> 이미지 안에 os도 포함되어 있어서 용량이 너무 큼
-컨테이너: 호스트 os 위에 docker 엔진 위에 컨테이너
+컨테이너는 이미지 레이어 + 컨테이너 레이어
+이미지 레이어(read only)
+컨테이너 레이어(read, write)
+소스 수정은 컨테이너 레이어에
+새 이미지를 받아오면 기존 레이어는 놔두고, 바뀐 레이어만 업데이트해서 조합
 
-이미지: 서비스 운영에 필요한 코드, 파일 등을 묶은 형태
-컨테이너: 이미지를 실행한 인스턴스(한 이미지로 여러 컨테이너 실행 가능)
-docker host: docker가 컨테이너를 실행할 수 있는 플랫폼을 구성한 것
-컨테이너 이미지: 여러 레이어로 구성된 이미지들의 조합
+dockerfile: 컨테이너를 만들도록 도와주는 명령어 집합
+- 순서대로 실행됨
+
+=========================================================
+
+dockerfile 생성 후 image push하기
+- vi dockerfile 후 아래 입력 / 저장
+
+# Docker file for Ubuntu with OpenJDK 18 and Tomcat 9. 			
+FROM ubuntu:18.04									
+LABEL maintainer="Jun Woo Park <p40212@gmail.com>"		
+
+# Set environment variables   							
+ENV TOMCAT_VERSION 9.0.100
+ENV CATALINA_HOME /usr/local/tomcat
+ENV JAVA_HOME /usr/lib/jvm/java-17-openjdk-amd64
+ENV PATH $CATALINA_HOME/bin:$PATH
+
+# Install JDK & wget packages.
+RUN apt-get -y update && apt-get -y upgrade
+RUN apt-get -y install openjdk-17-jdk wget
+
+# Install and configure Tomcat.
+RUN mkdir $CATALINA_HOME
+RUN wget https://archive.apache.org/dist/tomcat/tomcat-9/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.tar.gz -O /tmp/tomcat.tar.gz
+RUN cd /tmp && tar xvfz tomcat.tar.gz
+RUN cp -Rv /tmp/apache-tomcat-${TOMCAT_VERSION}/* $CATALINA_HOME
+RUN rm -rf /tmp/apache-tomcat-${TOMCAT_VERSION}
+RUN rm -rf /tmp/tomcat.tar.gz
+
+# Expose Tomcat port.
+EXPOSE 80
+
+# Start Tomcat
+CMD ["/usr/local/tomcat/bin/catalina.sh", "run"]
+
+- docker build -t tomcat:v1.0 .
+- docker images로 만들어진 이미지 확인
+
+- docker tag tomcat:v1.0 junwooqkr5302/tomcat:v1.0
+- docker push junwooqkr5302/tomcat:v1.0
+
+=========================================================
+
+dockerfile 수정 후 tomcat:v1.0으로 image 생성, 컨테이너 실행해보기
+
+FROM ubuntu:18.04
+LABEL maintainer="Jun Woo Park <p40212@gmail.com>"
+# install apache
+RUN apt-get update \
+    && apt-get install -y apache2
+RUN echo "TEST WEB" > /var/www/html/index.html   
+EXPOSE 80
+CMD ["/usr/sbin/apache2ctl","-D","FOREGROUND"]
+
+=========================================================
+
+dockerfile 수정 후 httpweb:v2.0으로 image 생성, 컨테이너 실행하고 push 하기
+
+FROM ubuntu:18.04
+LABEL maintainer="Jun Woo Park <p40212@gmail.com>"
+# install apache
+RUN apt-get update \
+    && apt-get install -y apache2
+COPY ./index.html /var/www/html/index.html
+EXPOSE 80
+CMD ["/usr/sbin/apache2ctl","-D","FOREGROUND"]
