@@ -1,0 +1,135 @@
+<h1 data-ke-size="size30">[LG CNS AM INSPIRE CAMP 6기] 10/23 TIL - Docker: 웹 서버 이미지 빌드와 컨테이너 네트워크·이미지 관리</h1>
+<h2 data-ke-size="size26">오늘의 한 줄 요약</h2>
+<ul style="list-style-type: disc;" data-ke-list-type="disc">
+<li>Apache와 Nginx의 기본 이미지, 웹 문서 경로, 실행 명령을 비교하며 웹 서버 이미지를 구성하는 흐름을 정리했다.</li>
+<li>브리지 네트워크의 내부 통신과 호스트 포트 게시를 구분하고, 사용자 지정 네트워크의 서브넷·게이트웨이·컨테이너 IP를 살펴봤다.</li>
+<li>컨테이너 변경을 이미지로 만드는 방법과 파일 시스템·이미지를 tar 파일로 보관하는 방법의 차이를 정리했다.</li>
+<li>최종 이미지에 포함할 파일과 패키지를 줄이는 방법, 멀티 스테이지 빌드, 빌드 캐시 옵션의 역할을 학습했다.</li>
+</ul>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">키워드 정리</h2>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr><td style="width: 23.7209%;"><b>키워드</b></td><td style="width: 76.2791%;"><b>설명 또는 예시</b></td></tr>
+<tr><td style="width: 23.7209%;"><b><code>COPY</code></b></td><td style="width: 76.2791%;">빌드 컨텍스트의 파일을 이미지 내부 경로로 복사하는 Dockerfile 명령어</td></tr>
+<tr><td style="width: 23.7209%;"><b><code>CMD</code></b></td><td style="width: 76.2791%;">컨테이너를 시작할 때 사용할 기본 실행 명령</td></tr>
+<tr><td style="width: 23.7209%;"><b><code>bridge</code></b></td><td style="width: 76.2791%;">같은 호스트의 컨테이너 인터페이스를 연결하는 가상 네트워크 방식</td></tr>
+<tr><td style="width: 23.7209%;"><b>서브넷 / 게이트웨이</b></td><td style="width: 76.2791%;">네트워크의 IP 주소 범위 / 다른 네트워크로 나가는 통로</td></tr>
+<tr><td style="width: 23.7209%;"><b>포트 게시</b></td><td style="width: 76.2791%;">호스트 포트를 컨테이너 포트에 연결하는 설정. <code>-p</code>로 지정한다.</td></tr>
+<tr><td style="width: 23.7209%;"><b><code>EXPOSE</code></b></td><td style="width: 76.2791%;">이미지에서 사용할 포트를 알리는 메타데이터</td></tr>
+<tr><td style="width: 23.7209%;"><b><code>NAT</code></b></td><td style="width: 76.2791%;">패킷의 주소를 변환하는 기능. Docker의 포트 연결에서는 목적지 주소와 포트를 변환한다.</td></tr>
+<tr><td style="width: 23.7209%;"><b><code>commit</code></b></td><td style="width: 76.2791%;">컨테이너의 파일 변경과 설정을 새 이미지로 저장하는 작업</td></tr>
+<tr><td style="width: 23.7209%;"><b><code>export / import</code></b></td><td style="width: 76.2791%;">컨테이너 파일 시스템을 tar 파일로 내보내고, 그 파일로 새 이미지를 만드는 작업</td></tr>
+<tr><td style="width: 23.7209%;"><b><code>save / load</code></b></td><td style="width: 76.2791%;">이미지를 레이어·설정·태그와 함께 보관하고 다시 불러오는 작업</td></tr>
+<tr><td style="width: 23.7209%;"><b>멀티 스테이지 빌드</b></td><td style="width: 76.2791%;">여러 빌드 단계를 두고 최종 실행에 필요한 결과물만 마지막 이미지에 포함하는 방식</td></tr>
+</tbody>
+</table>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">오늘 배운 것</h2>
+<h4 data-ke-size="size20">컨테이너 프로세스와 로그 확인</h4>
+<p data-ke-size="size16">컨테이너의 실행 상태를 살펴볼 때는 프로세스와 로그를 각각 확인한다. 이미지 목록에서는 식별자가 생략되는지도 구분할 수 있다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr><td><b>명령어</b></td><td><b>확인하는 내용</b></td></tr>
+<tr><td><code>docker top</code></td><td>지정한 컨테이너에서 실행 중인 프로세스</td></tr>
+<tr><td><code>docker logs</code></td><td>컨테이너의 표준 출력·표준 오류로 수집된 로그</td></tr>
+<tr><td><code>docker logs -f</code></td><td>기존 로그를 표시하고 이후에 추가되는 로그를 계속 확인</td></tr>
+<tr><td><code>docker images --no-trunc</code></td><td>이미지 목록의 ID 등을 축약하지 않고 표시</td></tr>
+</tbody>
+</table>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">Apache와 Nginx 웹 서버 이미지 구성</h4>
+<p data-ke-size="size16">웹 서버 이미지는 기본 이미지에 서버 프로그램과 웹 문서를 준비하고, 컨테이너 시작 시 서버를 실행하도록 구성한다. 수업 메모에서는 Ubuntu에 Apache를 설치하는 방식과 Nginx 이미지를 바탕으로 웹 문서를 교체하는 방식을 비교했다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr><td><b>구분</b></td><td><b>Apache 구성</b></td><td><b>Nginx 구성</b></td></tr>
+<tr><td>기본 이미지</td><td><code>ubuntu:22.04</code></td><td><code>nginx:1.14</code></td></tr>
+<tr><td>서버 준비</td><td><code>RUN</code>에서 패키지 목록을 갱신하고 <code>apache2</code> 설치</td><td>기본 이미지에 포함된 Nginx 사용</td></tr>
+<tr><td>웹 문서 복사 대상</td><td><code>/var/www/html/index.html</code></td><td><code>/usr/share/nginx/html/index.html</code></td></tr>
+<tr><td>서버 실행</td><td><code>apache2ctl</code>의 <code>FOREGROUND</code>로 실행</td><td><code>nginx</code>의 <code>daemon off;</code> 설정으로 실행</td></tr>
+<tr><td>이미지 이름과 태그</td><td><code>httpdweb:v1.0</code></td><td><code>nginxweb:v1.0</code></td></tr>
+</tbody>
+</table>
+<p data-ke-size="size16"><code>FROM</code>은 기본 이미지를 선택하고, <code>RUN</code>은 빌드 중 명령을 실행하며, <code>COPY</code>는 준비한 웹 문서를 이미지에 넣는다. <code>CMD</code>는 컨테이너 시작 시 실행할 기본 명령을 지정한다. 두 구성 모두 웹 서버가 포그라운드에서 실행되도록 설정했다.</p>
+<p data-ke-size="size16">메모의 빌드 명령인 <code>docker build -t httpdweb:v1.0 .</code>과 <code>docker build -t nginxweb:v1.0 .</code>에서 마지막 <code>.</code>은 현재 디렉터리를 빌드 컨텍스트로 지정한다. 메모에서는 Nginx 기반 이미지가 더 작았다고 기록했으며, 크기 차이는 각 기본 이미지와 추가로 포함한 패키지·파일 구성을 함께 보고 비교한다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">호스트 인터페이스와 Docker 네트워크 방식</h4>
+<p data-ke-size="size16">수업에서 살펴본 <code>ens5</code>는 EC2 호스트의 네트워크 인터페이스이고, <code>docker0</code>는 Docker 기본 브리지의 인터페이스다. 브리지 네트워크에는 컨테이너의 가상 인터페이스가 연결되므로, 네트워크 자체의 개수와 연결된 컨테이너 인터페이스의 개수는 구분해서 본다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr><td><b>네트워크 방식</b></td><td><b>동작</b></td></tr>
+<tr><td><code>bridge</code></td><td>컨테이너에 별도 IP를 할당하고 브리지로 연결한다. 같은 브리지의 컨테이너끼리 통신할 수 있다.</td></tr>
+<tr><td><code>host</code></td><td>호스트의 네트워크 공간을 공유하며 컨테이너 전용 IP를 할당하지 않는다. 호스트 포트를 직접 사용하므로 포트 매핑 옵션은 적용되지 않는다.</td></tr>
+<tr><td><code>none</code></td><td>루프백 인터페이스만 두어 외부 네트워크와 분리한다.</td></tr>
+</tbody>
+</table>
+<p data-ke-size="size16">메모의 <code>172.17.0.1</code>은 기본 브리지 주소의 예시이며, 실제 주소 범위는 Docker 설정에 따라 달라진다. 컨테이너 IP는 연결한 네트워크의 주소 범위에서 할당되므로, 실행 순서로 추정하기보다 현재 할당된 값을 확인한다.</p>
+<p data-ke-size="size16"><code>docker network ls</code>는 네트워크 목록을, <code>docker network inspect</code>는 지정한 네트워크 이름이나 ID의 상세 정보를 보여준다. <code>ifconfig</code>는 인터페이스를, <code>brctl show</code>는 브리지와 그 브리지에 연결된 인터페이스를 확인하는 데 사용한다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">컨테이너 내부 포트와 호스트 포트 게시</h4>
+<p data-ke-size="size16">브리지 네트워크에서는 호스트가 컨테이너의 내부 IP로 접근하는 경로와 외부에서 호스트 IP로 접근하는 경로가 다르다. 외부 요청을 컨테이너로 전달하려면 호스트 포트와 서버가 실제로 응답하는 컨테이너 포트를 연결한다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr><td><b>설정</b></td><td><b>의미</b></td></tr>
+<tr><td><code>-p 80:80</code></td><td>호스트 80번을 컨테이너 80번에 연결</td></tr>
+<tr><td><code>-p</code>에 컨테이너 포트만 지정</td><td>호스트의 사용 가능한 포트를 자동 할당해 지정한 컨테이너 포트에 연결</td></tr>
+<tr><td><code>-P</code></td><td>이미지의 <code>EXPOSE</code> 등으로 노출된 포트들을 호스트의 자동 할당 포트에 연결</td></tr>
+<tr><td><code>EXPOSE 80</code></td><td>이미지의 사용 포트를 알리는 설정이며, 호스트 포트 게시는 별도로 지정</td></tr>
+</tbody>
+</table>
+<p data-ke-size="size16">수업 메모의 <code>iptables -t nat -L -n -v</code> 결과에는 호스트 80번을 <code>172.17.0.2:80</code>으로, 32768번을 <code>172.17.0.3:80</code>으로 전달하는 규칙이 있었다. 이처럼 호스트에서 받은 요청의 목적지 주소와 포트를 컨테이너의 주소와 포트로 바꾸어 전달한다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">사용자 지정 브리지의 주소 범위와 고정 IP</h4>
+<p data-ke-size="size16">사용자 지정 브리지는 애플리케이션이 사용할 네트워크와 주소 범위를 직접 정할 때 사용한다. 네트워크를 만든 뒤 컨테이너를 해당 네트워크에 연결하고, 필요하면 그 범위 안의 IP를 지정한다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr><td><b>메모의 설정</b></td><td><b>역할</b></td></tr>
+<tr><td><code>mynet</code></td><td><code>bridge</code> 드라이버로 만드는 사용자 지정 네트워크 이름</td></tr>
+<tr><td><code>--subnet 192.168.100.0/24</code></td><td>컨테이너에 할당할 네트워크의 주소 범위</td></tr>
+<tr><td><code>--gateway 192.168.100.254</code></td><td>해당 네트워크의 게이트웨이 주소</td></tr>
+<tr><td><code>--net mynet</code></td><td><code>appjs</code> 컨테이너를 연결할 네트워크 선택</td></tr>
+<tr><td><code>--ip 192.168.100.100</code></td><td>컨테이너에 지정할 내부 IP</td></tr>
+</tbody>
+</table>
+<p data-ke-size="size16">네트워크 생성은 <code>docker network create</code>로 수행하고, 목록과 상세 정보에서 설정을 확인한다. 내부 IP 지정과 호스트 포트 게시의 역할은 서로 다르므로, 외부 접속 경로를 확인할 때는 포트 연결도 함께 살펴본다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">컨테이너 변경 저장과 이미지 보관 방식 비교</h4>
+<p data-ke-size="size16">컨테이너의 변경 상태를 이미지로 남기는 작업, 컨테이너 파일 시스템을 내보내는 작업, 기존 이미지를 보관하는 작업은 저장 대상이 다르다. 무엇을 다시 사용할 것인지에 따라 명령을 선택한다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr><td><b>방법</b></td><td><b>저장 대상과 결과</b></td><td><b>메모의 명령</b></td></tr>
+<tr><td><code>commit</code></td><td>기존 이미지에 컨테이너의 파일 변경·설정을 반영해 새 이미지 생성. 마운트된 볼륨 데이터는 제외한다.</td><td><code>docker commit web nginx1.14</code></td></tr>
+<tr><td><code>export → import</code></td><td>컨테이너 파일 시스템을 tar 파일로 보관하고 새 이미지 생성. 볼륨 데이터와 원래 이미지의 레이어 이력·실행 설정은 함께 보존되지 않는다.</td><td><code>docker export -o nginx:1.14.tar nc</code><br /><code>docker import nginx:1.14.tar new_nginx</code></td></tr>
+<tr><td><code>save → load</code></td><td>이미지를 레이어·설정·지정한 태그와 함께 tar 파일로 보관하고 복원</td><td><code>docker save -o nginx.tar nginx:1.14</code><br /><code>docker load -i nginx.tar</code></td></tr>
+</tbody>
+</table>
+<p data-ke-size="size16"><code>export</code>와 <code>save</code>의 기본 결과는 여러 내용을 담는 tar 아카이브다. 파일 크기를 줄이는 압축은 별도로 적용할 수 있다.</p>
+<p data-ke-size="size16"><code>import</code>한 이미지에 기본 실행 명령이 없다면 <code>docker run</code>의 이미지 이름 뒤에 실행할 명령과 인자를 지정하거나, 가져올 때 <code>--change</code>로 <code>CMD</code>·<code>ENTRYPOINT</code> 같은 설정을 추가한다. <code>-g</code>는 Nginx 실행 명령의 인자로, 전역 설정을 전달할 때 사용한다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">최종 이미지 구성 줄이기와 빌드 캐시</h4>
+<p data-ke-size="size16">이미지 경량화는 최종 이미지에 포함되는 파일과 패키지를 줄이는 데 초점을 둔다. 수업에서 살펴본 방법은 필요한 구성만 포함하기, 가벼운 기본 이미지 사용하기, 빌드 단계와 실행 단계를 나누기다.</p>
+<ul style="list-style-type: disc;" data-ke-list-type="disc">
+<li>여러 명령을 <code>&amp;&amp;</code>로 연결하면 하나의 <code>RUN</code>에서 처리할 수 있다. 설치 중 생긴 불필요한 파일을 같은 단계에서 정리하면 해당 파일이 최종 레이어에 남는 것을 줄일 수 있다.</li>
+<li><code>alpine</code>처럼 작은 기본 이미지를 선택할 때는 실행에 필요한 구성과 호환되는지도 함께 확인한다.</li>
+<li>멀티 스테이지 빌드는 여러 <code>FROM</code>으로 단계를 나누고, 앞 단계의 결과물 중 실행에 필요한 것만 마지막 단계로 가져온다. 빌드 도구와 중간 산출물을 최종 이미지에서 제외할 수 있다.</li>
+</ul>
+<p data-ke-size="size16"><code>--no-cache</code>는 기존 빌드 캐시를 재사용하지 않고 명령을 다시 실행하도록 하는 옵션이다. 최종 이미지 크기는 포함된 파일과 패키지에 의해 결정되므로, 캐시 재사용 여부와 이미지 경량화는 역할을 구분해서 이해한다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">어려웠던 점 / 각종 오류</h2>
+<p data-ke-size="size16">EC2 안에서 <code>curl 192.168.100.100</code>을 실행하면 Marvel 페이지의 HTML을 확인할 수 있었지만, 외부 IP로 접속했을 때는 Nginx 기본 화면이 보였다. 포트를 생략한 HTTP 요청은 80번을 사용하므로, 내부 요청은 <code>192.168.100.100:80</code>에 대한 응답을 확인한 것이다.</p>
+<p data-ke-size="size16"><code>sudo ss -lntp 'sport = :80'</code>의 결과에는 80번 수신 소켓이 표시되지 않았다. 이어서 확인한 <code>docker ps</code> 출력에서 <code>appjs</code>의 포트 정보는 다음과 같았다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr><td><b>실제 표시된 값</b></td><td><b>의미</b></td></tr>
+<tr><td><code>80/tcp</code></td><td>컨테이너의 80번 포트 표시. 호스트 포트와의 연결은 표시되지 않았다.</td></tr>
+<tr><td><code>0.0.0.0:8080-&gt;8080/tcp</code></td><td>호스트의 IPv4 8080번을 컨테이너 8080번에 연결</td></tr>
+<tr><td><code>[::]:8080-&gt;8080/tcp</code></td><td>호스트의 IPv6 8080번을 컨테이너 8080번에 연결</td></tr>
+</tbody>
+</table>
+<p data-ke-size="size16">확인된 포트 연결은 호스트 8080번에서 컨테이너 8080번으로 향하고 있었다. 내부에서 응답한 80번 서비스로 호스트 8080번의 요청을 전달하려면 <code>-p 8080:80</code>처럼 대상 포트를 맞춰야 한다. 내부 IP에서 응답을 받은 사실과 외부 IP로 원하는 페이지에 도달하는 사실을 구분하고, <code>PORTS</code>의 호스트·컨테이너 포트를 함께 읽는 것이 핵심이었다.</p>
+<p data-ke-size="size16">외부에서 보인 Nginx 기본 화면의 응답 출처, 실행 중인 <code>appjs</code>의 내부 IP 일치 여부, 포트 설정을 바꾼 뒤의 접속 결과는 추가로 확인되지 않았다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 style="color: #000000; text-align: start;" data-ke-size="size26">하루를 정리하며</h2>
+<p style="color: #222222; text-align: start;" data-ke-size="size16">LG CNS 6기</p>
+<p style="color: #222222; text-align: start;" data-ke-size="size16">LGCNSINSIRECAMP</p>
+<p style="color: #222222; text-align: start;" data-ke-size="size16">개발자</p>

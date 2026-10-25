@@ -1,129 +1,132 @@
-aws에서 새 ec2 인스턴스 시작
-- 이름: aws-docker-ec2
-- ubuntu 24.04 선택
-- 서브넷: CIDR이 172.31.16.0/20인 옵션 선택
-- 인바운드 규칙 편집
-  - ssh, anywhere-ipv4
-  - http, anywhere-ipv4
-  - https, anywhere-ipv4
-  - 모든 icmp -ipv4, anywhere-ipv4
-  - 사용자 지정 tcp, anywhere-ipv4
-- xshell에서 연결 확인
+docker top <컨테이너이름>
+docker logs (-f) <컨테이너이름>: 로그 보기(-f: 실시간)
+docker images --no-trunc
 
-docker 구성 요소
-- registry: 이미지를 가져오는 곳
-- docker host: 가져온 이미지로 컨테이너를 만듦
-- client: build, pull, run 등의 명령어 실행
+apache 이미지 생성을 위한 dockerfile
+=================================
+FROM ubuntu:22.04
+LABEL maintainer = "p40212@gmail.com"
 
-build: 프로젝트 파일로 이미지 생성
-run: 이미지로 컨테이너 생성
+#install apache
+RUN apt-get update && apt-get -y install apache2
 
-하나의 이미지는 여러 layer로 구성
-컨테이너를 만들면 이미지 레이어(read only)에 컨테이너 레이어(read+write)가 추가됨
+COPY index.html /var/www/html/index.html
 
-docker run -d --name app1 ubuntu:focal
-- ubuntu 이미지가 만들어지고 나면 컨테이너가 끝남
-docker run -it --name app2 ubuntu:focal /bin/bash
-- ctrl + p, ctrl + q를 누르면 컨테이너를 중지하지 않고 접속만 분리
-docker run -it --name app3 ubuntu:focal
-- 처음부터 접속이 분리되어 있으니 빠져나올 필요가 없음
-
-docker로 MySQL 실행해보기
-- docker run -d --name ms -e MYSQL_ROOT_PASSWORD=<비밀번호> mysql -> 컨테이너 생성 및 실행
-- docker exec -it ms mysql -u root -p<비밀번호> -> 컨테이너에 접속
-- docker exec -it <컨테이너ID> /bin/bash
-- cat /etc/hosts
-- ls var/lib/mysql
-
-docker build -t <이미지이름>:<태그> <dockerfile 경로>
-docker tag <이미지이름>:<태그> <저장소이름>/<이미지이름>:<태그>
-docker push <저장소이름>/<이미지이름>:<태그>
-docker -v: 버전 확인
-docker run (-d/--name/-p/--rm/-i/-t): pull + create + start
-docker inspect <이미지 이름 or 컨테이너 이름>: 상세 정보
-docker rm (-f) <컨테이너 이름>
-docker rmi (-f) <이미지 이름>
-docker exec -it <컨테이너 이름> /bin/bash: 컨테이너에 접속
-- nginx의 index.html 수정하기: 컨테이너에 접속 후 cat > /usr/share/nginx/html/index.html -> 내용 입력하고 ctrl + d 눌러서 저장
-docker rename <현재 컨테이너 이름> <변경할 컨테이너 이름>
-docker cp <복사할 파일> <붙여넣을 경로>
-- 컨테이너 경로 = <컨테이너ID>:<내부 경로>
-alias cip='docker inspect --format "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}"'
-docker stats
-docker system df
-docker container prune: 미사용 컨테이너 삭제
-docker ps --size
-
-컨테이너는 이미지 레이어 + 컨테이너 레이어
-이미지 레이어(read only)
-컨테이너 레이어(read, write)
-소스 수정은 컨테이너 레이어에
-새 이미지를 받아오면 기존 레이어는 놔두고, 바뀐 레이어만 업데이트해서 조합
-
-dockerfile: 컨테이너를 만들도록 도와주는 명령어 집합
-- 순서대로 실행됨
-
-=========================================================
-
-dockerfile 생성 후 image push하기
-- vi dockerfile 후 아래 입력 / 저장
-
-# Docker file for Ubuntu with OpenJDK 18 and Tomcat 9. 			
-FROM ubuntu:18.04									
-LABEL maintainer="Jun Woo Park <p40212@gmail.com>"		
-
-# Set environment variables   							
-ENV TOMCAT_VERSION 9.0.100
-ENV CATALINA_HOME /usr/local/tomcat
-ENV JAVA_HOME /usr/lib/jvm/java-17-openjdk-amd64
-ENV PATH $CATALINA_HOME/bin:$PATH
-
-# Install JDK & wget packages.
-RUN apt-get -y update && apt-get -y upgrade
-RUN apt-get -y install openjdk-17-jdk wget
-
-# Install and configure Tomcat.
-RUN mkdir $CATALINA_HOME
-RUN wget https://archive.apache.org/dist/tomcat/tomcat-9/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.tar.gz -O /tmp/tomcat.tar.gz
-RUN cd /tmp && tar xvfz tomcat.tar.gz
-RUN cp -Rv /tmp/apache-tomcat-${TOMCAT_VERSION}/* $CATALINA_HOME
-RUN rm -rf /tmp/apache-tomcat-${TOMCAT_VERSION}
-RUN rm -rf /tmp/tomcat.tar.gz
-
-# Expose Tomcat port.
 EXPOSE 80
 
-# Start Tomcat
-CMD ["/usr/local/tomcat/bin/catalina.sh", "run"]
-
-- docker build -t tomcat:v1.0 .
-- docker images로 만들어진 이미지 확인
-
-- docker tag tomcat:v1.0 junwooqkr5302/tomcat:v1.0
-- docker push junwooqkr5302/tomcat:v1.0
-
-=========================================================
-
-dockerfile 수정 후 tomcat:v1.0으로 image 생성, 컨테이너 실행해보기
-
-FROM ubuntu:18.04
-LABEL maintainer="Jun Woo Park <p40212@gmail.com>"
-# install apache
-RUN apt-get update \
-    && apt-get install -y apache2
-RUN echo "TEST WEB" > /var/www/html/index.html   
-EXPOSE 80
 CMD ["/usr/sbin/apache2ctl","-D","FOREGROUND"]
+=================================
 
-=========================================================
+index.html의 내용
+=================================
+<html>
+<head> 
+<title>Docker httpd-webserver Connected Success !!!</title> 
+<style>
+body {margin-top: 40px; background-color: blue;}
+</style> 
+</head>
+<body>
+<div style=color:white;text-align:center>
+<h1>Docker httpd-webserver Connected Success !!!</h1>
+<h2>Congratulations!</h2>
+<p><em>Your application is now running on a container in Docker httpd-webserver.</em></p>
+</p> </div>
+</body>
+</html>
+=================================
 
-dockerfile 수정 후 httpweb:v2.0으로 image 생성, 컨테이너 실행하고 push 하기
+docker build -t httpdweb:v1.0 .
+docker run -d --name my_httpd -p 80:80 httpdweb:v1.0
 
-FROM ubuntu:18.04
-LABEL maintainer="Jun Woo Park <p40212@gmail.com>"
-# install apache
-RUN apt-get update \
-    && apt-get install -y apache2
-COPY ./index.html /var/www/html/index.html
+
+nginx 이미지 생성을 위한 dockerfile
+=================================
+FROM nginx:1.14
+LABEL maintainer = "p40212@gmail.com"
+
+COPY index.html /usr/share/nginx/html/index.html
+
 EXPOSE 80
-CMD ["/usr/sbin/apache2ctl","-D","FOREGROUND"]
+
+CMD ["nginx","-g","daemon off;"]    
+=================================
+
+index.html의 내용
+=================================
+<html>
+<head> 
+<title>Amazon Nginx-Webserver Connected Success !!!</title> 
+<style>
+body {margin-top: 40px; background-color: red;}
+</style> 
+</head>
+<body>
+<div style=color:white;text-align:center>
+<h1>Amazon Nginx-Webserver Connected Success !!!</h1>
+<h2>Congratulations!</h2>
+<p><em>Your application is now running on a container in Amazon Nginx-Webserver.</em></p>
+</p> </div>
+</body>
+</html>
+=================================
+
+docker build -t nginxweb:v1.0 .
+docker run -d --name my_nginx -p 80:80 nginxweb:v1.0
+
+-> nginx의 이미지가 훨씬 작음
+
+ens5: host(ubuntu)에 대한 네트워크 카드
+docker0: host 위에 올라가 있는 docker에 대한 네트워크 카드 -> bridge network
+가상 네트워크는 컨테이너 갯수 만큼 더 생김
+docker0의 주소는 172.17.0.1 -> 실행하는 컨테이너는 순차적으로 그 다음 주소를 할당받음
+
+apt install net-tools
+ifconfig
+
+docker network ls
+docker network inspect <컨테이너ID>
+
+brctl show: bridge network에 어떤 네트워크가 물려있는지 표시
+
+bridge
+host
+none
+
+포트포워딩: container port를 외부로 노출시켜 외부 연결을 허용
+-p hostPort:containerPort
+-p containerPort -> hostPort는 랜덤
+-P -> hostPort는 랜덤, containerPort는 dockerfile의 expose 설정에 따라 달라짐
+
+iptables -t nat -L -n -v의 결과 중 하나
+tcp dpt:80 to:172.17.0.2:80
+tcp dpt:32768 to:172.17.0.3:80
+tcp dpt:32769 to:172.17.0.4:80
+-> 컨테이너마다 고유한 내부 ip 부여
+
+사용자지정 bridge network 생성 가능
+docker network create --driver bridge --subnet 192.168.100.0/24 --gateway 192.168.100.254 mynet
+docker network ls로 확인
+docker run -d --name appjs --net mynet --ip 192.168.100.100 -p 80:80 powermvp/marvel-collection
+
+컨테이너로 이미지를 생성할 수 있음(컨테이너 안에는 이미지 레이어가 있기 때문)
+docker run -d --name web nginx:1.14
+docker rmi -f nginx:1.14
+docker commit web nginx1.14
+
+컨테이너를 압축하고, 이를 이용해서 이미지를 만들 수 있음
+docker run -d --name nc -p 80:80 nginx:1.14
+docker export -o nginx:1.14.tar nc
+docker import nginx:1.14.tar new_nginx
+-> 이 방법으로 만들어진 이미지는 CMD 또는 ENTRYPOINT 옵션이 없을 수 있음, -g 옵션으로 실행 시 명령어를 추가해주기
+
+이미지를 압축하고, 이를 이용해서 이미지를 만들 수 있음
+docker save -o nginx.tar nginx:1.14
+docker load -i nginx.tar
+
+이미지 경량화 전략
+- 컨테이너의 레이어 수 줄이기: 꼭 필요한 패키지, 파일만 추가
+  - dockerfile에서 여러 RUN 명령어를 &&로 묶기(RUN 하나는 레이어 하나이기 때문)
+  - 경량화된 이미지 (alpine 등) 사용
+  - --no-cache 옵션 넣기
+- multi-stage build
