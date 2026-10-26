@@ -1,132 +1,333 @@
-docker top <컨테이너이름>
-docker logs (-f) <컨테이너이름>: 로그 보기(-f: 실시간)
-docker images --no-trunc
+멀티 스테이지 빌드
+- 이전 단계에서 생성된 이미지와 캐시를 재사용
+- 변경된 부분만 다시 빌드
+-> 이미지의 크기 감소
 
-apache 이미지 생성을 위한 dockerfile
-=================================
-FROM ubuntu:22.04
-LABEL maintainer = "p40212@gmail.com"
+이미지 경량화 실습(4가지 패턴)
 
-#install apache
-RUN apt-get update && apt-get -y install apache2
+파일 이름: Dockerfile
+이미지 이름: nodejs-server:latest
+-> docker build --force-rm -t nodejs-server .
+===================================
+FROM node:16
+LABEL maintainer="p40212@gmail.com"
+LABEL description="Simple server with Node.js"
 
-COPY index.html /var/www/html/index.html
+# Create app directory
+WORKDIR /app
 
-EXPOSE 80
+# Install app dependencies
+# A wildcard is used to ensure both package.json AND package-lock.json are copied
+# where available (npm@5+)
+COPY package*.json ./
 
-CMD ["/usr/sbin/apache2ctl","-D","FOREGROUND"]
-=================================
+RUN npm install
+# If you are building your code for production
+# RUN npm ci --only=production
 
-index.html의 내용
-=================================
-<html>
-<head> 
-<title>Docker httpd-webserver Connected Success !!!</title> 
-<style>
-body {margin-top: 40px; background-color: blue;}
-</style> 
-</head>
-<body>
-<div style=color:white;text-align:center>
-<h1>Docker httpd-webserver Connected Success !!!</h1>
-<h2>Congratulations!</h2>
-<p><em>Your application is now running on a container in Docker httpd-webserver.</em></p>
-</p> </div>
-</body>
-</html>
-=================================
+# Bundle app source
+COPY . .
 
-docker build -t httpdweb:v1.0 .
-docker run -d --name my_httpd -p 80:80 httpdweb:v1.0
+EXPOSE 8080
+CMD [ "node", "server.js" ]
+===================================
 
 
-nginx 이미지 생성을 위한 dockerfile
-=================================
+파일 이름: Dockerfile.slim
+이미지 이름: nodejs-server:slim
+-> docker build --force-rm -t nodejs-server:slim -f Dockerfile.slim .
+===================================
+FROM node:16-slim
+LABEL maintainer="p40212@gmail.com"
+LABEL description="Simple server with Node.js"
+
+# Create app directory
+WORKDIR /app
+
+# Install app dependencies
+# A wildcard is used to ensure both package.json AND package-lock.json are copied
+# where available (npm@5+)
+COPY package*.json ./
+
+RUN npm install
+# If you are building your code for production
+# RUN npm ci --only=production
+
+# Bundle app source
+COPY . .
+
+EXPOSE 8080
+CMD [ "node", "server.js" ]
+===================================
+
+
+파일 이름: Dockerfile.alpine
+이미지 이름: nodejs-server:alpine
+-> docker build --force-rm -t nodejs-server:alpine -f Dockerfile.alpine .
+===================================
+FROM node:16-alpine
+LABEL maintainer="p40212@gmail.com"
+LABEL description="Simple server with Node.js"
+
+# Create app directory
+WORKDIR /app
+
+# Install app dependencies
+# A wildcard is used to ensure both package.json AND package-lock.json are copied
+# where available (npm@5+)
+COPY package*.json ./
+
+RUN npm install
+# If you are building your code for production
+# RUN npm ci --only=production
+
+# Bundle app source
+COPY . .
+
+EXPOSE 8080
+CMD [ "node", "server.js" ]
+===================================
+
+
+파일 이름: Dockerfile.alpine-multi
+이미지 이름: nodejs-server:alpine-multi
+-> docker build --force-rm -t nodejs-server:alpine-multi -f Dockerfile.alpine-multi .
+===================================
+FROM node:16-alpine AS base
+LABEL maintainer="p40212@gmail.com"
+LABEL description="Simple server with Node.js"
+
+# Create app directory
+WORKDIR /app
+
+# Install app dependencies
+# A wildcard is used to ensure both package.json AND package-lock.json are copied
+# where available (npm@5+)
+COPY package*.json ./
+
+
+FROM base AS build
+RUN npm install
+# If you are building your code for production
+# RUN npm ci --only=production
+
+
+FROM base AS release
+COPY --from=build /app/node_modules ./node_modules
+# Bundle app source
+COPY . .
+
+EXPOSE 8080
+CMD [ "node", "server.js" ]
+===================================
+
+
+was 빌드 -> 멀티 스테이지 + alpine 쓰기
+web server 빌드 -> alpine 쓰기
+
+
+nginx 경량화 실습
+[경량화 진행 전]
 FROM nginx:1.14
-LABEL maintainer = "p40212@gmail.com"
+LABEL maintainer="p40212@gmail.com"
+COPY index.html /usr/share/nginx/html
+CMD ["nginx", "-g", "daemon off;"]
+===================================
+[경량화 진행 후]
+FROM nginx:1.14-alpine
+LABEL maintainer="p40212@gmail.com"
+COPY index.html /usr/share/nginx/html
+CMD ["nginx", "-g", "daemon off;"]
 
-COPY index.html /usr/share/nginx/html/index.html
 
-EXPOSE 80
+tomcat 경량화 실습
+[경량화 진행 전]
+FROM ubuntu:latest
+LABEL maintainer="p40212@gmail.com"
 
-CMD ["nginx","-g","daemon off;"]    
-=================================
+# Set environment variables
+ENV TOMCAT_VERSION 9.0.71
+ENV CATALINA_HOME /usr/local/tomcat
+ENV JAVA_HOME /usr/lib/jvm/java-17-openjdk-amd64
+ENV PATH $CATALINA_HOME/bin:$PATH
 
-index.html의 내용
-=================================
-<html>
-<head> 
-<title>Amazon Nginx-Webserver Connected Success !!!</title> 
-<style>
-body {margin-top: 40px; background-color: red;}
-</style> 
-</head>
-<body>
-<div style=color:white;text-align:center>
-<h1>Amazon Nginx-Webserver Connected Success !!!</h1>
-<h2>Congratulations!</h2>
-<p><em>Your application is now running on a container in Amazon Nginx-Webserver.</em></p>
-</p> </div>
-</body>
-</html>
-=================================
+# Install JDK & wget packages.
+RUN apt-get -y update && apt-get -y upgrade
+RUN apt-get -y install openjdk-17-jdk wget
 
+# Install and configure Tomcat.
+RUN mkdir $CATALINA_HOME
+RUN wget https://archive.apache.org/dist/tomcat/tomcat-9/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.tar.gz -O /tmp/tomcat.tar.gz
+RUN cd /tmp && tar xvfz tomcat.tar.gz
+RUN cp -Rv /tmp/apache-tomcat-${TOMCAT_VERSION}/* $CATALINA_HOME
+RUN rm -rf /tmp/apache-tomcat-${TOMCAT_VERSION}
+RUN rm -rf /tmp/tomcat.tar.gz
+
+COPY ./index.html $CATALINA_HOME/webapps/ROOT/
+
+# Expose Tomcat port.
+EXPOSE 8080
+
+# Start Tomcat
+CMD ["/usr/local/tomcat/bin/catalina.sh", "run"]
+===================================
+[경량화 진행 후]
+FROM alpine:latest as builder
+LABEL maintainer="p40212@gmail.com"
+
+RUN apk update && \
+    apk add --no-cache openjdk8 curl tar
+
+# Set environment variables
+ENV TOMCAT_VERSION 9.0.71
+ENV CATALINA_HOME /usr/local/tomcat
+ENV JAVA_HOME /usr/lib/jvm/java-17-openjdk-amd64
+ENV PATH $CATALINA_HOME/bin:$PATH
+
+# Install JDK & wget packages.
+# RUN apt-get -y update && apt-get -y upgrade
+# RUN apt-get -y install openjdk-17-jdk wget
+
+# Install and configure Tomcat.
+RUN mkdir $CATALINA_HOME
+RUN wget https://archive.apache.org/dist/tomcat/tomcat-9/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.tar.gz -O /tmp/tomcat.tar.gz
+RUN cd /tmp && tar xvfz tomcat.tar.gz
+RUN cp -Rv /tmp/apache-tomcat-${TOMCAT_VERSION}/* $CATALINA_HOME
+RUN rm -rf /tmp/apache-tomcat-${TOMCAT_VERSION}
+RUN rm -rf /tmp/tomcat.tar.gz
+
+COPY ./index.html $CATALINA_HOME/webapps/ROOT/
+
+FROM alpine:latest
+
+RUN apk add --no-cache openjdk8-jre-base && \
+    rm -rf /var/cache/apk/*
+
+ENV JAVA_HOME /usr/lib/jvm/java-1.8-openjdk
+ENV CATALINA_HOME /usr/local/tomcat
+ENV PATH $JAVA_HOME/bin:$CATALINA_HOME/bin:$PATH
+
+COPY --from=builder $CATALINA_HOME $CATALINA_HOME
+
+EXPOSE 8080
+
+CMD ["catalina.sh", "run"]
+
+ec2 용량 증설
+sudo growpart /dev/xvda 1
+sudo resize2fs /dev/xvda1
+df -h /
+
+aws cli 설치 과정
+cli 액세스 키 발급
+apt-get update
+sudo apt-get install -y unzip
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+apt install unzip
+unzip awscliv2.zip
+sudo ./aws/install
+aws --version
+aws configure
+- access key, secret access key 입력
+- region name: us-east-1
+- output format: json
+
+Amazon ECR > 프라이빗 레지스트리 > 리포지토리 > 프라이빗 리포지토리 생성
+이름 설정 후 생성
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 447839931800.dkr.ecr.us-east-1.amazonaws.com
 docker build -t nginxweb:v1.0 .
-docker run -d --name my_nginx -p 80:80 nginxweb:v1.0
+docker tag nginxweb:v1.0 447839931800.dkr.ecr.us-east-1.amazonaws.com/ecr-nginx:v1.0
+docker push 447839931800.dkr.ecr.us-east-1.amazonaws.com/ecr-nginx:v1.0
+docker run -d --name nginxweb -p 80:80 447839931800.dkr.ecr.us-east-1.amazonaws.com/ecr-nginx:v1.0
 
--> nginx의 이미지가 훨씬 작음
+local registry 사용해보기(포트는 반드시 5000번)
+docker run -d -p 5000:5000 --restart always --name registry registry:2
+docker pull junwooqkr5302/nginx-after:v1.0
+docker tag junwooqkr5302/nginx-after:v1.0 localhost:5000/nginx-after:v1.0
+docker push localhost:5000/nginx-after:v1.0
+-> 이미지는 var/lib/docker/volumes 에 저장되어있음
 
-ens5: host(ubuntu)에 대한 네트워크 카드
-docker0: host 위에 올라가 있는 docker에 대한 네트워크 카드 -> bridge network
-가상 네트워크는 컨테이너 갯수 만큼 더 생김
-docker0의 주소는 172.17.0.1 -> 실행하는 컨테이너는 순차적으로 그 다음 주소를 할당받음
 
-apt install net-tools
-ifconfig
+k8s 클러스터 구성하기
+기존의 virtual machine 복사(k8s-master, k8s-worker1, k8s-worker2)
+k8s-worker1의 ipv4 ip 변경: 10.0.2.11, vi /etc/hostname으로 hostname 변경, vi /etc/hosts으로 추가: 10.0.2.10 k8s-master, 10.0.2.11 k8s-worker1, 10.0.2.12 k8s-worker2
+k8s-worker2의 ipv4 ip 변경: 10.0.2.12, vi /etc/hostname으로 hostname 변경, vi /etc/hosts으로 추가: 10.0.2.10 k8s-master, 10.0.2.11 k8s-worker1, 10.0.2.12 k8s-worker2
 
-docker network ls
-docker network inspect <컨테이너ID>
+master, worker 모두 진행
+======================
+sudo -i 
+cd ~
+swapon && cat /etc/fstab
+swapoff -a && sed -i '/swap/s/^/#/' /etc/fstab
+ufw disable
+cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
+br_netfilter
+EOF
+cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
+net.bridge.bridge-nf-call-ip6tables = 1
+net.bridge.bridge-nf-call-iptables = 1
+EOF
+sudo sysctl --system
+modprobe br_netfilter
+sysctl net.bridge.bridge-nf-call-ip6tables
+sudo apt-get update
+sudo apt-get install -y apt-transport-https ca-certificates curl
+sudo mkdir -p /etc/apt/keyrings/
+sudo chmod 755 /etc/apt/keyrings/
+curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.32/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.32/deb/ /' | tee /etc/apt/sources.list.d/kubernetes.list
+sudo apt-get update
+sudo apt-get install -y kubelet kubeadm kubectl kubernetes-cni
+sudo apt-mark hold kubelet kubeadm kubectl
+sudo mkdir /etc/docker
+cat <<EOF | sudo tee /etc/docker/daemon.json
+{
+"exec-opts": ["native.cgroupdriver=systemd"],
+"log-driver": "json-file",
+"log-opts": {
+"max-size": "100m"
+},
+"storage-driver": "overlay2"
+}
+EOF
+sudo systemctl enable docker
+sudo systemctl daemon-reload
+sudo systemctl restart docker
+sudo rm /etc/containerd/config.toml
+sudo systemctl restart containerd
+kubeadm version
+======================
 
-brctl show: bridge network에 어떤 네트워크가 물려있는지 표시
+master에서만 진행
+======================
+kubeadm init
+(저장할 내용1)
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+(저장할 내용2)
+kubeadm join 10.0.2.10:6443 --token do97bu.fdik29l5ke3w0ux7 --discovery-token-ca-cert-hash sha256:6f0b76e87692f4ab4a72e21f0887e0158dc9e23d7b108596825c3aa34cf7ecce
 
-bridge
-host
-none
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+cat > kubernetestoken.txt (저장할 내용2)
+kubectl apply -f https://github.com/weaveworks/weave/releases/download/v2.8.1/weave-daemonset-k8s.yaml
+kubectl get nodes
+kubectl get pods --all-namespaces
+======================
 
-포트포워딩: container port를 외부로 노출시켜 외부 연결을 허용
--p hostPort:containerPort
--p containerPort -> hostPort는 랜덤
--P -> hostPort는 랜덤, containerPort는 dockerfile의 expose 설정에 따라 달라짐
+worker에서만 진행
+======================
+kubeadm join 10.0.2.10:6443 --token do97bu.fdik29l5ke3w0ux7 --discovery-token-ca-cert-hash sha256:6f0b76e87692f4ab4a72e21f0887e0158dc9e23d7b108596825c3aa34cf7ecce
+======================
 
-iptables -t nat -L -n -v의 결과 중 하나
-tcp dpt:80 to:172.17.0.2:80
-tcp dpt:32768 to:172.17.0.3:80
-tcp dpt:32769 to:172.17.0.4:80
--> 컨테이너마다 고유한 내부 ip 부여
-
-사용자지정 bridge network 생성 가능
-docker network create --driver bridge --subnet 192.168.100.0/24 --gateway 192.168.100.254 mynet
-docker network ls로 확인
-docker run -d --name appjs --net mynet --ip 192.168.100.100 -p 80:80 powermvp/marvel-collection
-
-컨테이너로 이미지를 생성할 수 있음(컨테이너 안에는 이미지 레이어가 있기 때문)
-docker run -d --name web nginx:1.14
-docker rmi -f nginx:1.14
-docker commit web nginx1.14
-
-컨테이너를 압축하고, 이를 이용해서 이미지를 만들 수 있음
-docker run -d --name nc -p 80:80 nginx:1.14
-docker export -o nginx:1.14.tar nc
-docker import nginx:1.14.tar new_nginx
--> 이 방법으로 만들어진 이미지는 CMD 또는 ENTRYPOINT 옵션이 없을 수 있음, -g 옵션으로 실행 시 명령어를 추가해주기
-
-이미지를 압축하고, 이를 이용해서 이미지를 만들 수 있음
-docker save -o nginx.tar nginx:1.14
-docker load -i nginx.tar
-
-이미지 경량화 전략
-- 컨테이너의 레이어 수 줄이기: 꼭 필요한 패키지, 파일만 추가
-  - dockerfile에서 여러 RUN 명령어를 &&로 묶기(RUN 하나는 레이어 하나이기 때문)
-  - 경량화된 이미지 (alpine 등) 사용
-  - --no-cache 옵션 넣기
-- multi-stage build
+master에서만 진행
+======================
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+kubectl patch deployment metrics-server -n kube-system \
+  --type='json' \
+  -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]'
+kubectl get pods -n kube-system | grep metrics
+kubectl top pods -n kube-system
+======================

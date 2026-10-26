@@ -1,0 +1,330 @@
+<h1 data-ke-size="size30">[LG CNS AM INSPIRE CAMP 6기] &lt;10/26&gt; TIL - &lt;Docker&gt;: &lt;이미지 경량화와 레지스트리 활용&gt;</h1>
+<h2 data-ke-size="size26">오늘의 한 줄 요약</h2>
+<ul style="list-style-type: disc;" data-ke-list-type="disc">
+<li>기반 이미지 선택과 멀티 스테이지 빌드를 통해 실행 이미지에 포함할 내용을 줄이는 방법을 학습했다.</li>
+<li>빌드 캐시를 재사용하는 파일 복사 순서와 이미지 크기를 줄이는 단계 분리를 구분했다.</li>
+<li>EC2의 볼륨·파티션·파일시스템 확장 순서와 컨테이너 포트 연결을 확인했다.</li>
+<li>AWS CLI와 Amazon ECR, 로컬 Registry를 이용한 이미지 인증·태그 지정·업로드 흐름을 정리했다.</li>
+</ul>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">키워드 정리</h2>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 23.7209%;"><b>키워드</b></td>
+<td style="width: 76.2791%;"><b>설명 또는 예시</b></td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b>기반 이미지</b></td>
+<td style="width: 76.2791%;">Dockerfile의 <code>FROM</code>에서 지정하는 출발 이미지</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>slim</code></b></td>
+<td style="width: 76.2791%;">불필요한 패키지를 줄인 이미지 변형</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b>Alpine Linux</b></td>
+<td style="width: 76.2791%;">작은 기본 구성을 제공하는 Linux 배포판</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b>이미지 레이어</b></td>
+<td style="width: 76.2791%;">이미지를 구성하는 파일시스템 변경 기록</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b>빌드 캐시</b></td>
+<td style="width: 76.2791%;">변경되지 않은 빌드 결과를 재사용해 빌드 시간을 줄이는 기능</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b>멀티 스테이지 빌드</b></td>
+<td style="width: 76.2791%;">여러 빌드 단계를 정의하고 최종 단계에 필요한 파일을 선택하는 방식</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>COPY --from</code></b></td>
+<td style="width: 76.2791%;">다른 빌드 단계의 파일을 현재 단계로 복사하는 옵션</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b>JDK / JRE</b></td>
+<td style="width: 76.2791%;">Java 개발 도구를 포함한 환경 / Java 실행 환경</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>EXPOSE</code></b></td>
+<td style="width: 76.2791%;">이미지가 사용할 포트를 명시하는 메타데이터</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b>포트 게시</b></td>
+<td style="width: 76.2791%;"><code>-p</code>로 호스트 포트와 컨테이너 포트를 연결하는 설정</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b>EBS</b></td>
+<td style="width: 76.2791%;">EC2 인스턴스에 연결하는 블록 스토리지</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>growpart</code> / <code>resize2fs</code></b></td>
+<td style="width: 76.2791%;">파티션 확장 / ext4 파일시스템 확장에 사용하는 명령</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b>AWS CLI</b></td>
+<td style="width: 76.2791%;">터미널에서 AWS 서비스를 사용하는 명령 도구</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b>Amazon ECR</b></td>
+<td style="width: 76.2791%;">AWS에서 제공하는 컨테이너 이미지 레지스트리</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b>Registry</b></td>
+<td style="width: 76.2791%;">컨테이너 이미지를 저장하고 배포하는 서버</td>
+</tr>
+<tr>
+<td style="width: 23.7209%;"><b><code>tag</code> / <code>push</code> / <code>pull</code></b></td>
+<td style="width: 76.2791%;">이미지에 이름 부여 / 레지스트리에 업로드 / 레지스트리에서 다운로드</td>
+</tr>
+</tbody>
+</table>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">오늘 배운 것</h2>
+<h4 data-ke-size="size20">기반 이미지 선택을 통한 경량화</h4>
+<p data-ke-size="size16">기반 이미지는 애플리케이션 코드와 의존성을 추가하기 전의 실행 환경이다. 같은 서버를 실행하더라도 기반 이미지에 포함된 운영체제와 도구에 따라 최종 이미지 크기가 달라진다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 33.3333%;"><b>Node.js 이미지</b></td>
+<td style="width: 33.3333%;"><b>구성</b></td>
+<td style="width: 33.3333%;"><b>비교할 점</b></td>
+</tr>
+<tr>
+<td style="width: 33.3333%;"><code>node:16</code></td>
+<td style="width: 33.3333%;">Node.js와 여러 기본 패키지를 포함한 일반 이미지</td>
+<td style="width: 33.3333%;">실습의 기본 구성</td>
+</tr>
+<tr>
+<td style="width: 33.3333%;"><code>node:16-slim</code></td>
+<td style="width: 33.3333%;">실행에 필요한 패키지 위주로 줄인 Debian 계열 이미지</td>
+<td style="width: 33.3333%;">일반 이미지보다 포함 도구가 적음</td>
+</tr>
+<tr>
+<td style="width: 33.3333%;"><code>node:16-alpine</code></td>
+<td style="width: 33.3333%;">Alpine Linux 기반 이미지</td>
+<td style="width: 33.3333%;">작은 기반 구성을 사용하며 네이티브 의존성 호환성을 확인</td>
+</tr>
+</tbody>
+</table>
+<p data-ke-size="size16">Alpine 계열은 <code>apk</code>로 패키지를 관리하고, 메모의 Ubuntu 기반 실습은 <code>apt-get</code>을 사용한다. 경량화는 기반 이미지 선택과 실행에 필요한 구성 요소를 선별하는 작업을 함께 살펴보는 과정이다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">멀티 스테이지에서 공통 환경과 실행 결과 분리</h4>
+<p data-ke-size="size16">하나의 Dockerfile에서 <code>FROM</code>이 나올 때마다 새 빌드 단계가 시작된다. <code>AS</code>로 이름을 붙인 단계는 이후 <code>FROM</code>의 기반으로 사용하거나 <code>COPY --from</code>의 복사 대상으로 지정할 수 있다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 33.3333%;"><b>단계</b></td>
+<td style="width: 33.3333%;"><b>출발점</b></td>
+<td style="width: 33.3333%;"><b>역할</b></td>
+</tr>
+<tr>
+<td style="width: 33.3333%;"><code>base</code></td>
+<td style="width: 33.3333%;"><code>node:16-alpine</code></td>
+<td style="width: 33.3333%;">작업 위치를 <code>/app</code>으로 지정하고 패키지 명세 파일 복사</td>
+</tr>
+<tr>
+<td style="width: 33.3333%;"><code>build</code></td>
+<td style="width: 33.3333%;"><code>base</code></td>
+<td style="width: 33.3333%;"><code>npm install</code>로 의존성 설치</td>
+</tr>
+<tr>
+<td style="width: 33.3333%;"><code>release</code></td>
+<td style="width: 33.3333%;"><code>base</code></td>
+<td style="width: 33.3333%;">설치된 <code>node_modules</code>와 서버 소스를 모아 실행 이미지 구성</td>
+</tr>
+</tbody>
+</table>
+<p data-ke-size="size16"><code>build</code>와 <code>release</code>는 모두 <code>base</code>에서 시작한다. 따라서 최종 단계에는 공통 환경이 포함되며, 설치 단계의 나머지 내용은 명시적으로 복사한 것만 추가된다. 별도 대상을 지정하지 않은 빌드에서는 마지막 단계가 최종 이미지가 된다.</p>
+<p data-ke-size="size16">이 Node.js 실습의 <code>build</code> 단계는 의존성 설치를 담당한다. 개발 의존성까지 설치되었다면 그대로 복사되는 <code>node_modules</code>에도 포함되므로, 실제 경량화 정도는 최종 단계에 남기는 파일에 따라 달라진다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">빌드 캐시와 이미지 레이어의 역할</h4>
+<p data-ke-size="size16">의존성 명세 파일을 먼저 복사하고 패키지를 설치한 뒤 서버 소스를 복사하면, 소스만 변경한 빌드에서 의존성 설치 결과를 캐시로 재사용할 수 있다. 캐시는 빌드 시간을 줄이고, 멀티 스테이지는 최종 이미지에 포함할 내용을 줄이는 역할을 한다.</p>
+<p data-ke-size="size16">이전 레이어에 저장된 압축 파일을 뒤의 별도 <code>RUN</code>에서 삭제하더라도 이전 레이어의 데이터는 이미지에 남는다. 최종 단계에 필요한 결과물만 복사하면 설치에 사용한 임시 파일이나 도구가 최종 이미지에 들어오는 범위를 줄일 수 있다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">Nginx와 Tomcat에 적용한 경량화 방식</h4>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 33.3333%;"><b>대상</b></td>
+<td style="width: 33.3333%;"><b>기존 구성</b></td>
+<td style="width: 33.3333%;"><b>변경한 구성</b></td>
+</tr>
+<tr>
+<td style="width: 33.3333%;">Nginx</td>
+<td style="width: 33.3333%;"><code>nginx:1.14</code> 기반</td>
+<td style="width: 33.3333%;"><code>nginx:1.14-alpine</code>으로 기반 이미지 변경</td>
+</tr>
+<tr>
+<td style="width: 33.3333%;">Tomcat</td>
+<td style="width: 33.3333%;">Ubuntu에 JDK 17과 다운로드 도구를 설치하고 Tomcat 배치</td>
+<td style="width: 33.3333%;">Alpine의 준비 단계와 JRE를 사용하는 최종 실행 단계로 분리</td>
+</tr>
+</tbody>
+</table>
+<p data-ke-size="size16">Nginx는 기반 이미지를 바꾸고 정적 파일을 배치하는 흐름을 유지했다. Tomcat은 <code>builder</code>에서 준비한 설치 디렉터리를 최종 단계로 복사하고, 최종 단계에는 Java 8 실행 환경을 설치했다. 경량화한 Tomcat의 정상 동작은 직접 확인했다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">EC2 용량을 운영체제에 반영하는 순서</h4>
+<p data-ke-size="size16">EC2의 디스크 사용 공간을 늘리려면 EBS 볼륨, 파티션, 파일시스템을 순서대로 확인한다. AWS에서 볼륨 크기를 변경한 것과 운영체제가 파일을 저장할 수 있는 공간이 늘어난 것은 서로 다른 단계다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 33.3333%;"><b>순서</b></td>
+<td style="width: 33.3333%;"><b>대상</b></td>
+<td style="width: 33.3333%;"><b>확인 또는 작업</b></td>
+</tr>
+<tr>
+<td style="width: 33.3333%;">1</td>
+<td style="width: 33.3333%;">EBS 볼륨</td>
+<td style="width: 33.3333%;">AWS에서 루트 볼륨의 크기를 늘리고 <code>lsblk</code>로 디스크 크기 확인</td>
+</tr>
+<tr>
+<td style="width: 33.3333%;">2</td>
+<td style="width: 33.3333%;">루트 파티션</td>
+<td style="width: 33.3333%;"><code>sudo growpart /dev/xvda 1</code>로 파티션 확장</td>
+</tr>
+<tr>
+<td style="width: 33.3333%;">3</td>
+<td style="width: 33.3333%;">ext4 파일시스템</td>
+<td style="width: 33.3333%;"><code>sudo resize2fs /dev/xvda1</code>로 파일시스템 확장</td>
+</tr>
+<tr>
+<td style="width: 33.3333%;">4</td>
+<td style="width: 33.3333%;">사용 가능한 용량</td>
+<td style="width: 33.3333%;"><code>df -h /</code>로 루트 파일시스템 크기와 여유 공간 확인</td>
+</tr>
+</tbody>
+</table>
+<p data-ke-size="size16">실습에서 확인한 루트 파티션 <code>/dev/xvda1</code>의 파일시스템은 <code>ext4</code>였다. 파티션 확장은 디스크에 추가 공간이 반영된 뒤 수행해야 한다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">AWS CLI를 준비하고 ECR에 이미지 등록</h4>
+<p data-ke-size="size16">AWS CLI는 터미널에서 AWS 서비스에 인증하고 명령을 실행하는 도구다. 메모에서는 Linux용 설치 압축 파일을 내려받아 압축을 풀고 설치한 뒤, <code>aws --version</code>으로 확인하고 <code>aws configure</code>에서 인증 정보, 리전 <code>us-east-1</code>, 출력 형식 <code>json</code>을 설정했다.</p>
+<p data-ke-size="size16">ECR 프라이빗 리포지토리는 인증된 사용자가 이미지를 저장하고 가져오는 저장소다. 메모에서는 <code>ecr-nginx</code> 리포지토리를 생성하고 인증, 빌드, 태그 지정, 업로드, 실행 순서를 사용했다.</p>
+<table style="border-collapse: collapse; width: 100%;" border="1" data-ke-align="alignLeft" data-ke-style="style8">
+<tbody>
+<tr>
+<td style="width: 50.0000%;"><b>순서</b></td>
+<td style="width: 50.0000%;"><b>역할</b></td>
+</tr>
+<tr>
+<td style="width: 50.0000%;">인증</td>
+<td style="width: 50.0000%;"><code>aws ecr get-login-password</code>의 결과를 <code>docker login --password-stdin</code>으로 전달</td>
+</tr>
+<tr>
+<td style="width: 50.0000%;">빌드</td>
+<td style="width: 50.0000%;">실행할 Nginx 이미지를 <code>nginxweb:v1.0</code>으로 생성</td>
+</tr>
+<tr>
+<td style="width: 50.0000%;">태그 지정</td>
+<td style="width: 50.0000%;">기존 이미지에 ECR 주소와 리포지토리 경로를 포함하는 이름 추가</td>
+</tr>
+<tr>
+<td style="width: 50.0000%;">업로드</td>
+<td style="width: 50.0000%;"><code>docker push</code>로 지정한 리포지토리에 이미지 전송</td>
+</tr>
+<tr>
+<td style="width: 50.0000%;">실행</td>
+<td style="width: 50.0000%;">ECR 이미지 주소를 <code>docker run</code>에 전달하고 호스트와 컨테이너의 80번 포트 연결</td>
+</tr>
+</tbody>
+</table>
+<p data-ke-size="size16"><code>docker tag</code>는 서버를 다시 빌드하거나 이미지를 업로드하는 명령이 아니라 이미지에 다른 이름을 추가하는 명령이다. 실제 업로드는 <code>docker push</code>에서 수행한다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">로컬 Registry를 통한 이미지 저장</h4>
+<p data-ke-size="size16">Registry 서버를 컨테이너로 실행하면 Docker Hub나 ECR 이외에 직접 준비한 레지스트리에도 이미지를 저장할 수 있다. 메모의 <code>localhost:5000</code>은 Docker 명령을 실행하는 호스트의 Registry를 가리킨다.</p>
+<p data-ke-size="size16">실습에서는 Registry의 기본 내부 포트인 5000을 호스트의 5000과 연결했다. 호스트 포트는 다른 값으로 지정할 수 있으며, 이미지를 업로드할 때는 태그의 레지스트리 주소와 공개한 포트를 맞춰야 한다.</p>
+<p data-ke-size="size16">Registry의 기본 데이터 디렉터리는 컨테이너 내부의 <code>/var/lib/registry</code>이며, 메모의 실행 방식에서는 Docker가 관리하는 볼륨에 데이터가 보관된다. 호스트의 실제 저장 위치는 Docker 데이터 디렉터리와 볼륨 설정에 따라 달라진다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h4 data-ke-size="size20">k8s 클러스터 구성하기</h4>
+<p data-ke-size="size16">[참고 링크]를 참고하여 k8s 클러스터 구성을 완료했다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">오늘의 코드 1 - 의존성 설치 결과를 재사용하는 복사 순서</h2>
+<p data-ke-size="size16">수업 메모에 기록한 Node.js 기본형 Dockerfile에서 의존성 설치와 소스 복사 부분을 발췌했다.</p>
+<h4 data-ke-size="size20">수업메모.txt</h4>
+<pre class="reasonml"><code class="language-dockerfile">COPY package*.json ./
+
+RUN npm install
+# If you are building your code for production
+# RUN npm ci --only=production
+
+# Bundle app source
+COPY . .</code></pre>
+<p data-ke-size="size16">패키지 명세 파일을 먼저 복사해 설치한 뒤 전체 소스를 복사한다. 의존성 명세가 그대로라면 서버 소스를 수정한 빌드에서 설치 단계의 캐시를 재사용할 수 있다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 2 - Node.js 설치 단계와 실행 단계 분리</h2>
+<p data-ke-size="size16">공통 단계에서 <code>/app</code>과 패키지 명세 파일을 준비한 다음 이어지는 설치·실행 단계다.</p>
+<h4 data-ke-size="size20">수업메모.txt</h4>
+<pre class="reasonml"><code class="language-dockerfile">FROM base AS build
+RUN npm install
+# If you are building your code for production
+# RUN npm ci --only=production
+
+
+FROM base AS release
+COPY --from=build /app/node_modules ./node_modules
+# Bundle app source
+COPY . .
+
+EXPOSE 8080
+CMD [ "node", "server.js" ]</code></pre>
+<p data-ke-size="size16"><code>release</code>는 <code>base</code>에서 시작하고 <code>build</code>에서 설치한 <code>node_modules</code>를 복사한다. 주석으로 남긴 운영용 설치 명령은 실행되지 않으며, 컨테이너의 기본 실행 명령은 <code>node server.js</code>다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 3 - Nginx 기반 이미지를 Alpine으로 변경</h2>
+<p data-ke-size="size16">메모의 경량화 전후 코드에서 달라진 기반 이미지 부분이다.</p>
+<h4 data-ke-size="size20">수업메모.txt</h4>
+<pre class="reasonml"><code class="language-dockerfile">FROM nginx:1.14</code></pre>
+<p data-ke-size="size16">경량화 전에는 일반 Nginx 이미지를 기반으로 사용했다. 정적 파일 복사와 Nginx 실행 명령은 이후 구성에서도 유지했다.</p>
+<h4 data-ke-size="size20">수업메모.txt</h4>
+<pre class="reasonml"><code class="language-dockerfile">FROM nginx:1.14-alpine</code></pre>
+<p data-ke-size="size16">경량화 후에는 같은 버전의 Alpine 변형을 기반으로 선택했다. 변경 대상은 기반 이미지이며, 메모에는 전후 이미지 크기의 측정값이 기록되어 있지 않다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 4 - Tomcat 실행 이미지에 JRE와 설치 결과 배치</h2>
+<p data-ke-size="size16">메모의 Ubuntu 기반 구성에서는 JDK와 다운로드 도구를 설치했다.</p>
+<h4 data-ke-size="size20">수업메모.txt</h4>
+<pre class="reasonml"><code class="language-dockerfile">RUN apt-get -y update &amp;&amp; apt-get -y upgrade
+RUN apt-get -y install openjdk-17-jdk wget</code></pre>
+<p data-ke-size="size16">기존 구성은 Java 개발 도구와 다운로드 도구를 같은 이미지 안에 설치한다. Tomcat 압축 파일의 다운로드와 설치도 같은 단계에서 이어진다.</p>
+<h4 data-ke-size="size20">수업메모.txt</h4>
+<pre class="reasonml"><code class="language-dockerfile">FROM alpine:latest
+
+RUN apk add --no-cache openjdk8-jre-base &amp;&amp; \
+    rm -rf /var/cache/apk/*
+
+ENV JAVA_HOME /usr/lib/jvm/java-1.8-openjdk
+ENV CATALINA_HOME /usr/local/tomcat
+ENV PATH $JAVA_HOME/bin:$CATALINA_HOME/bin:$PATH
+
+COPY --from=builder $CATALINA_HOME $CATALINA_HOME
+
+EXPOSE 8080
+
+CMD ["catalina.sh", "run"]</code></pre>
+<p data-ke-size="size16">최종 단계는 Alpine에 Java 8 실행 환경을 설치하고 <code>builder</code>에서 준비한 Tomcat 디렉터리를 가져온다. <code>catalina.sh run</code>으로 실행하는 이 경량화 구성은 직접 정상 동작을 확인했다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 5 - ECR 인증과 이미지 업로드</h2>
+<h4 data-ke-size="size20">수업메모.txt</h4>
+<pre class="reasonml"><code class="language-bash">aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 447839931800.dkr.ecr.us-east-1.amazonaws.com
+docker build -t nginxweb:v1.0 .
+docker tag nginxweb:v1.0 447839931800.dkr.ecr.us-east-1.amazonaws.com/ecr-nginx:v1.0
+docker push 447839931800.dkr.ecr.us-east-1.amazonaws.com/ecr-nginx:v1.0
+docker run -d --name nginxweb -p 80:80 447839931800.dkr.ecr.us-east-1.amazonaws.com/ecr-nginx:v1.0</code></pre>
+<p data-ke-size="size16">첫 명령은 ECR 인증 정보를 표준 입력으로 전달해 Docker를 레지스트리에 로그인시킨다. 이어서 로컬 이미지를 만들고 ECR용 태그로 업로드한 뒤 해당 이미지로 컨테이너를 실행하는 순서다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style6" />
+<h2 data-ke-size="size26">오늘의 코드 6 - 로컬 Registry 실행과 이미지 업로드</h2>
+<h4 data-ke-size="size20">수업메모.txt</h4>
+<pre class="reasonml"><code class="language-bash">docker run -d -p 5000:5000 --restart always --name registry registry:2
+docker pull junwooqkr5302/nginx-after:v1.0
+docker tag junwooqkr5302/nginx-after:v1.0 localhost:5000/nginx-after:v1.0
+docker push localhost:5000/nginx-after:v1.0</code></pre>
+<p data-ke-size="size16">Registry를 실행한 뒤 Docker Hub의 이미지를 내려받아 로컬 Registry 주소가 붙은 태그를 추가한다. 마지막 명령은 해당 이름의 이미지를 <code>localhost:5000</code>의 Registry로 업로드한다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 data-ke-size="size26">어려웠던 점 / 각종 오류</h2>
+<p data-ke-size="size16">멀티 스테이지에서 <code>release</code>가 앞선 <code>build</code>의 모든 내용을 이어받는지 확인했다. 실제 코드는 두 단계 모두 <code>base</code>에서 시작하며, 설치 결과는 <code>COPY --from=build</code>로 별도로 가져오는 구조였다.</p>
+<p data-ke-size="size16">컨테이너 <code>tomcat-before</code>에 <code>8080:8080</code>이 연결되어 있었지만, 실행 명령은 Nginx였고 설정에서도 <code>listen 80;</code>을 확인했다. 이 실행 상태에 맞는 연결은 <code>8080:80</code>이며, Tomcat을 설치하고 <code>catalina.sh</code>를 실행하도록 작성한 코드와 실제 컨테이너 상태는 구분해서 확인해야 했다. <code>EXPOSE 8080</code>은 서버의 수신 포트를 바꾸는 명령이 아니다.</p>
+<p data-ke-size="size16">루트 파일시스템의 사용률이 99%인 상태에서 파티션을 확장하려고 했지만 <code>NOCHANGE: partition 1 is size 14677983. it cannot be grown</code>이 출력됐다. 파티션 배치를 확인하니 디스크 전체가 여전히 8GiB였고 루트 파티션이 디스크 끝까지 사용 중이었다. AWS에서 루트 EBS 볼륨을 먼저 늘리고 운영체제에 반영된 크기를 확인해야 한다는 원인을 파악했으며, 해당 출력에서는 증설 완료까지 확인되지는 않았다.</p>
+<hr contenteditable="false" data-ke-type="horizontalRule" data-ke-style="style2" />
+<h2 style="color: #000000; text-align: start;" data-ke-size="size26">하루를 정리하며</h2>
+<p style="color: #222222; text-align: start;" data-ke-size="size16">LG CNS 6기</p>
+<p style="color: #222222; text-align: start;" data-ke-size="size16">LGCNSINSIRECAMP</p>
+<p style="color: #222222; text-align: start;" data-ke-size="size16">개발자</p>
