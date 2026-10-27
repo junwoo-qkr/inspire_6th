@@ -1,333 +1,253 @@
-멀티 스테이지 빌드
-- 이전 단계에서 생성된 이미지와 캐시를 재사용
-- 변경된 부분만 다시 빌드
--> 이미지의 크기 감소
+CNI(Container Network Interface): 컨테이너 간 통신할 수 있게 해주는 인터페이스(weave net을 어제 깔았음)
 
-이미지 경량화 실습(4가지 패턴)
-
-파일 이름: Dockerfile
-이미지 이름: nodejs-server:latest
--> docker build --force-rm -t nodejs-server .
-===================================
-FROM node:16
-LABEL maintainer="p40212@gmail.com"
-LABEL description="Simple server with Node.js"
-
-# Create app directory
-WORKDIR /app
-
-# Install app dependencies
-# A wildcard is used to ensure both package.json AND package-lock.json are copied
-# where available (npm@5+)
-COPY package*.json ./
-
-RUN npm install
-# If you are building your code for production
-# RUN npm ci --only=production
-
-# Bundle app source
-COPY . .
-
-EXPOSE 8080
-CMD [ "node", "server.js" ]
-===================================
-
-
-파일 이름: Dockerfile.slim
-이미지 이름: nodejs-server:slim
--> docker build --force-rm -t nodejs-server:slim -f Dockerfile.slim .
-===================================
-FROM node:16-slim
-LABEL maintainer="p40212@gmail.com"
-LABEL description="Simple server with Node.js"
-
-# Create app directory
-WORKDIR /app
-
-# Install app dependencies
-# A wildcard is used to ensure both package.json AND package-lock.json are copied
-# where available (npm@5+)
-COPY package*.json ./
-
-RUN npm install
-# If you are building your code for production
-# RUN npm ci --only=production
-
-# Bundle app source
-COPY . .
-
-EXPOSE 8080
-CMD [ "node", "server.js" ]
-===================================
-
-
-파일 이름: Dockerfile.alpine
-이미지 이름: nodejs-server:alpine
--> docker build --force-rm -t nodejs-server:alpine -f Dockerfile.alpine .
-===================================
-FROM node:16-alpine
-LABEL maintainer="p40212@gmail.com"
-LABEL description="Simple server with Node.js"
-
-# Create app directory
-WORKDIR /app
-
-# Install app dependencies
-# A wildcard is used to ensure both package.json AND package-lock.json are copied
-# where available (npm@5+)
-COPY package*.json ./
-
-RUN npm install
-# If you are building your code for production
-# RUN npm ci --only=production
-
-# Bundle app source
-COPY . .
-
-EXPOSE 8080
-CMD [ "node", "server.js" ]
-===================================
-
-
-파일 이름: Dockerfile.alpine-multi
-이미지 이름: nodejs-server:alpine-multi
--> docker build --force-rm -t nodejs-server:alpine-multi -f Dockerfile.alpine-multi .
-===================================
-FROM node:16-alpine AS base
-LABEL maintainer="p40212@gmail.com"
-LABEL description="Simple server with Node.js"
-
-# Create app directory
-WORKDIR /app
-
-# Install app dependencies
-# A wildcard is used to ensure both package.json AND package-lock.json are copied
-# where available (npm@5+)
-COPY package*.json ./
-
-
-FROM base AS build
-RUN npm install
-# If you are building your code for production
-# RUN npm ci --only=production
-
-
-FROM base AS release
-COPY --from=build /app/node_modules ./node_modules
-# Bundle app source
-COPY . .
-
-EXPOSE 8080
-CMD [ "node", "server.js" ]
-===================================
-
-
-was 빌드 -> 멀티 스테이지 + alpine 쓰기
-web server 빌드 -> alpine 쓰기
-
-
-nginx 경량화 실습
-[경량화 진행 전]
-FROM nginx:1.14
-LABEL maintainer="p40212@gmail.com"
-COPY index.html /usr/share/nginx/html
-CMD ["nginx", "-g", "daemon off;"]
-===================================
-[경량화 진행 후]
-FROM nginx:1.14-alpine
-LABEL maintainer="p40212@gmail.com"
-COPY index.html /usr/share/nginx/html
-CMD ["nginx", "-g", "daemon off;"]
-
-
-tomcat 경량화 실습
-[경량화 진행 전]
-FROM ubuntu:latest
-LABEL maintainer="p40212@gmail.com"
-
-# Set environment variables
-ENV TOMCAT_VERSION 9.0.71
-ENV CATALINA_HOME /usr/local/tomcat
-ENV JAVA_HOME /usr/lib/jvm/java-17-openjdk-amd64
-ENV PATH $CATALINA_HOME/bin:$PATH
-
-# Install JDK & wget packages.
-RUN apt-get -y update && apt-get -y upgrade
-RUN apt-get -y install openjdk-17-jdk wget
-
-# Install and configure Tomcat.
-RUN mkdir $CATALINA_HOME
-RUN wget https://archive.apache.org/dist/tomcat/tomcat-9/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.tar.gz -O /tmp/tomcat.tar.gz
-RUN cd /tmp && tar xvfz tomcat.tar.gz
-RUN cp -Rv /tmp/apache-tomcat-${TOMCAT_VERSION}/* $CATALINA_HOME
-RUN rm -rf /tmp/apache-tomcat-${TOMCAT_VERSION}
-RUN rm -rf /tmp/tomcat.tar.gz
-
-COPY ./index.html $CATALINA_HOME/webapps/ROOT/
-
-# Expose Tomcat port.
-EXPOSE 8080
-
-# Start Tomcat
-CMD ["/usr/local/tomcat/bin/catalina.sh", "run"]
-===================================
-[경량화 진행 후]
-FROM alpine:latest as builder
-LABEL maintainer="p40212@gmail.com"
-
-RUN apk update && \
-    apk add --no-cache openjdk8 curl tar
-
-# Set environment variables
-ENV TOMCAT_VERSION 9.0.71
-ENV CATALINA_HOME /usr/local/tomcat
-ENV JAVA_HOME /usr/lib/jvm/java-17-openjdk-amd64
-ENV PATH $CATALINA_HOME/bin:$PATH
-
-# Install JDK & wget packages.
-# RUN apt-get -y update && apt-get -y upgrade
-# RUN apt-get -y install openjdk-17-jdk wget
-
-# Install and configure Tomcat.
-RUN mkdir $CATALINA_HOME
-RUN wget https://archive.apache.org/dist/tomcat/tomcat-9/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.tar.gz -O /tmp/tomcat.tar.gz
-RUN cd /tmp && tar xvfz tomcat.tar.gz
-RUN cp -Rv /tmp/apache-tomcat-${TOMCAT_VERSION}/* $CATALINA_HOME
-RUN rm -rf /tmp/apache-tomcat-${TOMCAT_VERSION}
-RUN rm -rf /tmp/tomcat.tar.gz
-
-COPY ./index.html $CATALINA_HOME/webapps/ROOT/
-
-FROM alpine:latest
-
-RUN apk add --no-cache openjdk8-jre-base && \
-    rm -rf /var/cache/apk/*
-
-ENV JAVA_HOME /usr/lib/jvm/java-1.8-openjdk
-ENV CATALINA_HOME /usr/local/tomcat
-ENV PATH $JAVA_HOME/bin:$CATALINA_HOME/bin:$PATH
-
-COPY --from=builder $CATALINA_HOME $CATALINA_HOME
-
-EXPOSE 8080
-
-CMD ["catalina.sh", "run"]
-
-ec2 용량 증설
-sudo growpart /dev/xvda 1
-sudo resize2fs /dev/xvda1
-df -h /
-
-aws cli 설치 과정
-cli 액세스 키 발급
-apt-get update
-sudo apt-get install -y unzip
-curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-apt install unzip
-unzip awscliv2.zip
-sudo ./aws/install
-aws --version
-aws configure
-- access key, secret access key 입력
-- region name: us-east-1
-- output format: json
-
-Amazon ECR > 프라이빗 레지스트리 > 리포지토리 > 프라이빗 리포지토리 생성
-이름 설정 후 생성
-aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 447839931800.dkr.ecr.us-east-1.amazonaws.com
-docker build -t nginxweb:v1.0 .
-docker tag nginxweb:v1.0 447839931800.dkr.ecr.us-east-1.amazonaws.com/ecr-nginx:v1.0
-docker push 447839931800.dkr.ecr.us-east-1.amazonaws.com/ecr-nginx:v1.0
-docker run -d --name nginxweb -p 80:80 447839931800.dkr.ecr.us-east-1.amazonaws.com/ecr-nginx:v1.0
-
-local registry 사용해보기(포트는 반드시 5000번)
-docker run -d -p 5000:5000 --restart always --name registry registry:2
-docker pull junwooqkr5302/nginx-after:v1.0
-docker tag junwooqkr5302/nginx-after:v1.0 localhost:5000/nginx-after:v1.0
-docker push localhost:5000/nginx-after:v1.0
--> 이미지는 var/lib/docker/volumes 에 저장되어있음
-
-
-k8s 클러스터 구성하기
-기존의 virtual machine 복사(k8s-master, k8s-worker1, k8s-worker2)
-k8s-worker1의 ipv4 ip 변경: 10.0.2.11, vi /etc/hostname으로 hostname 변경, vi /etc/hosts으로 추가: 10.0.2.10 k8s-master, 10.0.2.11 k8s-worker1, 10.0.2.12 k8s-worker2
-k8s-worker2의 ipv4 ip 변경: 10.0.2.12, vi /etc/hostname으로 hostname 변경, vi /etc/hosts으로 추가: 10.0.2.10 k8s-master, 10.0.2.11 k8s-worker1, 10.0.2.12 k8s-worker2
-
-master, worker 모두 진행
-======================
-sudo -i 
-cd ~
-swapon && cat /etc/fstab
-swapoff -a && sed -i '/swap/s/^/#/' /etc/fstab
-ufw disable
-cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
-br_netfilter
-EOF
-cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
-net.bridge.bridge-nf-call-ip6tables = 1
-net.bridge.bridge-nf-call-iptables = 1
-EOF
-sudo sysctl --system
-modprobe br_netfilter
-sysctl net.bridge.bridge-nf-call-ip6tables
-sudo apt-get update
-sudo apt-get install -y apt-transport-https ca-certificates curl
-sudo mkdir -p /etc/apt/keyrings/
-sudo chmod 755 /etc/apt/keyrings/
-curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.32/deb/Release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.32/deb/ /' | tee /etc/apt/sources.list.d/kubernetes.list
-sudo apt-get update
-sudo apt-get install -y kubelet kubeadm kubectl kubernetes-cni
-sudo apt-mark hold kubelet kubeadm kubectl
-sudo mkdir /etc/docker
-cat <<EOF | sudo tee /etc/docker/daemon.json
-{
-"exec-opts": ["native.cgroupdriver=systemd"],
-"log-driver": "json-file",
-"log-opts": {
-"max-size": "100m"
-},
-"storage-driver": "overlay2"
-}
-EOF
-sudo systemctl enable docker
-sudo systemctl daemon-reload
-sudo systemctl restart docker
-sudo rm /etc/containerd/config.toml
-sudo systemctl restart containerd
-kubeadm version
-======================
-
-master에서만 진행
-======================
-kubeadm init
-(저장할 내용1)
-mkdir -p $HOME/.kube
-sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-sudo chown $(id -u):$(id -g) $HOME/.kube/config
-(저장할 내용2)
-kubeadm join 10.0.2.10:6443 --token do97bu.fdik29l5ke3w0ux7 --discovery-token-ca-cert-hash sha256:6f0b76e87692f4ab4a72e21f0887e0158dc9e23d7b108596825c3aa34cf7ecce
-
-mkdir -p $HOME/.kube
-sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-sudo chown $(id -u):$(id -g) $HOME/.kube/config
-cat > kubernetestoken.txt (저장할 내용2)
-kubectl apply -f https://github.com/weaveworks/weave/releases/download/v2.8.1/weave-daemonset-k8s.yaml
-kubectl get nodes
-kubectl get pods --all-namespaces
-======================
-
-worker에서만 진행
-======================
-kubeadm join 10.0.2.10:6443 --token do97bu.fdik29l5ke3w0ux7 --discovery-token-ca-cert-hash sha256:6f0b76e87692f4ab4a72e21f0887e0158dc9e23d7b108596825c3aa34cf7ecce
-======================
-
-master에서만 진행
-======================
+[메트릭 서버 설치하기]
 kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
 kubectl patch deployment metrics-server -n kube-system \
   --type='json' \
   -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]'
+(메트릭 서버 설치 확인 명령어)
 kubectl get pods -n kube-system | grep metrics
 kubectl top pods -n kube-system
-======================
+
+pod 생성 실습1
+vi netflixwweb.yaml
+==== yaml 파일 내용 ====
+apiVersion: v1
+kind: Pod
+metadata:
+  name: netflixweb-pod
+  labels:
+    app: nginx-app
+spec:
+  containers:
+  - name: nginx-app
+    image: powermvp/netflix:v2.0
+    ports:
+    - containerPort: 80
+    resources:
+      limits:
+        cpu: 200m
+        memory: 256Mi
+      requests:
+        cpu: 100m
+        memory: 128Mi
+==== yaml 파일 내용 ====
+kubectl apply -f netflixweb.yaml
+kubectl describe PODS netflixweb-pod: 포드의 실행 로그
+
+pod 생성 실습2
+vi nginx-deploy.yaml
+==== yaml 파일 내용 ====
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-app-deploy
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: nginx-app
+  template:
+    metadata:
+      labels:
+        app: nginx-app
+    spec:
+      containers:
+      - name: nginx-app
+        image: powermvp/marvel-collection:v1.0
+        ports:
+        - containerPort: 80
+        resources:
+          limits:
+            cpu: 200m
+            memory: 256Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+==== yaml 파일 내용 ====
+kubectl apply -f nginx-deploy.yaml
+kubectl get deploy, pods
+
+pod의 개수 조절
+kubectl scale deployment nginx-app-deploy --replicas=<pod의 개수>
+
+scale in/out
+scale up/down
+
+pod 삭제
+kubectl delete pod <pod-name>
+- 삭제하더라도 지정된 replicas만큼 되도록 자동생성됨
+
+api server: 요청의 인증, 권한 등을 확인
+scheduler: 노드의 상태를 보고 새로운 pod를 실행할 노드 선택
+etcd: 클러스터의 설정과 상태 저장
+controller manager: 원하는 상태를 유지
+
+독립 pod: pod가 하나밖에 없어서 꺼지면 다시 안켜짐
+deploy pod: 여러개 만들어서 하나가 꺼져도 다시 복구됨
+
+pod의 이름 구성: deploy-replicaSet-pod
+
+kubectl get deployments.apps,rs,pods
+deployments.apps가 rs, rs가 pods를 생성
+
+rs 삭제
+kubectl delete rs <rs-name>
+
+deployments.apps 삭제
+kubectl delete deployments.apps <deployments.apps-name>
+
+독립 pod 생성
+kubectl run <pod 이름> --image=<이미지>
+
+deployment 생성
+kubectl create deployment <deployment 이름> --image=<이미지> (--replicas=n)
+
+service: k8s의 load balancer와 비슷한 맥락
+cluster ip: 내부 연결용
+node port: 외부 연결용
+load balancer: 외부 연결용
+-> service는 pod의 label과 spec.selector.app이 동일한 경우에만 작동
+
+service 생성하기
+vi nginx-clusterIp.yaml
+==== yaml 파일 내용 ====
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-app-clusterip
+spec:
+  selector:
+    app: nginx-app
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+  type: ClusterIP
+==== yaml 파일 내용 ====
+kubectl apply -f nginx-clusterIp.yaml
+kubectl port-forward svc/nginx-app-clusterip 8080:80
+curl http://127.0.0.1:8080
+
+nodeport 생성하기
+vi nginx-nodePort.yaml
+==== yaml 파일 내용 ====
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-app-nodeport
+spec:
+  selector:
+    app: nginx-app
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+    nodePort: 30080
+  type: NodePort
+==== yaml 파일 내용 ====
+kubectl apply -f nginx-nodePort.yaml
+
+loadbalancer 생성하기
+vi nginx-loadbalancer.yaml
+==== yaml 파일 내용 ====
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-app-nodeport
+spec:
+  selector:
+    app: nginx-app
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+    nodePort: 30090
+  type: LoadBalancer
+==== yaml 파일 내용 ====
+kubectl apply -f nginx-loadbanacer.yaml
+
+metallb 설치하기
+https://lgcns-kubernetes-core-edu.oopy.io/k8s12 <- 이거 따라하기
+VMnet1의 주소 확인하기: 192.168.198.1 -> config.yaml 작성 시 주소는 192.168.198.100 ~ 192.168.198.120으로 설정
+
+aws ecr 이미지로 리소스 생성
+- 마스터 노드에 aws cli 설치
+kubectl create secret docker-registry ecr-secret \
+  --docker-server=<AWS 계정ID>.dkr.ecr.<계정 지역>.amazonaws.com \
+  --docker-username=AWS \
+  --docker-password="$(aws ecr get-login-password --region <계정 지역>)" \
+  --namespace=default
+kubectl get secret
+
+AWS ECR로 pod 생성하기
+vi awsecr-pod.yaml
+==== yaml 파일 내용 ====
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+spec:
+  imagePullSecrets:
+    - name: ecr-secret
+  containers:
+  - name: nginx
+    image: 447839931800.dkr.ecr.us-east-1.amazonaws.com/ecr-nginx:v2.0
+    ports:
+    - containerPort: 80
+==== yaml 파일 내용 ====
+kubectl apply -f awsecr-pod.yaml
+
+(또는 yaml 파일 없이 명령어로만 생성)
+kubectl run nc \
+  --image=447839931800.dkr.ecr.us-east-1.amazonaws.com/ecr-nginx:v2.0 \
+  --overrides='{"spec":{"imagePullSecrets":[{"name":"ecr-secret"}]}}'
+
+AWS ECR로 deployment 생성하기
+vi awsecr-deploy.yaml
+==== yaml 파일 내용 ====
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    app: nginx
+spec:
+  replicas: 5
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      imagePullSecrets:
+        - name: ecr-secret
+      containers:
+      - name: nginx
+        image: 447839931800.dkr.ecr.us-east-1.amazonaws.com/ecr-nginx:v2.0
+        ports:
+        - containerPort: 80
+==== yaml 파일 내용 ====
+kubectl expose deployment nginx-deployment --name nginx-svc --port=80 --type=LoadBalancer
+
+주요 명령어
+kubectl apply
+kubectl run
+- --dry-run=client -o yaml > xxx.yaml: 실행되는 포드 정보를 yaml 파일로 저장
+kubectl get <자원타입>
+- kubectl get pods [-o wide]
+- kubectl get nodes [-o wide]
+kubectl edit <자원타입> <자원이름> [옵션]
+kubectl describe <자원타입> <자원이름> [옵션]
+- describe의 Endpoints는 replicas 설정만큼 존재
+kubectl delete <자원타입> <자원이름> [옵션]
+kubectl exec -it <포드이름>  -- <실행할 명령>
+kubectl logs -f <포드이름>
+
+주요 shortnames
+NAME                                SHORTNAMES   APIVERSION                        NAMESPACED   configmaps                          cm           v1                                true         namespaces                          ns           v1                                false        persistentvolumeclaims              pvc          v1                                true         persistentvolumes                   pv           v1                                false        replicationcontrollers              rc           v1                                true         secrets                                          v1                                true         serviceaccounts                     sa           v1                                true         
+services                            svc          v1                                true         daemonsets                          ds           apps/v1                           true         
+deployments                         deploy       apps/v1                           true         
+replicasets                         rs           apps/v1                           true         statefulsets                        sts          apps/v1                           true         cronjobs                            cj           batch/v1                          true         
