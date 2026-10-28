@@ -1,253 +1,108 @@
-CNI(Container Network Interface): 컨테이너 간 통신할 수 있게 해주는 인터페이스(weave net을 어제 깔았음)
+kubectl create namespace <namespace 이름> (기본값: default)
+-> run 시에 namespace를 -n으로 지정하면 get 할때도 -n으로 namespace를 지정해줘야함
+kubectl get <자원타입> | wc -l: 현재 실행중인 자원 + 1
 
-[메트릭 서버 설치하기]
-kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
-kubectl patch deployment metrics-server -n kube-system \
-  --type='json' \
-  -p='[{"op":"add","path":"/spec/template/spec/containers/0/args/-","value":"--kubelet-insecure-tls"}]'
-(메트릭 서버 설치 확인 명령어)
-kubectl get pods -n kube-system | grep metrics
-kubectl top pods -n kube-system
+마스터 컴포넌트(controller plane) 구성 요소
+- etcd: key-value 타입의 노드의 정보를 저장하는 저장소
+- kube-apiserver: 요청의 유효성 등을 검색
+- kube-scheduler: 포드를 실행할 노드 선택
+- kube-controller-manager: 포드의 개수 보장
 
-pod 생성 실습1
-vi netflixwweb.yaml
-==== yaml 파일 내용 ====
-apiVersion: v1
-kind: Pod
-metadata:
-  name: netflixweb-pod
-  labels:
-    app: nginx-app
-spec:
-  containers:
-  - name: nginx-app
-    image: powermvp/netflix:v2.0
-    ports:
-    - containerPort: 80
-    resources:
-      limits:
-        cpu: 200m
-        memory: 256Mi
-      requests:
-        cpu: 100m
-        memory: 128Mi
-==== yaml 파일 내용 ====
-kubectl apply -f netflixweb.yaml
-kubectl describe PODS netflixweb-pod: 포드의 실행 로그
+워커 노드 컴포넌트(data plane) 구성 요소
+- kubelet: 모든 노드에서 실행되는 k8s -> daemon 형태로 동작함
+- kubu-proxy: k8s의 network 동작을 관리, iptable rule을 구성
+- 컨테이너 런타임: 컨테이너를 실행하는 엔진(docker, containerd, CRI-O 등)
 
-pod 생성 실습2
-vi nginx-deploy.yaml
-==== yaml 파일 내용 ====
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: nginx-app-deploy
-spec:
-  replicas: 3
-  selector:
-    matchLabels:
-      app: nginx-app
-  template:
-    metadata:
-      labels:
-        app: nginx-app
-    spec:
-      containers:
-      - name: nginx-app
-        image: powermvp/marvel-collection:v1.0
-        ports:
-        - containerPort: 80
-        resources:
-          limits:
-            cpu: 200m
-            memory: 256Mi
-          requests:
-            cpu: 100m
-            memory: 128Mi
-==== yaml 파일 내용 ====
-kubectl apply -f nginx-deploy.yaml
-kubectl get deploy, pods
+k8s 동작 순서
+1. kubectl로 create pod api에 호출
+2. api server가 요청의 유효성 검사 후 etcd에 저장
+3. etcd가 결과 반환
+4. api server가 scheduler 호출
+5. scheduler가 pod를 실행할 위치를 결정하고 반환
+6. api server가 pod 실행 결과를 etcd에 기록
+7. etcd가 결과 반환
+8. api server가 해당 노드의 kubelet 호출
+9. kubelet은 docker api로 컨테이너를 생성
+10. kubelet은 api를 호출해서 pod 상태를 업데이트
+11. api server가 etcd의 상태 유지
 
-pod의 개수 조절
-kubectl scale deployment nginx-app-deploy --replicas=<pod의 개수>
+replication controller: 실행중인 pod의 갯수를 설정대로 유지
+- spec.selector.app과 spec.template.metadata.labels.app이 같아야 함
 
-scale in/out
-scale up/down
+kubectl edit <자원 타입> <자원 이름>: 실행중인 자원의 설정을 수정하고 바로 반영
 
-pod 삭제
-kubectl delete pod <pod-name>
-- 삭제하더라도 지정된 replicas만큼 되도록 자동생성됨
+yaml 파일을 수정(image 버전 등)하고 apply하면 실행중인 pod에 변경사항이 적용되지 않음
+delete 후 재실행되는 pod는 변경사항이 적용됨
 
-api server: 요청의 인증, 권한 등을 확인
-scheduler: 노드의 상태를 보고 새로운 pod를 실행할 노드 선택
-etcd: 클러스터의 설정과 상태 저장
-controller manager: 원하는 상태를 유지
+label이 webui인 ngnix(replicas=3) pod를 3개 실행중일때, label이 똑같이 webui인 redis를 실행
+-> nginx와 redis의 label이 같기 때문에 같은 pod라고 생각하고 rc가 바로 redis를 꺼버림
 
-독립 pod: pod가 하나밖에 없어서 꺼지면 다시 안켜짐
-deploy pod: 여러개 만들어서 하나가 꺼져도 다시 복구됨
+replicaset
+- replication controller와 동일한 역할
 
-pod의 이름 구성: deploy-replicaSet-pod
+replication controller와 replicaset의 차이
+replication controller:
+- apiVersion: v1
+- kind: ReplicationController
+- selector.app: webui
+replicaset:
+- apiVersion: apps/v1
+- kind: ReplicaSet
+- selector.matchLabels.app: webui
 
-kubectl get deployments.apps,rs,pods
-deployments.apps가 rs, rs가 pods를 생성
+replicaset도 이미지 버전등에 대해서는 실행 중 수정이 안됨 -> replicaset, replication controller 둘 다 pod의 갯수만 유지해줌
 
-rs 삭제
-kubectl delete rs <rs-name>
+rs 삭제 시 --cascade=false 옵션이 있으면 pod는 rs 삭제 후에도 남아있음
 
-deployments.apps 삭제
-kubectl delete deployments.apps <deployments.apps-name>
+rs 실행 시 label이 같은 pod가 이미 실행중이면 같은 rs라고 생각함
 
-독립 pod 생성
-kubectl run <pod 이름> --image=<이미지>
+deployment
+- pod의 버전관리 담당
+- deployment 하위에 replicaset
+- yaml 파일에 kind: Deployment로 정의되어 있음
+- rolling update(변경 사항이 있으면 pod 인스턴스를 점진적으로 업데이트) 지원
 
-deployment 생성
-kubectl create deployment <deployment 이름> --image=<이미지> (--replicas=n)
+실행 중인 deployment의 yaml에서 이미지 버전을 변경하고 apply -> 바뀐 버전으로 pod가 재실행
 
-service: k8s의 load balancer와 비슷한 맥락
-cluster ip: 내부 연결용
-node port: 외부 연결용
-load balancer: 외부 연결용
--> service는 pod의 label과 spec.selector.app이 동일한 경우에만 작동
+한 deployment에 여러 rs: 버전을 바꿀때마다 새 rs가 생김
+이전에 사용하던 rs는 rollback 등을 위해 실행하지 않고 남겨놓음
+deployment의 rollingupdate.maxSurge, maxUnavailable에 대한 설명?
 
-service 생성하기
-vi nginx-clusterIp.yaml
-==== yaml 파일 내용 ====
-apiVersion: v1
-kind: Service
-metadata:
-  name: nginx-app-clusterip
-spec:
-  selector:
-    app: nginx-app
-  ports:
-  - protocol: TCP
-    port: 80
-    targetPort: 80
-  type: ClusterIP
-==== yaml 파일 내용 ====
-kubectl apply -f nginx-clusterIp.yaml
-kubectl port-forward svc/nginx-app-clusterip 8080:80
-curl http://127.0.0.1:8080
+kubectl set image deployments <deployment이름> <컨테이너이름>=<이미지> --record
+kubectl rollout history deployment <deployment이름>
+- revisionHistoryLimit에 따라 볼 수 있는 history 갯수가 결정
+kubectl rollout undo deployment <deployment이름> (--to-revision=n)
 
-nodeport 생성하기
-vi nginx-nodePort.yaml
-==== yaml 파일 내용 ====
-apiVersion: v1
-kind: Service
-metadata:
-  name: nginx-app-nodeport
-spec:
-  selector:
-    app: nginx-app
-  ports:
-  - protocol: TCP
-    port: 80
-    targetPort: 80
-    nodePort: 30080
-  type: NodePort
-==== yaml 파일 내용 ====
-kubectl apply -f nginx-nodePort.yaml
+annotations.Kubernetes.io/change-cause에 버전 변경 메모를 남길 수 있음
 
-loadbalancer 생성하기
-vi nginx-loadbalancer.yaml
-==== yaml 파일 내용 ====
-apiVersion: v1
-kind: Service
-metadata:
-  name: nginx-app-nodeport
-spec:
-  selector:
-    app: nginx-app
-  ports:
-  - protocol: TCP
-    port: 80
-    targetPort: 80
-    nodePort: 30090
-  type: LoadBalancer
-==== yaml 파일 내용 ====
-kubectl apply -f nginx-loadbanacer.yaml
+daemonset
+- 노드 당 pod가 하나씩 실행되도록 보장
+- 로그 수집기, 모니터링등에 적용
+yaml 파일에 kind:DaemonSet으로 정의되어 있음(replicas 설정은 없음)
 
-metallb 설치하기
-https://lgcns-kubernetes-core-edu.oopy.io/k8s12 <- 이거 따라하기
-VMnet1의 주소 확인하기: 192.168.198.1 -> config.yaml 작성 시 주소는 192.168.198.100 ~ 192.168.198.120으로 설정
+statefulset
+- pod의 상태(이름) 유지
+- 생성되는 pod의 이름이 일정(xxx-0, 1, 2, ...)
+- 삭제하면 다시 생성되는 pod는 원본과 동일
+- scale in하면 제일 마지막에 생성된 것부터 삭제
 
-aws ecr 이미지로 리소스 생성
-- 마스터 노드에 aws cli 설치
-kubectl create secret docker-registry ecr-secret \
-  --docker-server=<AWS 계정ID>.dkr.ecr.<계정 지역>.amazonaws.com \
-  --docker-username=AWS \
-  --docker-password="$(aws ecr get-login-password --region <계정 지역>)" \
-  --namespace=default
-kubectl get secret
-
-AWS ECR로 pod 생성하기
-vi awsecr-pod.yaml
-==== yaml 파일 내용 ====
-apiVersion: v1
-kind: Pod
-metadata:
-  name: nginx
-spec:
-  imagePullSecrets:
-    - name: ecr-secret
-  containers:
-  - name: nginx
-    image: 447839931800.dkr.ecr.us-east-1.amazonaws.com/ecr-nginx:v2.0
-    ports:
-    - containerPort: 80
-==== yaml 파일 내용 ====
-kubectl apply -f awsecr-pod.yaml
-
-(또는 yaml 파일 없이 명령어로만 생성)
-kubectl run nc \
-  --image=447839931800.dkr.ecr.us-east-1.amazonaws.com/ecr-nginx:v2.0 \
-  --overrides='{"spec":{"imagePullSecrets":[{"name":"ecr-secret"}]}}'
-
-AWS ECR로 deployment 생성하기
-vi awsecr-deploy.yaml
-==== yaml 파일 내용 ====
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: nginx-deployment
-  labels:
-    app: nginx
-spec:
-  replicas: 5
-  selector:
-    matchLabels:
-      app: nginx
-  template:
-    metadata:
-      labels:
-        app: nginx
-    spec:
-      imagePullSecrets:
-        - name: ecr-secret
-      containers:
-      - name: nginx
-        image: 447839931800.dkr.ecr.us-east-1.amazonaws.com/ecr-nginx:v2.0
-        ports:
-        - containerPort: 80
-==== yaml 파일 내용 ====
-kubectl expose deployment nginx-deployment --name nginx-svc --port=80 --type=LoadBalancer
-
-주요 명령어
-kubectl apply
-kubectl run
-- --dry-run=client -o yaml > xxx.yaml: 실행되는 포드 정보를 yaml 파일로 저장
-kubectl get <자원타입>
-- kubectl get pods [-o wide]
-- kubectl get nodes [-o wide]
-kubectl edit <자원타입> <자원이름> [옵션]
-kubectl describe <자원타입> <자원이름> [옵션]
-- describe의 Endpoints는 replicas 설정만큼 존재
-kubectl delete <자원타입> <자원이름> [옵션]
-kubectl exec -it <포드이름>  -- <실행할 명령>
-kubectl logs -f <포드이름>
-
-주요 shortnames
-NAME                                SHORTNAMES   APIVERSION                        NAMESPACED   configmaps                          cm           v1                                true         namespaces                          ns           v1                                false        persistentvolumeclaims              pvc          v1                                true         persistentvolumes                   pv           v1                                false        replicationcontrollers              rc           v1                                true         secrets                                          v1                                true         serviceaccounts                     sa           v1                                true         
-services                            svc          v1                                true         daemonsets                          ds           apps/v1                           true         
-deployments                         deploy       apps/v1                           true         
-replicasets                         rs           apps/v1                           true         statefulsets                        sts          apps/v1                           true         cronjobs                            cj           batch/v1                          true         
+service
+- 동일한 서비스(동일 라벨) pod 그룹에 단일 진입점을 제공
+- kind: Service로 정의됨
+- 종류:
+  - ClusterIP
+    - selector의 label이 동일한 pod를 묶어 단일 진입점 생성
+    - 클러스터 내부에서만 사용 가능
+  - NodePort
+    - 모든 워커 노드를 대상으로 외부에서 접속 가능한 포트 예약
+    - ClusterIP와 NodePort를 예약
+  - LoadBalancer
+    - public cloud(aws, gcp 등)에서 사용 가능
+    - nodeport를 예약 후 해당 nodeport로 외부 접근 허용
+  - ExternalName
+    - 클러스터 안에서 외부에 접속 시 사용할 도메인을 yaml 파일에 등록
+  - headless service
+    - clusterIP가 없는 서비스 -> 단일 진입점이 필요 없을 때 사용
+    - 일반적으로 DB에 statefulset과 함께 사용
+  - kube-proxy
+    - iptable rule을 기반으로 서비스를 pod와 연결
